@@ -1,8 +1,6 @@
 const express = require('express');
 require('dotenv').config();
-
 const { Client } = require('pg');
-
 const app = express();
 const port = 3000;
 
@@ -21,20 +19,41 @@ const client = new Client({
 // });
 
 
+
 client.connect()
   .then(() => console.log('Connecté à la base de données PostgreSQL !'))
   .catch(err => console.error('Erreur de connexion', err));
 
-// Route principale
-app.get('/', async (req, res) => {
+
+
+
+app.use(express.static('public'));
+
+
+app.get('/api/advBoulogne', async (req, res) => {
   try {
-    const result = await client.query('select distinct "ADV", "Latitude","Longitude" from adv ;');
-    res.send(`
-      <h1>Données de la table ADV</h1>
-      <pre>${JSON.stringify(result.rows, null, 2)}</pre>
-    `);
+    const result = await client.query('SELECT DISTINCT "ADV", "Latitude", "Longitude"  FROM adv ORDER BY "ADV";');
+    res.json(result.rows);
   } catch (err) {
-    res.status(500).send('Erreur lors de la requête SQL : ' + err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/voiesBoulogne', async (req, res) =>{
+  try{
+    const result = await client.query('SELECT DISTINCT voie from voies order by voie');
+    res.json(result.rows);
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/voiesBoulogne/ecart', async (req,res) => {
+  try{
+    const result = await client.query('SELECT DISTINCT voie, distance, ecarts_1435 from voies order by voie, distance');
+    res.json(result.rows);
+  }catch(err){
+    res.status(500).json({ error: err.message });
   }
 });
 
