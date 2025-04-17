@@ -6,19 +6,24 @@ const { Client } = require('pg');
 const app = express();
 const port = 3000;
 
-// Config PostgreSQL
-const client = new Client({
-  host: process.env.HOSTBDD,
-  port: process.env.PORTBDD,
-  user: process.env.USERBDD,
-  password: process.env.PASSBDD, // remplace par ton vrai mot de passe
-  database: process.env.DATABASE,
-});
 
-// Connexion à PostgreSQL
+const client = new Client({
+  connectionString: process.env.CONNECTIONSTRING,
+  ssl: false,               
+});
+//ou cette methode:
+// const client = new Client({
+//   host: process.env.HOSTBDD,
+//   port: process.env.PORTBDD,                     
+//   user: process.env.USERBDD,                  
+//   password: process.env.PASSBDD,         
+//   database: process.env.DATABASE
+// });
+
+
 client.connect()
-  .then(() => console.log('✅ Connecté à PostgreSQL'))
-  .catch(err => console.error('❌ Connexion échouée :', err.stack));
+  .then(() => console.log('Connecté à la base de données PostgreSQL !'))
+  .catch(err => console.error('Erreur de connexion', err));
 
 // Route principale
 app.get('/', async (req, res) => {
