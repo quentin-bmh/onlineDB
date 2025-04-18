@@ -56,7 +56,22 @@ app.get('/api/voiesBoulogne/ecart', async (req,res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
+app.get('/api/voiesBoulogne/fleche', async (req,res) => {
+  try{
+    const result = await client.query('SELECT DISTINCT voie, distance, fleches from voies order by voie, distance');
+    res.json(result.rows);
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+});
+app.get('/api/voiesBoulogne/ga', async (req,res) => {
+  try{
+    const result = await client.query('SELECT DISTINCT voie, distance, ga_arrondi from voies order by voie, distance');
+    res.json(result.rows);
+  }catch(err){
+    res.status(500).json({ error: err.message });
+  }
+});
 // Lancement du serveur
 app.listen(port, () => {
   console.log(`🚀 Serveur Express en ligne : http://localhost:${port}`);
