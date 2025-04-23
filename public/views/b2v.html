@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Données B2V</title>
+  <link rel="stylesheet" href="/css/b2v.css">
+</head>
+<body>
+  <h1>Données B2V</h1>
+
+  <label for="dateFilter">Filtrer par date :</label>
+  <select id="dateFilter"></select>
+
+  <div id="data-container">
+    <section id="section1">
+      <h2>Appareil</h2>
+    </section>
+    <section id="section2">
+      <div class="row">
+        <label for="tangente">Tangente:</label>
+        <input type="text" id="tangente">
+        <label for="modele">Modèle:</label>
+        <input type="text" id="modele">
+      </div>
+      <div class="row">
+        <label for="plancher">Plancher:</label>
+        <select id="plancher">
+          <option value="bois">bois</option>
+          <option value="beton">beton</option>
+        </select>
+        <label for="pose">Pose:</label>
+        <select id="pose">
+          <option value="eclisse">eclisse</option>
+          <option value="soudees">soudees</option>
+          <option value="incorporees">incorporees</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>DMAR:</label>
+        <label><input type="radio" id="dmar-oui"> Oui</label>
+        <label><input type="radio" id="dmar-non"> Non</label>
+        <label>Coussinet:</label>
+        <label><input type="radio" id="coussinet-oui"> Oui</label>
+        <label><input type="radio" id="coussinet-non"> Non</label>
+      </div>
+    </section>
+      
+    
+
+    <section id="section3">
+      <h2>Protection de pointe</h2>
+      <div class="row two-col">
+        <div>
+          <label for="ecrg">ECR G:</label>
+          <input type="text" id="ecrg"><span>mm</span>
+          <label for="e2cg">E2C G:</label>
+          <input type="text" id="e2cg"><span>mm</span>
+          <label for="p2pg">P2P G:</label>
+          <input type="text" id="p2pg">
+        </div>
+        <div>
+          <label for="ecrd">ECR D:</label>
+          <input type="text" id="ecrd"><span>mm</span>
+          <label for="e2cd">E2C D:</label>
+          <input type="text" id="e2cd"><span>mm</span>
+          <label for="p2pd">P2P D:</label>
+          <input type="text" id="p2pd">
+        </div>
+      </div>
+      <div class="row">
+        <label for="coeurn">Cœur N:</label>
+        <input type="text" id="coeurn">
+      </div>
+    </section>
+
+    <section id="section4">
+      <h2>Bavures</h2>
+      <div class="row two-col">
+        <div>
+          <label>Bavure G:</label>
+          <label><input type="radio" name="bavureg" id="bavureg-aucune" value="aucune"> Aucune</label>
+          <label><input type="radio" name="bavureg" id="bavureg-meulee" value="meulee"> Meulée</label>
+        </div>
+        <div>
+          <label>Bavure D:</label>
+          <label><input type="radio" name="bavured" id="bavured-aucune" value="aucune"> Aucune</label>
+          <label><input type="radio" name="bavured" id="bavured-meulee" value="meulee"> Meulée</label>
+        </div>
+      </div>
+    </section>
+
+    <section id="section5">
+      <h2>Usure Latérale Contre-Aiguille</h2>
+      <div class="row two-col">
+        <div>
+          <label>Usure 1a G:</label>
+          <label><input type="radio" id="usure_1ag-gt3"> &gt; 3mm</label>
+          <label><input type="radio" id="usure_1ag-lt3"> &lt; 3mm</label>
+          <label><input type="radio" id="usure_1ag-0"> 0mm</label>
+          <label for="classement_cag">Classement CAG:</label>
+          <select id="classement_cag">
+            <option value="Bon">Bon</option>
+            <option value="VI">VI</option>
+            <option value="VR">VR</option>
+          </select>
+        </div>
+        <div>
+          <label>Usure 1a D:</label>
+          <label><input type="radio" id="usure_1ad-gt3"> &gt; 3mm</label>
+          <label><input type="radio" id="usure_1ad-lt3"> &lt; 3mm</label>
+          <label><input type="radio" id="usure_1ad-0"> 0mm</label>
+          <label for="classement_cad">Classement CAD:</label>
+          <select id="classement_cad">
+            <option value="Bon">Bon</option>
+            <option value="VI">VI</option>
+            <option value="VR">VR</option>
+          </select>
+        </div>
+      </div>
+      <div class="row two-col">
+        <div>
+          <label>Usure 1b G:</label>
+          <label><input type="radio" id="usure_1bg-ok"> ok</label>
+          <label><input type="radio" id="usure_1bg-meulage"> meulage</label>
+          <label><input type="radio" id="usure_1bg-refuse"> refuse</label>
+        </div>
+        <div>
+          <label>Usure 1b D:</label>
+          <label><input type="radio" id="usure_1bd-ok"> ok</label>
+          <label><input type="radio" id="usure_1bd-meulage"> meulage</label>
+          <label><input type="radio" id="usure_1bd-refuse"> refuse</label>
+        </div>
+      </div>
+      <div class="row two-col">
+        <div>
+          <label>Usure 1c G:</label>
+          <label><input type="radio" id="usure_1cg-ok"> ok</label>
+          <label><input type="radio" id="usure_1cg-meulage"> meulage</label>
+          <label><input type="radio" id="usure_1cg-refuse"> refuse</label>
+        </div>
+        <div>
+          <label>Usure 1c D:</label>
+          <label><input type="radio" id="usure_1cd-ok"> ok</label>
+          <label><input type="radio" id="usure_1cd-meulage"> meulage</label>
+          <label><input type="radio" id="usure_1cd-refuse"> refuse</label>
+        </div>
+      </div>
+    </section>
+
+    <section id="section6">
+      <h2>Usure Latérale Aiguille</h2>
+      <div class="row two-col">
+        <div>
+          <label>Contact Fente G:</label>
+          <label><input type="radio" id="contact_fenteg-dessus"> dessus</label>
+          <label><input type="radio" id="contact_fenteg-dd"> dessous</label>
+        </div>
+        <div>
+          <label>Contact Fente D:</label>
+          <label><input type="radio" id="contact_fented-dessus"> dessus</label>
+          <label><input type="radio" id="contact_fented-dd"> dessous</label>
+        </div>
+      </div>
+      <div class="row two-col">
+        <div>
+          <label for="pente_usure_ag">Pente Usure AG:</label>
+          <select id="pente_usure_ag">
+            <option value=">= 60%">>= 60%</option>
+            <option value="< 60%">< 60%</option>
+          </select>
+          <label for="classement_ag">Classement AG:</label>
+          <select id="classement_ag">
+            <option value="Bon">Bon</option>
+            <option value="VI">VI</option>
+            <option value="VR">VR</option>
+          </select>
+        </div>
+        <div>
+          <label for="pente_usure_ad">Pente Usure AD:</label>
+          <select id="pente_usure_ad">
+            <option value=">= 60%">>= 60%</option>
+            <option value="< 60%">< 60%</option>
+          </select>
+          <label for="classement_ad">Classement AD:</label>
+          <select id="classement_ad">
+            <option value="Bon">Bon</option>
+            <option value="VI">VI</option>
+            <option value="VR">VR</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section id="section7">
+      <h2>Ébréchure d'Aiguille</h2>
+      <div class="row two-col">
+        <div>
+          <label for="contact_ebrechureag">Contact Ébréchure AG:</label>
+          <label><input type="radio" id="contact_ebrechureag-dessus"> dessus</label>
+          <label><input type="radio" id="contact_ebrechureag-dessous"> dessous</label>
+        </div>
+        <div>
+          <label for="contact_ebrechuread">Contact Ébréchure AD:</label>
+          <label><input type="radio" id="contact_ebrechuread-dessus"> dessus</label>
+          <label><input type="radio" id="contact_ebrechuread-dessous"> dessous</label>
+        </div>
+      </div>
+      <div class="row two-col">
+        <div>
+          <label for="longeur_ebrechureg">Longueur Ébréchure G:</label>
+          <input type="text" id="longeur_ebrechureg">
+          <label for="classement_eg">Classement EG:</label>
+          <select id="classement_eg">
+            <option value="Bon">Bon</option>
+            <option value="VI">VI</option>
+            <option value="VR">VR</option>
+          </select>
+        </div>
+        <div>
+          <label for="longeur_ebrechured">Longueur Ébréchure D:</label>
+          <input type="text" id="longeur_ebrechured">
+          <label for="classement_ed">Classement ED:</label>
+          <select id="classement_ed">
+            <option value="Bon">Bon</option>
+            <option value="VI">VI</option>
+            <option value="VR">VR</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script src="/js/b2v.js"></script>
+</body>
+</html>
