@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = dateFilter ? `/api/b2v?created_at=${dateFilter}` : '/api/b2v';
         const resp = await fetch(url);
         const data = await resp.json();
+        // console.log(data)
         if (data.length) fillForm(data[0]);
       } catch (err) {
         console.error('Erreur fetch B2V:', err);
@@ -11,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   
     const fillForm = (d) => {
+      console.log(d);
+
       // Texte / selects simples
       document.getElementById('tangente').value = d.tangente;
       document.getElementById('modele').value   = d.modele;
@@ -64,13 +67,19 @@ document.addEventListener('DOMContentLoaded', () => {
       // Ébréchure
       ['contact_ebrechureag','contact_ebrechuread'].forEach(id => {
         ['dessus','dessous'].forEach(pos => {
-          document.getElementById(`${id}-${pos}`).checked = (d[id] === pos);
+          const radio = document.getElementById(`${id}-${pos}`);
+          const value = (d[id] || "").trim().toLowerCase();
+          if (radio) {
+            radio.checked = (value === pos);
+          }
         });
       });
-      document.getElementById('longeur_ebrechureg').value = d.longeur_ebrechureg;
-      document.getElementById('longeur_ebrechured').value = d.longeur_ebrechured;
-      document.getElementById('classement_eg').value = d.classement_eg;
-      document.getElementById('classement_ed').value = d.classement_ed;
+
+      document.getElementById('longeur_ebrechureg').value = d.longeur_ebrechureg ?? '';
+      document.getElementById('longeur_ebrechured').value = d.longeur_ebrechured ?? '';
+      document.getElementById('classement_eg').value = d.classement_eg ?? '';
+      document.getElementById('classement_ed').value = d.classement_ed ?? '';
+
     };
   
     // Charger dates dans le <select>

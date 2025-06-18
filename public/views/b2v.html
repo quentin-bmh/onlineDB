@@ -38,11 +38,11 @@
       </div>
       <div class="row">
         <label>DMAR:</label>
-        <label><input type="radio" id="dmar-oui"> Oui</label>
-        <label><input type="radio" id="dmar-non"> Non</label>
+        <label><input type="radio" id="dmar-oui" name="dmar" value="a"> Oui</label> 
+        <label><input type="radio" id="dmar-non"name="dmar" value="b"> Non</label> 
         <label>Coussinet:</label>
-        <label><input type="radio" id="coussinet-oui"> Oui</label>
-        <label><input type="radio" id="coussinet-non"> Non</label>
+        <label><input type="radio" id="coussinet-oui" name="coussinet" value="a"> Oui</label> 
+        <label><input type="radio" id="coussinet-non" name="coussinet" value="b"> Non</label> 
       </div>
     </section>
       
@@ -95,9 +95,9 @@
       <div class="row two-col">
         <div>
           <label>Usure 1a G:</label>
-          <label><input type="radio" id="usure_1ag-gt3"> &gt; 3mm</label>
-          <label><input type="radio" id="usure_1ag-lt3"> &lt; 3mm</label>
-          <label><input type="radio" id="usure_1ag-0"> 0mm</label>
+          <label><input type="radio" id="usure_1ag-gt3" name="usure_1a_d" value="> 3mm"> &gt; 3mm</label>
+          <label><input type="radio" id="usure_1ag-lt3" name="usure_1a_d" value="< 3mm"> &lt; 3mm</label>
+          <label><input type="radio" id="usure_1ag-0" name="usure_1a_d" value="0mm"> 0mm</label>
           <label for="classement_cag">Classement CAG:</label>
           <select id="classement_cag">
             <option value="Bon">Bon</option>
@@ -107,9 +107,9 @@
         </div>
         <div>
           <label>Usure 1a D:</label>
-          <label><input type="radio" id="usure_1ad-gt3"> &gt; 3mm</label>
-          <label><input type="radio" id="usure_1ad-lt3"> &lt; 3mm</label>
-          <label><input type="radio" id="usure_1ad-0"> 0mm</label>
+          <label><input type="radio" id="usure_1ad-gt3" name="usure_1a_g" value="> 3mm"> &gt; 3mm</label>
+          <label><input type="radio" id="usure_1ad-lt3" name="usure_1a_g" value="< 3mm"> &lt; 3mm</label>
+          <label><input type="radio" id="usure_1ad-0" name="usure_1a_g" value="0mm"> 0mm</label>
           <label for="classement_cad">Classement CAD:</label>
           <select id="classement_cad">
             <option value="Bon">Bon</option>
@@ -121,29 +121,29 @@
       <div class="row two-col">
         <div>
           <label>Usure 1b G:</label>
-          <label><input type="radio" id="usure_1bg-ok"> ok</label>
-          <label><input type="radio" id="usure_1bg-meulage"> meulage</label>
-          <label><input type="radio" id="usure_1bg-refuse"> refuse</label>
+          <label><input type="radio" id="usure_1bg-ok" name="usure_1b_g" value="ok"> ok</label>
+          <label><input type="radio" id="usure_1bg-meulage" name="usure_1b_g" value="meulage"> meulage</label>
+          <label><input type="radio" id="usure_1bg-refuse" name="usure_1b_g" value="refuse"> refuse</label>
         </div>
         <div>
           <label>Usure 1b D:</label>
-          <label><input type="radio" id="usure_1bd-ok"> ok</label>
-          <label><input type="radio" id="usure_1bd-meulage"> meulage</label>
-          <label><input type="radio" id="usure_1bd-refuse"> refuse</label>
+          <label><input type="radio" id="usure_1bd-ok" name="usure_1b_d" value="ok"> ok</label>
+          <label><input type="radio" id="usure_1bd-meulage" name="usure_1b_d" value="meulage"> meulage</label>
+          <label><input type="radio" id="usure_1bd-refuse" name="usure_1b_d" value="refuse"> refuse</label>
         </div>
       </div>
       <div class="row two-col">
         <div>
           <label>Usure 1c G:</label>
-          <label><input type="radio" id="usure_1cg-ok"> ok</label>
-          <label><input type="radio" id="usure_1cg-meulage"> meulage</label>
-          <label><input type="radio" id="usure_1cg-refuse"> refuse</label>
+          <label><input type="radio" id="usure_1cg-ok" name="usure_1c_g" value="ok"> ok</label>
+          <label><input type="radio" id="usure_1cg-meulage" name="usure_1c_g" value="meulage"> meulage</label>
+          <label><input type="radio" id="usure_1cg-refuse" name="usure_1c_g" value="refuse"> refuse</label>
         </div>
         <div>
           <label>Usure 1c D:</label>
-          <label><input type="radio" id="usure_1cd-ok"> ok</label>
-          <label><input type="radio" id="usure_1cd-meulage"> meulage</label>
-          <label><input type="radio" id="usure_1cd-refuse"> refuse</label>
+          <label><input type="radio" id="usure_1cd-ok" name="usure_1c_d" value="ok"> ok</label>
+          <label><input type="radio" id="usure_1cd-meulage" name="usure_1c_d" value="meulage"> meulage</label>
+          <label><input type="radio" id="usure_1cd-refuse" name="usure_1c_d" value="refuse"> refuse</label>
         </div>
       </div>
     </section>
@@ -153,13 +153,13 @@
       <div class="row two-col">
         <div>
           <label>Contact Fente G:</label>
-          <label><input type="radio" id="contact_fenteg-dessus"> dessus</label>
-          <label><input type="radio" id="contact_fenteg-dd"> dessous</label>
+          <label><input type="radio" id="contact_fenteg-dessus" name="contact_fg" value="dessus"> dessus</label>
+          <label><input type="radio" id="contact_fenteg-dessous" name="contact_fg" value="dessous"> dessous</label>
         </div>
         <div>
           <label>Contact Fente D:</label>
-          <label><input type="radio" id="contact_fented-dessus"> dessus</label>
-          <label><input type="radio" id="contact_fented-dd"> dessous</label>
+          <label><input type="radio" id="contact_fented-dessus" name="contact_fd" value="dessus"> dessus</label>
+          <label><input type="radio" id="contact_fented-dd" name="contact_fd" value="dessous"> dessous</label>
         </div>
       </div>
       <div class="row two-col">
@@ -197,13 +197,13 @@
       <div class="row two-col">
         <div>
           <label for="contact_ebrechureag">Contact Ébréchure AG:</label>
-          <label><input type="radio" id="contact_ebrechureag-dessus"> dessus</label>
-          <label><input type="radio" id="contact_ebrechureag-dessous"> dessous</label>
+          <label><input type="radio" id="contact_ebrechureag-dessus" name="contact_eag" value="dessus"> dessus</label>
+          <label><input type="radio" id="contact_ebrechureag-dessous" name="contact_eag" value="dessous"> dessous</label>
         </div>
         <div>
           <label for="contact_ebrechuread">Contact Ébréchure AD:</label>
-          <label><input type="radio" id="contact_ebrechuread-dessus"> dessus</label>
-          <label><input type="radio" id="contact_ebrechuread-dessous"> dessous</label>
+          <label><input type="radio" id="contact_ebrechuread-dessus" name="contact_ead" value="dessus"> dessus</label>
+          <label><input type="radio" id="contact_ebrechuread-dessous" name="contact_ead" value="dessous"> dessous</label>
         </div>
       </div>
       <div class="row two-col">
