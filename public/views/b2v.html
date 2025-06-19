@@ -9,13 +9,22 @@
 <body>
   <h1>Données B2V</h1>
 
-  <label for="dateFilter">Filtrer par date :</label>
-  <select id="dateFilter"></select>
+  <label for="advFilter">Filtrer par ADV :</label>
+  <select id="advFilter"></select>
+  <!-- Champ caché pour stocker l'ID de l'enregistrement B2V -->
+  <input type="hidden" id="id" name="id">
+
+  <!-- Bouton de sauvegarde -->
+  <button type="button" id="saveButton">💾 Enregistrer les modifications</button>
+
 
   <div id="data-container">
     <section id="section1">
       <h2>Appareil</h2>
+      <label id="adv"></label>
+      <h2 class="hidden">test</h2>
     </section>
+
     <section id="section2">
       <div class="row">
         <label for="tangente">Tangente:</label>
@@ -45,8 +54,6 @@
         <label><input type="radio" id="coussinet-non" name="coussinet" value="b"> Non</label> 
       </div>
     </section>
-      
-    
 
     <section id="section3">
       <h2>Protection de pointe</h2>
@@ -159,7 +166,7 @@
         <div>
           <label>Contact Fente D:</label>
           <label><input type="radio" id="contact_fented-dessus" name="contact_fd" value="dessus"> dessus</label>
-          <label><input type="radio" id="contact_fented-dd" name="contact_fd" value="dessous"> dessous</label>
+          <label><input type="radio" id="contact_fented-dessous" name="contact_fd" value="dessous"> dessous</label>
         </div>
       </div>
       <div class="row two-col">
@@ -196,16 +203,17 @@
       <h2>Ébréchure d'Aiguille</h2>
       <div class="row two-col">
         <div>
-          <label for="contact_ebrechureag">Contact Ébréchure AG:</label>
+          <label>Contact Ébréchure AG:</label>
           <label><input type="radio" id="contact_ebrechureag-dessus" name="contact_eag" value="dessus"> dessus</label>
           <label><input type="radio" id="contact_ebrechureag-dessous" name="contact_eag" value="dessous"> dessous</label>
         </div>
         <div>
-          <label for="contact_ebrechuread">Contact Ébréchure AD:</label>
+          <label>Contact Ébréchure AD:</label>
           <label><input type="radio" id="contact_ebrechuread-dessus" name="contact_ead" value="dessus"> dessus</label>
           <label><input type="radio" id="contact_ebrechuread-dessous" name="contact_ead" value="dessous"> dessous</label>
         </div>
       </div>
+
       <div class="row two-col">
         <div>
           <label for="longeur_ebrechureg">Longueur Ébréchure G:</label>
@@ -230,7 +238,9 @@
       </div>
     </section>
 
+
   </div>
+
 
   <script src="/js/b2v.js"></script>
 </body>

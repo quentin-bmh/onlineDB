@@ -113,3 +113,19 @@ input[type="radio"] {
     flex-direction: column;
   }
 }
+
+#section1{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  border: solid 2px black;
+  padding: 8px;
+}
+#section1 h2, label{
+  padding: 0;
+  margin: 0;
+}
+.hidden{
+  visibility: hidden;
+}

@@ -1,77 +1,99 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const fetchB2VData = async (dateFilter) => {
-      try {
-        const url = dateFilter ? `/api/b2v?created_at=${dateFilter}` : '/api/b2v';
-        const resp = await fetch(url);
-        const data = await resp.json();
-        // console.log(data)
-        if (data.length) fillForm(data[0]);
-      } catch (err) {
-        console.error('Erreur fetch B2V:', err);
-      }
-    };
-  
-    const fillForm = (d) => {
-      console.log(d);
+  const advSelect = document.getElementById('advFilter');
 
-      // Texte / selects simples
-      document.getElementById('tangente').value = d.tangente;
-      document.getElementById('modele').value   = d.modele;
-      document.getElementById('plancher').value = d.plancher;
-      document.getElementById('pose').value     = d.pose;
-      document.getElementById('ecrg').value     = d.ecrg;
-      document.getElementById('e2cg').value     = d.e2cg;
-      document.getElementById('p2pg').value     = d.p2pg;
-      document.getElementById('ecrd').value     = d.ecrd;
-      document.getElementById('e2cd').value     = d.e2cd;
-      document.getElementById('p2pd').value     = d.p2pd;
-      document.getElementById('coeurn').value   = d.coeurn;
-  
-      // Checkboxes DMAR / Coussinet
-      document.getElementById('dmar-oui').checked     = d.dmar === true;
-      document.getElementById('dmar-non').checked     = d.dmar === false;
-      document.getElementById('coussinet-oui').checked  = d.coussinet === true;
-      document.getElementById('coussinet-non').checked  = d.coussinet === false;
-  
-      // Radios bavures
+  const fetchB2VData = async (advFilter) => {
+    try {
+      const url = advFilter ? `/api/b2v?adv=${encodeURIComponent(advFilter)}` : '/api/b2v';
+      // console.log('📡 URL appelée :', url);
+      const resp = await fetch(url);
+      const data = await resp.json();
+      if (data.length) {
+        fillForm(data[0]);
+      } else {
+        console.warn("Aucune donnée B2V trouvée pour cet ADV.");
+      }
+    } catch (err) {
+      console.error('Erreur fetch B2V:', err);
+    }
+  };
+
+  const loadADVs = async () => {
+    try {
+      const resp = await fetch('/api/b2v/advs');
+      const advs = await resp.json();
+      advSelect.innerHTML = ''; // Nettoyer d'abord
+
+      advs.forEach(r => {
+        const opt = new Option(r.adv, r.adv);
+        advSelect.appendChild(opt);
+      });
+
+      // Appelle fetchB2VData() avec la valeur actuelle du select après remplissage
+      if (advSelect.value) {
+        fetchB2VData(advSelect.value);
+      }
+    } catch (e) {
+      console.error('Erreur chargement liste ADV:', e);
+    }
+  };
+
+  advSelect.addEventListener('change', e => {
+    // console.log('ADV sélectionné :', e.target.value);
+    fetchB2VData(e.target.value);
+  });
+
+  loadADVs();
+
+  const fillForm = (d) => {
+    // console.log('📄 Données reçues:', d);
+    try {
+      ['adv','tangente','modele','plancher','pose','ecrg','e2cg','p2pg','ecrd','e2cd','p2pd','coeurn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = d[id];
+      });
+      document.getElementById('adv').textContent = d.adv;
+      document.getElementById('id').value = d.id;
+      document.getElementById('dmar-oui').checked = d.dmar === true;
+      document.getElementById('dmar-non').checked = d.dmar === false;
+      document.getElementById('coussinet-oui').checked = d.coussinet === true;
+      document.getElementById('coussinet-non').checked = d.coussinet === false;
+
       document.getElementById(`bavureg-${d.bavureg}`).checked = true;
       document.getElementById(`bavured-${d.bavured}`).checked = true;
-  
-      // Usure Contre-Aiguille
+
       ['gt3','lt3','0'].forEach(s => {
-        document.getElementById(`usure_1ag-${s}`).checked = (d.usure_1ag === (s==='gt3'?'> 3mm':s==='lt3'?'< 3mm':'0mm'));
-        document.getElementById(`usure_1ad-${s}`).checked = (d.usure_1ad === (s==='gt3'?'> 3mm':s==='lt3'?'< 3mm':'0mm'));
+        const val = s === 'gt3' ? '> 3mm' : s === 'lt3' ? '< 3mm' : '0mm';
+        document.getElementById(`usure_1ag-${s}`).checked = (d.usure_1ag === val);
+        document.getElementById(`usure_1ad-${s}`).checked = (d.usure_1ad === val);
       });
+
       document.getElementById('classement_cag').value = d.classement_cag;
       document.getElementById('classement_cad').value = d.classement_cad;
-  
-      // Usure 1b / 1c
+
       ['usure_1b','usure_1c'].forEach(pref => {
         ['ok','meulage','refuse'].forEach(opt => {
           document.getElementById(`${pref}g-${opt}`).checked = (d[`${pref}g`] === opt);
           document.getElementById(`${pref}d-${opt}`).checked = (d[`${pref}d`] === opt);
         });
       });
-  
-      // Usure Aiguille
+
       ['contact_fenteg','contact_fented'].forEach(id => {
         ['dessus','dessous'].forEach(pos => {
-          document.getElementById(`${id}-${pos}`).checked = (d[id] === pos);
+          const el = document.getElementById(`${id}-${pos}`);
+          if (el) el.checked = (d[id] === pos);
         });
       });
+
       document.getElementById('pente_usure_ag').value = d.pente_usure_ag;
       document.getElementById('pente_usure_ad').value = d.pente_usure_ad;
-      document.getElementById('classement_ag').value   = d.classement_ag;
-      document.getElementById('classement_ad').value   = d.classement_ad;
-  
-      // Ébréchure
+      document.getElementById('classement_ag').value = d.classement_ag;
+      document.getElementById('classement_ad').value = d.classement_ad;
+
       ['contact_ebrechureag','contact_ebrechuread'].forEach(id => {
+        const value = (d[id] || "").trim().toLowerCase();
         ['dessus','dessous'].forEach(pos => {
           const radio = document.getElementById(`${id}-${pos}`);
-          const value = (d[id] || "").trim().toLowerCase();
-          if (radio) {
-            radio.checked = (value === pos);
-          }
+          if (radio) radio.checked = value === pos;
         });
       });
 
@@ -79,27 +101,31 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('longeur_ebrechured').value = d.longeur_ebrechured ?? '';
       document.getElementById('classement_eg').value = d.classement_eg ?? '';
       document.getElementById('classement_ed').value = d.classement_ed ?? '';
+    } catch (err) {
+      console.error("💥 Erreur dans fillForm:", err);
+    }
+  };
+});
 
-    };
-  
-    // Charger dates dans le <select>
-    const loadDates = async () => {
-      try {
-        const resp = await fetch('/api/b2v/dates');
-        const dates = await resp.json();
-        const sel = document.getElementById('dateFilter');
-        dates.forEach(r => sel.add(new Option(r.date, r.date)));
-      } catch (e) {
-        console.error('Erreur dates:', e);
-      }
-    };
-  
-    document.getElementById('dateFilter')
-      .addEventListener('change', e => fetchB2VData(e.target.value));
-  
-    loadDates().then(() => {
-      const first = document.getElementById('dateFilter').value;
-      fetchB2VData(first);
+
+const submitButton = document.getElementById('saveButton');
+submitButton.addEventListener('click', async () => {
+  const id = document.getElementById('id').value; // Assure-toi d’avoir un champ hidden avec l’ID
+  const payload = {
+    adv: document.getElementById('adv').value,
+    tangente: document.getElementById('tangente').value,
+    // ⏩ Toutes les autres valeurs à collecter…
+  };
+
+  try {
+    const res = await fetch(`/api/b2v/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
-  });
-  
+    if (res.ok) alert("✅ Modifications enregistrées !");
+    else alert("❌ Échec de la mise à jour.");
+  } catch (err) {
+    console.error(err);
+  }
+});
