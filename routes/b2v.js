@@ -49,24 +49,63 @@ router.get('/api/b2v/advs', async (req, res) => {
 router.put('/api/b2v/:id', async (req, res) => {
   const { id } = req.params;
   const updatedData = req.body;
-  const userId = 1; // À récupérer dynamiquement en fonction de l'authentification
+  const userId = 1;
 
   try {
-    // Récupérer l'enregistrement actuel
+    console.log('\n--- 🔄 Début de mise à jour ADV ---');
+    console.log('🆔 ID:', id);
+    console.log('📨 Données reçues dans req.body:', updatedData);
+
     const { rows } = await client.query('SELECT * FROM b2v WHERE id = $1', [id]);
     const current = rows[0];
     if (!current) return res.status(404).json({ error: "ADV non trouvé" });
 
-    // Préparer les colonnes et valeurs à insérer dans b2v_historique (sans 'id')
-    const keys = Object.keys(current).filter(k => k !== 'id');
-    if (keys.length === 0) {
-      return res.status(400).json({ error: "Données actuelles invalides" });
+    console.log('📦 Données actuelles de la BDD (b2v):', current);
+
+    const changedFields = {};
+
+    for (const [key, newValue] of Object.entries(updatedData)) {
+      const oldValue = current[key];
+      if (oldValue === undefined) {
+        console.warn(`⚠️ Champ "${key}" n'existe pas dans l'enregistrement actuel`);
+        continue;
+      }
+
+      console.log(`🔍 Comparaison pour le champ "${key}":`);
+      console.log(`   Ancienne valeur (BDD):`, oldValue, `(type: ${typeof oldValue})`);
+      console.log(`   Nouvelle valeur (BODY):`, newValue, `(type: ${typeof newValue})`);
+
+      const isDifferent = (() => {
+        if (oldValue === null || oldValue === undefined) return newValue !== null && newValue !== undefined && newValue !== '';
+        if (typeof oldValue === 'number') return Number(newValue) !== oldValue;
+        if (typeof oldValue === 'boolean') return (newValue === 'true' || newValue === true || newValue === 1 || newValue === '1') !== oldValue;
+        return oldValue != newValue; // comparaison non stricte pour strings
+      })();
+
+      if (isDifferent) {
+        changedFields[key] = {
+          oldValue,
+          newValue
+        };
+      } else {
+        console.log(`   ✅ Pas de différence détectée`);
+      }
     }
 
-    // Récupérer les valeurs correspondantes (dans le même ordre que keys)
+    if (Object.keys(changedFields).length === 0) {
+      console.log("❌ Aucune modification détectée.");
+      return res.status(400).json({ error: "Aucune modification détectée" });
+    }
+
+    console.log("✅ Champs détectés comme modifiés:");
+    for (const [field, { oldValue, newValue }] of Object.entries(changedFields)) {
+      console.log(`- ${field}: "${oldValue}" => "${newValue}"`);
+    }
+
+    // Historiser
+    const keys = Object.keys(current).filter(k => k !== 'id');
     const values = keys.map(k => current[k]);
 
-    // Insérer dans b2v_historique
     await client.query(`
       INSERT INTO b2v_historique (
         ${keys.join(', ')},
@@ -77,39 +116,25 @@ router.put('/api/b2v/:id', async (req, res) => {
       )
     `, [...values, userId, current.id]);
 
-    // Mettre à jour l'enregistrement actuel uniquement si updatedData n'est pas vide
-    const fields = Object.keys(updatedData);
-    if (fields.length === 0) {
-      return res.status(400).json({ error: "Aucune donnée fournie pour la mise à jour" });
-    }
-    const vals = Object.values(updatedData);
+    // Mise à jour
+    const fields = Object.keys(changedFields);
+    const vals = fields.map(f => updatedData[f]);
     const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
 
-    await client.query(
-      `UPDATE b2v SET ${setClause} WHERE id = $${fields.length + 1}`,
+    const result = await client.query(
+      `UPDATE b2v SET ${setClause} WHERE id = $${fields.length + 1} RETURNING *`,
       [...vals, id]
     );
 
-    res.json({ success: true });
+    console.log('✅ Mise à jour effectuée avec succès.');
+    res.json({ success: true, updated: result.rows[0] });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Erreur lors de la mise à jour" });
+    console.error('🔥 Erreur pendant la mise à jour ADV:', err);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 });
 
-// Récupérer l'historique des modifications d'un b2v
-router.get('/api/b2v/:id/historique', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { rows } = await client.query(`
-      SELECT * FROM b2v_historique
-      WHERE b2v_id = $1
-      ORDER BY snapshot_date DESC
-    `, [id]);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: "Erreur récupération historique" });
-  }
-});
+
 
 module.exports = router;

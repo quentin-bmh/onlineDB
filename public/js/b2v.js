@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   const advSelect = document.getElementById('advFilter');
+  const submitButton = document.getElementById('saveButton');
 
   const fetchB2VData = async (advFilter) => {
     try {
       const url = advFilter ? `/api/b2v?adv=${encodeURIComponent(advFilter)}` : '/api/b2v';
-      // console.log('📡 URL appelée :', url);
       const resp = await fetch(url);
       const data = await resp.json();
       if (data.length) {
@@ -21,14 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const resp = await fetch('/api/b2v/advs');
       const advs = await resp.json();
-      advSelect.innerHTML = ''; // Nettoyer d'abord
-
+      advSelect.innerHTML = '';
       advs.forEach(r => {
         const opt = new Option(r.adv, r.adv);
         advSelect.appendChild(opt);
       });
-
-      // Appelle fetchB2VData() avec la valeur actuelle du select après remplissage
       if (advSelect.value) {
         fetchB2VData(advSelect.value);
       }
@@ -38,20 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   advSelect.addEventListener('change', e => {
-    // console.log('ADV sélectionné :', e.target.value);
     fetchB2VData(e.target.value);
   });
 
   loadADVs();
 
   const fillForm = (d) => {
-    // console.log('📄 Données reçues:', d);
     try {
       ['adv','tangente','modele','plancher','pose','ecrg','e2cg','p2pg','ecrd','e2cd','p2pd','coeurn'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = d[id];
       });
-      document.getElementById('adv').textContent = d.adv;
       document.getElementById('id').value = d.id;
       document.getElementById('dmar-oui').checked = d.dmar === true;
       document.getElementById('dmar-non').checked = d.dmar === false;
@@ -105,27 +99,49 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error("💥 Erreur dans fillForm:", err);
     }
   };
-});
 
+  // ✅ Sauvegarde
+  submitButton.addEventListener('click', async () => {
+    const id = document.getElementById('id').value;
+    const formEl = document.getElementById('data-container');
+    const payload = {};
 
-const submitButton = document.getElementById('saveButton');
-submitButton.addEventListener('click', async () => {
-  const id = document.getElementById('id').value; // Assure-toi d’avoir un champ hidden avec l’ID
-  const payload = {
-    adv: document.getElementById('adv').value,
-    tangente: document.getElementById('tangente').value,
-    // ⏩ Toutes les autres valeurs à collecter…
-  };
-
-  try {
-    const res = await fetch(`/api/b2v/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+    const elements = formEl.querySelectorAll('input[id], select[id]');
+    elements.forEach(el => {
+      const { id: key, type } = el;
+      if (type === 'radio') {
+        if (el.checked) payload[key] = el.value;
+      } else if (type === 'checkbox') {
+        payload[key] = el.checked;
+      } else {
+        payload[key] = el.value;
+      }
     });
-    if (res.ok) alert("✅ Modifications enregistrées !");
-    else alert("❌ Échec de la mise à jour.");
-  } catch (err) {
-    console.error(err);
-  }
+
+    // Pour éviter les mauvaises valeurs :
+    if (!payload.adv) {
+      payload.adv = advSelect.value;
+    }
+
+    payload.id = id;
+
+    console.log('🧭 Payload envoyé :', payload);
+
+    try {
+      const res = await fetch(`/api/b2v/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        alert("✅ Modifications enregistrées !");
+      } else {
+        const err = await res.json();
+        alert("❌ Échec de la mise à jour : " + (err.error || res.status));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("❌ Erreur réseau");
+    }
+  });
 });
