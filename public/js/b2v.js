@@ -1,112 +1,226 @@
 document.addEventListener('DOMContentLoaded', () => {
   const advSelect = document.getElementById('advFilter');
+  const historySelect = document.getElementById('historyFilter');
   const submitButton = document.getElementById('saveButton');
+  const formContainer = document.getElementById('data-container');
 
-  const fetchB2VData = async (advFilter) => {
-    try {
-      const url = advFilter ? `/api/b2v?adv=${encodeURIComponent(advFilter)}` : '/api/b2v';
-      const resp = await fetch(url);
-      const data = await resp.json();
-      if (data.length) {
-        fillForm(data[0]);
-      } else {
-        console.warn("Aucune donnée B2V trouvée pour cet ADV.");
+  let currentB2VData = null;
+
+  const setFormDisabled = (disabled) => {
+    const elements = formContainer.querySelectorAll('input, select, textarea, button');
+    elements.forEach(el => {
+      if (el !== advSelect && el !== historySelect && el !== submitButton) {
+        el.disabled = disabled;
       }
-    } catch (err) {
-      console.error('Erreur fetch B2V:', err);
-    }
+    });
+    submitButton.disabled = disabled;
+  };
+  const add1s = (isoDate) => {
+    const d = new Date(isoDate);
+    d.setSeconds(d.getSeconds() + 1);
+    return d.toISOString();
   };
 
-  const loadADVs = async () => {
-    try {
-      const resp = await fetch('/api/b2v/advs');
-      const advs = await resp.json();
-      advSelect.innerHTML = '';
-      advs.forEach(r => {
-        const opt = new Option(r.adv, r.adv);
-        advSelect.appendChild(opt);
+  const fetchHistoryDates = async (b2vId) => {
+  try {
+    const url = `/api/b2v_historique/${b2vId}/dates`;
+    console.log('[fetchHistoryDates] URL appelée :', url);
+    const resp = await fetch(url);
+    const data = await resp.json();
+    console.log('[fetchHistoryDates] Données reçues :', data);
+
+    historySelect.innerHTML = '';
+
+    const latestOpt = new Option("🔄 Dernière version", '');
+    latestOpt.selected = true;
+    historySelect.appendChild(latestOpt);
+
+    if (data.length === 0) {
+      const opt = new Option("Aucune donnée historique", "");
+      opt.disabled = true;
+      historySelect.appendChild(opt);
+      historySelect.disabled = true;
+    } else {
+      historySelect.disabled = false;
+      data.forEach(r => {
+        const opt = new Option(new Date(r.snapshot_date).toLocaleString(), r.snapshot_date);
+        historySelect.appendChild(opt);
       });
-      if (advSelect.value) {
-        fetchB2VData(advSelect.value);
-      }
-    } catch (e) {
-      console.error('Erreur chargement liste ADV:', e);
     }
-  };
+  } catch (err) {
+    console.error('Erreur chargement dates historiques:', err);
+  }
+};
+
+const fetchHistoricalVersion = async (b2vId, snapshotDate) => {
+  try {
+    const url = `/api/b2v_historique/${b2vId}/date/${encodeURIComponent(snapshotDate)}`;
+    console.log('[fetchHistoricalVersion] URL appelée :', url);
+    const resp = await fetch(url);
+    const data = await resp.json();
+    console.log('[fetchHistoricalVersion] Données reçues :', data);
+
+    if (data) {
+      fillForm(data);
+      setFormDisabled(true); // lecture seule
+    }
+  } catch (err) {
+    console.error('Erreur chargement version historique:', err);
+  }
+};
+
+const fetchB2VData = async (advFilter) => {
+  try {
+    const url = advFilter ? `/api/b2v?adv=${encodeURIComponent(advFilter)}` : '/api/b2v';
+    console.log('[fetchB2VData] URL appelée :', url);
+    const resp = await fetch(url);
+    const data = await resp.json();
+    console.log('[fetchB2VData] Données reçues :', data);
+
+    if (data.length) {
+      currentB2VData = data[0];
+      
+      fillForm(currentB2VData);
+      setFormDisabled(false); // formulaire actif
+      document.getElementById('id').value = currentB2VData.id;
+      await fetchHistoryDates(currentB2VData.id);
+    }
+  } catch (err) {
+    console.error('Erreur fetch B2V:', err);
+  }
+};
+
+const loadADVs = async () => {
+  try {
+    const url = '/api/b2v/advs';
+    console.log('[loadADVs] URL appelée :', url);
+    const resp = await fetch(url);
+    const advs = await resp.json();
+    console.log('[loadADVs] Données reçues :', advs);
+
+    advSelect.innerHTML = '';
+    advs.forEach(r => {
+      const opt = new Option(r.adv, r.adv);
+      advSelect.appendChild(opt);
+    });
+    if (advSelect.value) {
+      fetchB2VData(advSelect.value);
+    }
+  } catch (e) {
+    console.error('Erreur chargement liste ADV:', e);
+  }
+};
+
 
   advSelect.addEventListener('change', e => {
     fetchB2VData(e.target.value);
   });
 
-  loadADVs();
+  historySelect.addEventListener('change', e => {
+    const selectedDate = e.target.value;
+    const b2vId = document.getElementById('id').value;
+    if (!selectedDate) {
+      // Affiche de nouveau la version actuelle
+      if (currentB2VData) {
+        fillForm(currentB2VData);
+        setFormDisabled(false);
+      }
+    } else {
+      const adjustedDate = add1s(selectedDate);
+      fetchHistoricalVersion(b2vId, adjustedDate);
+    }
+  });
 
   const fillForm = (d) => {
     try {
+      // Identifiants
+      // document.getElementById('id').value = d.id ?? '';
+
+      // Champs simples
       ['adv','tangente','modele','plancher','pose','ecrg','e2cg','p2pg','ecrd','e2cd','p2pd','coeurn'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.value = d[id];
+        if (el) el.value = d[id] ?? '';
       });
-      document.getElementById('id').value = d.id;
-      document.getElementById('dmar-oui').checked = d.dmar === true;
-      document.getElementById('dmar-non').checked = d.dmar === false;
-      document.getElementById('coussinet-oui').checked = d.coussinet === true;
-      document.getElementById('coussinet-non').checked = d.coussinet === false;
 
-      document.getElementById(`bavureg-${d.bavureg}`).checked = true;
-      document.getElementById(`bavured-${d.bavured}`).checked = true;
+      // Champs booléens
+      ['dmar', 'coussinet'].forEach(field => {
+        const oui = document.getElementById(`${field}-oui`);
+        const non = document.getElementById(`${field}-non`);
+        if (oui) oui.checked = d[field] === true;
+        if (non) non.checked = d[field] === false;
+      });
+
+      ['bavureg', 'bavured'].forEach(field => {
+        const val = d[field];
+        const el = document.getElementById(`${field}-${val}`);
+        if (el) el.checked = true;
+      });
 
       ['gt3','lt3','0'].forEach(s => {
         const val = s === 'gt3' ? '> 3mm' : s === 'lt3' ? '< 3mm' : '0mm';
-        document.getElementById(`usure_1ag-${s}`).checked = (d.usure_1ag === val);
-        document.getElementById(`usure_1ad-${s}`).checked = (d.usure_1ad === val);
+        const ag = document.getElementById(`usure_1ag-${s}`);
+        const ad = document.getElementById(`usure_1ad-${s}`);
+        if (ag) ag.checked = (d.usure_1ag === val);
+        if (ad) ad.checked = (d.usure_1ad === val);
       });
 
-      document.getElementById('classement_cag').value = d.classement_cag;
-      document.getElementById('classement_cad').value = d.classement_cad;
+      ['classement_cag','classement_cad','pente_usure_ag', 'pente_usure_ad', 'classement_ag', 'classement_ad', 'longeur_ebrechureg','longeur_ebrechured','classement_eg','classement_ed'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = d[id] ?? '';
+      });
 
       ['usure_1b','usure_1c'].forEach(pref => {
         ['ok','meulage','refuse'].forEach(opt => {
-          document.getElementById(`${pref}g-${opt}`).checked = (d[`${pref}g`] === opt);
-          document.getElementById(`${pref}d-${opt}`).checked = (d[`${pref}d`] === opt);
+          const g = document.getElementById(`${pref}g-${opt}`);
+          const dEl = document.getElementById(`${pref}d-${opt}`);
+          if (g) g.checked = d[`${pref}g`] === opt;
+          if (dEl) dEl.checked = d[`${pref}d`] === opt;
         });
       });
 
-      ['contact_fenteg','contact_fented'].forEach(id => {
-        ['dessus','dessous'].forEach(pos => {
-          const el = document.getElementById(`${id}-${pos}`);
-          if (el) el.checked = (d[id] === pos);
-        });
-      });
-
-      document.getElementById('pente_usure_ag').value = d.pente_usure_ag;
-      document.getElementById('pente_usure_ad').value = d.pente_usure_ad;
-      document.getElementById('classement_ag').value = d.classement_ag;
-      document.getElementById('classement_ad').value = d.classement_ad;
-
-      ['contact_ebrechureag','contact_ebrechuread'].forEach(id => {
-        const value = (d[id] || "").trim().toLowerCase();
+      ['contact_fenteg','contact_fented','contact_ebrechureag','contact_ebrechuread'].forEach(id => {
         ['dessus','dessous'].forEach(pos => {
           const radio = document.getElementById(`${id}-${pos}`);
-          if (radio) radio.checked = value === pos;
+          if (radio) radio.checked = d[id] === pos;
         });
       });
 
-      document.getElementById('longeur_ebrechureg').value = d.longeur_ebrechureg ?? '';
-      document.getElementById('longeur_ebrechured').value = d.longeur_ebrechured ?? '';
-      document.getElementById('classement_eg').value = d.classement_eg ?? '';
-      document.getElementById('classement_ed').value = d.classement_ed ?? '';
     } catch (err) {
       console.error("💥 Erreur dans fillForm:", err);
     }
   };
 
-  // ✅ Sauvegarde
+
+  // const fillForm = (data) => {
+  //   Object.keys(data).forEach(key => {
+  //     const value = data[key];
+
+  //     // Gestion des <input type="text"> et <select>
+  //     const input = document.getElementById(key);
+  //     if (input) {
+  //       if (input.tagName === 'INPUT' && (input.type === 'text' || input.type === 'hidden')) {
+  //         input.value = value;
+  //       } else if (input.tagName === 'SELECT') {
+  //         input.value = value;
+  //       }
+  //       return;
+  //     }
+
+  //     // Gestion des radios
+  //     const radioGroup = document.querySelectorAll(`input[type="radio"][name="${key}"]`);
+  //     if (radioGroup.length > 0) {
+  //       radioGroup.forEach(radio => {
+  //         radio.checked = (radio.value === value);
+  //       });
+  //     }
+  //   });
+  // };
+
   submitButton.addEventListener('click', async () => {
     const id = document.getElementById('id').value;
-    const formEl = document.getElementById('data-container');
     const payload = {};
 
-    const elements = formEl.querySelectorAll('input[id], select[id]');
+    const elements = formContainer.querySelectorAll('input[id], select[id]');
     elements.forEach(el => {
       const { id: key, type } = el;
       if (type === 'radio') {
@@ -118,14 +232,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    // Pour éviter les mauvaises valeurs :
-    if (!payload.adv) {
-      payload.adv = advSelect.value;
-    }
-
+    payload.adv = payload.adv || advSelect.value;
     payload.id = id;
-
-    console.log('🧭 Payload envoyé :', payload);
 
     try {
       const res = await fetch(`/api/b2v/${id}`, {
@@ -135,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (res.ok) {
         alert("✅ Modifications enregistrées !");
+        await fetchB2VData(advSelect.value); // recharge version actuelle + historique
       } else {
         const err = await res.json();
         alert("❌ Échec de la mise à jour : " + (err.error || res.status));
@@ -144,4 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
       alert("❌ Erreur réseau");
     }
   });
+
+  loadADVs();
 });

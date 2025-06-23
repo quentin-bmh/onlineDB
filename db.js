@@ -7,7 +7,11 @@ const client = new Client({
 });
 
 client.connect()
-  .then(() => console.log('Connecté à la base de données PostgreSQL !'))
+  .then(async () => {
+    console.log('Connecté à la base de données PostgreSQL !');
+    await client.query("SET TIME ZONE 'Europe/Paris'");
+    console.log("🕓 Fuseau horaire PostgreSQL défini sur UTC");
+  })
   .catch(err => console.error('Erreur de connexion', err));
 
 module.exports = client;

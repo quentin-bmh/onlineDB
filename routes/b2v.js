@@ -2,22 +2,25 @@ const express = require('express');
 const client = require('../db');
 const router = express.Router();
 
-// Récupérer toutes les dates distinctes arrondies au jour
 router.get('/api/b2v/dates', async (req, res) => {
+  console.log('🔍 GET /api/b2v/dates - Début');
   try {
     const result = await client.query(`
       SELECT DISTINCT DATE(created_at) as date FROM b2v ORDER BY date DESC;
     `);
+    console.log('✅ Dates distinctes récupérées:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
+    console.error('🔥 Erreur dans /api/b2v/dates:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Récupérer les données B2V, avec filtre optionnel par adv
 router.get('/api/b2v', async (req, res) => {
+  console.log('🔍 GET /api/b2v - Début');
   try {
     const { adv } = req.query;
+    console.log('🟢 Filtre ADV:', adv);
     let query = 'SELECT * FROM b2v';
     let params = [];
 
@@ -25,41 +28,49 @@ router.get('/api/b2v', async (req, res) => {
       query += ' WHERE adv = $1';
       params.push(adv);
     }
-
     query += ' ORDER BY created_at DESC';
 
     const result = await client.query(query, params);
+    console.log(`✅ ${result.rows.length} enregistrements récupérés`);
     res.json(result.rows);
   } catch (err) {
+    console.error('🔥 Erreur dans /api/b2v:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Récupérer la liste distincte des adv
 router.get('/api/b2v/advs', async (req, res) => {
+  console.log('🔍 GET /api/b2v/advs - Début');
   try {
     const result = await client.query('SELECT DISTINCT adv FROM b2v ORDER BY adv');
+    console.log('✅ Liste ADV récupérée:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
+    console.error('🔥 Erreur dans /api/b2v/advs:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Mettre à jour un enregistrement b2v et archiver l'état avant modification
 router.put('/api/b2v/:id', async (req, res) => {
+  console.log('\n--- 🔄 Début de mise à jour ADV ---');
   const { id } = req.params;
+  console.log('🆔 ID:', id);
   const updatedData = req.body;
+  console.log('📨 Données reçues dans req.body:', updatedData);
   const userId = 1;
 
+  if (!id || isNaN(Number(id))) {
+    console.warn('⚠️ ID invalide fourni:', id);
+    return res.status(400).json({ error: "ID invalide" });
+  }
+
   try {
-    console.log('\n--- 🔄 Début de mise à jour ADV ---');
-    console.log('🆔 ID:', id);
-    console.log('📨 Données reçues dans req.body:', updatedData);
-
     const { rows } = await client.query('SELECT * FROM b2v WHERE id = $1', [id]);
+    if (rows.length === 0) {
+      console.warn('⚠️ ADV non trouvé avec ID:', id);
+      return res.status(404).json({ error: "ADV non trouvé" });
+    }
     const current = rows[0];
-    if (!current) return res.status(404).json({ error: "ADV non trouvé" });
-
     console.log('📦 Données actuelles de la BDD (b2v):', current);
 
     const changedFields = {};
@@ -106,6 +117,7 @@ router.put('/api/b2v/:id', async (req, res) => {
     const keys = Object.keys(current).filter(k => k !== 'id');
     const values = keys.map(k => current[k]);
 
+    console.log('💾 Insertion dans b2v_historique');
     await client.query(`
       INSERT INTO b2v_historique (
         ${keys.join(', ')},
@@ -135,6 +147,91 @@ router.put('/api/b2v/:id', async (req, res) => {
   }
 });
 
+router.get('/api/b2v_historique/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  console.log(`🔍 GET /api/b2v_historique/${id} - Début`);
+  if (isNaN(id)) {
+    console.warn('⚠️ ID invalide:', req.params.id);
+    return res.status(400).json({ error: "ID invalide" });
+  }
+
+  try {
+    const result = await client.query('SELECT * FROM b2v_historique WHERE b2v_id = $1', [id]);
+    if (result.rows.length === 0) {
+      console.warn('⚠️ Historique non trouvé pour ID:', id);
+      return res.status(404).json({ error: "Historique non trouvé" });
+    }
+    console.log('✅ Historique récupéré');
+    res.json(result.rows);
+  } catch (err) {
+    console.error("🔥 Erreur pendant la récupération de l'historique ADV:", err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+router.get('/api/b2v_historique/:id/dates', async (req, res) => {
+  const { id } = req.params;
+  console.log(`🔍 GET /api/b2v_historique/${id}/dates - Début`);
+
+  if (!id || isNaN(Number(id))) {
+    console.warn('⚠️ ID invalide:', id);
+    return res.status(400).json({ error: "ID invalide" });
+  }
+
+  try {
+    const result = await client.query(`
+      SELECT snapshot_date 
+      FROM b2v_historique 
+      WHERE b2v_id = $1 
+      GROUP BY snapshot_date 
+      ORDER BY snapshot_date DESC
+    `, [id]);
+    console.log(`✅ Dates d'historique récupérées: ${result.rows.length}`);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('🔥 Erreur pendant la récupération de l\'historique ADV:', err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+router.get('/api/b2v_historique/:id/date/:snapshot_date', async (req, res) => {
+  const { id, snapshot_date } = req.params;
+  console.log(`📥 GET /api/b2v_historique/${id}/date/${snapshot_date} - Appel reçu`);
+
+  // Vérification de l'id
+  const parsedId = parseInt(id, 10);
+  if (isNaN(parsedId)) {
+    console.warn('⚠️ ID invalide:', id);
+    return res.status(400).json({ error: "ID invalide" });
+  }
+
+  // Vérification de la date
+  const parsedDate = new Date(snapshot_date);
+  if (isNaN(parsedDate.getTime())) {
+    console.warn('⚠️ Date invalide:', snapshot_date);
+    return res.status(400).json({ error: "Format de date invalide" });
+  }
+
+  try {
+    const result = await client.query(`
+      SELECT * FROM b2v_historique
+      WHERE b2v_id = $1 AND snapshot_date <= $2::timestamptz
+      ORDER BY snapshot_date DESC
+      LIMIT 1
+    `, [parsedId, parsedDate.toISOString()]);
+
+    if (result.rows.length === 0) {
+      console.warn(`❌ Aucune snapshot trouvée pour b2v_id=${parsedId} avant ${parsedDate.toISOString()}`);
+      return res.status(404).json({ error: "Aucune version historique trouvée." });
+    }
+
+    console.log(`✅ Snapshot trouvée pour b2v_id=${parsedId} :`, result.rows[0]);
+    return res.json(result.rows[0]); // On retourne bien un seul objet
+  } catch (err) {
+    console.error("🔥 Erreur lors de la récupération de la snapshot:", err);
+    return res.status(500).json({ error: "Erreur serveur" });
+  }
+});
 
 
 module.exports = router;
