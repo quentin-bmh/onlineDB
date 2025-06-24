@@ -129,3 +129,14 @@ input[type="radio"] {
 .hidden{
   visibility: hidden;
 }
+
+header {
+  background: #b6b6b6;
+  color: rgb(0, 0, 0);
+  padding: 10px;
+  text-align: center;
+  border-radius: 6px 6px 0 0;
+  z-index: 1;
+  position: sticky;
+  top: 0;
+}

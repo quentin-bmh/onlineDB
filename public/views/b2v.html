@@ -7,13 +7,15 @@
   <link rel="stylesheet" href="/css/b2v.css">
 </head>
 <body>
-  <h1>Données B2V</h1>
-  <label for="advFilter">ADV :</label>
-  <select id="advFilter"></select>
-  <input type="hidden" id="id" name="id">
-  <button type="button" id="saveButton">💾 Enregistrer les modifications</button>
-  <label for="historyFilter">Historique :</label>
-  <select id="historyFilter"></select>
+  <header>
+    <h1>Données B2V</h1>
+    <label for="advFilter">ADV :</label>
+    <select id="advFilter"></select>
+    <input type="hidden" id="id" name="id">
+    <button type="button" id="saveButton">💾 Enregistrer les modifications</button>
+    <label for="historyFilter">Historique :</label>
+    <select id="historyFilter"></select>
+  </header>
   
   <div id="data-container">
     <section id="section1">
@@ -44,11 +46,11 @@
       </div>
       <div class="row">
         <label>DMAR:</label>
-        <label><input type="radio" id="dmar-oui" name="dmar" value="a"> Oui</label> 
-        <label><input type="radio" id="dmar-non"name="dmar" value="b"> Non</label> 
+        <label><input type="radio" id="dmar-oui" name="dmar" value="true"> Oui</label> 
+        <label><input type="radio" id="dmar-non"name="dmar" value="false"> Non</label> 
         <label>Coussinet:</label>
-        <label><input type="radio" id="coussinet-oui" name="coussinet" value="a"> Oui</label> 
-        <label><input type="radio" id="coussinet-non" name="coussinet" value="b"> Non</label> 
+        <label><input type="radio" id="coussinet-oui" name="coussinet" value="true"> Oui</label> 
+        <label><input type="radio" id="coussinet-non" name="coussinet" value="false"> Non</label> 
       </div>
     </section>
 

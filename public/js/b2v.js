@@ -114,6 +114,7 @@ const loadADVs = async () => {
 
   advSelect.addEventListener('change', e => {
     fetchB2VData(e.target.value);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   historySelect.addEventListener('change', e => {
@@ -133,8 +134,6 @@ const loadADVs = async () => {
 
   const fillForm = (d) => {
     try {
-      // Identifiants
-      // document.getElementById('id').value = d.id ?? '';
 
       // Champs simples
       ['adv','tangente','modele','plancher','pose','ecrg','e2cg','p2pg','ecrd','e2cd','p2pd','coeurn'].forEach(id => {
@@ -191,68 +190,57 @@ const loadADVs = async () => {
   };
 
 
-  // const fillForm = (data) => {
-  //   Object.keys(data).forEach(key => {
-  //     const value = data[key];
+submitButton.addEventListener('click', async () => {
+  const id = document.getElementById('id').value;
+  const payload = {};
 
-  //     // Gestion des <input type="text"> et <select>
-  //     const input = document.getElementById(key);
-  //     if (input) {
-  //       if (input.tagName === 'INPUT' && (input.type === 'text' || input.type === 'hidden')) {
-  //         input.value = value;
-  //       } else if (input.tagName === 'SELECT') {
-  //         input.value = value;
-  //       }
-  //       return;
-  //     }
+  // 1. Collecter les radios groupés par "name"
+  const radioGroups = new Set();
+  formContainer.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radioGroups.add(radio.name);
+  });
 
-  //     // Gestion des radios
-  //     const radioGroup = document.querySelectorAll(`input[type="radio"][name="${key}"]`);
-  //     if (radioGroup.length > 0) {
-  //       radioGroup.forEach(radio => {
-  //         radio.checked = (radio.value === value);
-  //       });
-  //     }
-  //   });
-  // };
+  radioGroups.forEach(groupName => {
+    const checked = formContainer.querySelector(`input[name="${groupName}"]:checked`);
+    if (checked) payload[groupName] = checked.value;
+  });
 
-  submitButton.addEventListener('click', async () => {
-    const id = document.getElementById('id').value;
-    const payload = {};
-
-    const elements = formContainer.querySelectorAll('input[id], select[id]');
-    elements.forEach(el => {
-      const { id: key, type } = el;
-      if (type === 'radio') {
-        if (el.checked) payload[key] = el.value;
-      } else if (type === 'checkbox') {
-        payload[key] = el.checked;
-      } else {
-        payload[key] = el.value;
-      }
-    });
-
-    payload.adv = payload.adv || advSelect.value;
-    payload.id = id;
-
-    try {
-      const res = await fetch(`/api/b2v/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        alert("✅ Modifications enregistrées !");
-        await fetchB2VData(advSelect.value); // recharge version actuelle + historique
-      } else {
-        const err = await res.json();
-        alert("❌ Échec de la mise à jour : " + (err.error || res.status));
-      }
-    } catch (err) {
-      console.error(err);
-      alert("❌ Erreur réseau");
+  // 2. Inputs autres que radio
+  const elements = formContainer.querySelectorAll('input:not([type="radio"])[id], select[id]');
+  elements.forEach(el => {
+    const { id: key, type } = el;
+    if (type === 'checkbox') {
+      payload[key] = el.checked;
+    } else {
+      payload[key] = el.value;
     }
   });
+
+  // 3. Ajout de champs manquants
+  payload.adv = payload.adv || advSelect.value;
+  payload.id = id;
+
+  // 4. Envoi au backend
+  try {
+    const res = await fetch(`/api/b2v/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+      alert("✅ Modifications enregistrées !");
+      await fetchB2VData(advSelect.value);
+    } else {
+      const err = await res.json();
+      alert("❌ Échec de la mise à jour : " + (err.error || res.status));
+    }
+  } catch (err) {
+    console.error(err);
+    alert("❌ Erreur réseau");
+  }
+});
+
 
   loadADVs();
 });
