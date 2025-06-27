@@ -23,9 +23,9 @@ function createTable(data) {
         const row = document.createElement("tr");
         row.innerHTML = `
         <td>${adv["ADV"] || `ADV ${index}`}</td>
-        <td>${lat.toFixed(5)}</td>
-        <td>${lng.toFixed(5)}</td>
         `;
+        // <td>${lat.toFixed(5)}</td>
+        // <td>${lng.toFixed(5)}</td>
 
         row.addEventListener("click", () => updateMap(adv));
         tbody.appendChild(row);
@@ -42,7 +42,7 @@ function initMap() {
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri'
     });
-    normalLayer.addTo(map);
+    satelliteLayer.addTo(map);
     L.control.layers({
         "Plan Standard": normalLayer,
         "Satellite": satelliteLayer

@@ -6,26 +6,75 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   height: 100vh;
-  display: flex;
+  background-color: #ccc;
 }
 
-#sidebar {
-  width: 30%;
-  max-width: 400px;
+.grid-layout {
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  grid-template-rows: repeat(6, auto);
+  gap: 10px;
+  height: 100vh;
+  padding: 10px;
+}
+
+
+#left-sidebar {
+  grid-column: 1 / 3;
+  grid-row: 1 / 7;
   background-color: #f7f7f7;
   border-right: 1px solid #ccc;
   overflow-y: auto;
   padding: 10px;
 }
 
+#data {
+  grid-column: 3 / 4;
+  grid-row: 1 / 4;
+  height: 100%;
+  overflow-y: auto;
+  padding: 5px;
+  border: solid 1px #0e0e0e;
+  border-radius: 5px;
+  background-color: rgba(105, 104, 104, 0.8);
+}
+
 #map-container {
-  flex: 1;
-  height: 100vh;
+  grid-column: 4 / 13;
+  grid-row: 1 / 4;
+  height: 100%;
+  border: solid 1px #0e0e0e;
 }
 #map {
   width: 100%;
   height: 100%;
 }
+
+#right-sidebar {
+  grid-column: 13 / 15;
+  grid-row: 1 / 7;
+  background-color: #f7f7f7;
+  border: 1px solid #000000;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+
+#dataVoie-container {
+  grid-column: 3 / 13;
+  grid-row: 4 / 7;
+  height: 100%;
+  overflow-y: auto;
+  padding: 5px;
+  border: solid 1px #0e0e0e;
+  border-radius: 5px;
+  background-color: rgba(105, 104, 104, 0.8);
+}
+
+/* Autres styles */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -42,3 +91,44 @@ tr:hover {
   cursor: pointer;
 }
 
+#info-container {
+  padding: 10px;
+  border-radius: 2px;
+  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: solid 1px #000000;
+}
+
+.info-item {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-item label {
+  font-weight: bold;
+}
+
+.info-item span {
+  margin-left: 5px;
+  color: #ddd;
+}
+
+#cote, #eca {
+  width: 95%;
+  overflow-y: auto;
+  padding: 5px;
+  border: solid 1px #0e0e0e;
+  border-radius: 5px;
+  background-color: rgba(105, 104, 104, 0.8);
+}
+
+#cote {
+  height: 15vh;
+}
+
+#eca {
+  height: 80vh;
+}
