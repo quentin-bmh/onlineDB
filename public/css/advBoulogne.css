@@ -64,15 +64,102 @@ body {
 }
 
 #dataVoie-container {
+  position: relative;
   grid-column: 3 / 13;
   grid-row: 4 / 7;
   height: 100%;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 5px;
   border: solid 1px #0e0e0e;
   border-radius: 5px;
   background-color: rgba(105, 104, 104, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
 }
+
+.voie-content {
+  flex: 1;
+  display: none;
+  overflow-y: auto;
+  padding: 10px;
+  animation-duration: 0.5s;
+  animation-fill-mode: both;
+}
+
+.voie-content.active {
+  display: block;
+  animation-name: slideInUp;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+.voie-toggle {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.toggle-tab {
+  background-color: #222;
+  color: white;
+  padding: 5px 10px;
+  cursor: pointer;
+  width: max-content;
+  margin: 0 auto;
+  border-radius: 5px 5px 0 0;
+  transition: background 0.3s;
+  transform: rotate(0deg);
+}
+.toggle-tab.active {
+  transform: rotate(180deg); /* Quand actif, flèche vers le haut */
+}
+.toggle-tab:hover {
+  background-color: #444;
+}
+
+.toggle-menu {
+  display: none;
+  background-color: #333;
+  padding: 10px;
+  border-top: 1px solid #555;
+}
+
+.toggle-menu button {
+  margin: 5px;
+  padding: 6px 12px;
+  background-color: #555;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.toggle-menu button:hover {
+  background-color: #777;
+}
+
 
 /* Autres styles */
 table {

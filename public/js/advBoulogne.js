@@ -60,3 +60,34 @@ function updateMap(adv) {
     marker = L.marker([lat, lng]).addTo(map).bindPopup(`<b>${adv["ADV"]}</b>`).openPopup();
     map.setView([lat, lng], 20);
 }
+
+const toggleTab = document.querySelector('.toggle-tab');
+const toggleMenu = document.querySelector('.toggle-menu');
+const contentSections = document.querySelectorAll('.voie-content');
+
+toggleTab.addEventListener('click', () => {
+  const isOpen = toggleMenu.style.display === 'block';
+  toggleMenu.style.display = isOpen ? 'none' : 'block';
+  toggleTab.classList.toggle('active', !isOpen);
+});
+
+
+document.querySelectorAll('.toggle-menu button').forEach(button => {
+  button.addEventListener('click', () => {
+    const targetId = button.getAttribute('data-target');
+    const current = document.querySelector('.voie-content.active');
+    const next = document.getElementById(targetId);
+
+    if (current !== next) {
+      current.classList.remove('active');
+      current.style.animationName = 'slideOutDown';
+
+      setTimeout(() => {
+        current.style.display = 'none';
+        next.classList.add('active');
+        next.style.display = 'block';
+        next.style.animationName = 'slideInUp';
+      }, 500);
+    }
+  });
+});
