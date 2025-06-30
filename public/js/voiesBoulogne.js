@@ -1,5 +1,9 @@
 const voies = [];
 let charts = [];
+let voieActive = null;
+let latestDataGlobal = [];
+
+
 
 async function loadVoies() {
     try {
@@ -7,15 +11,42 @@ async function loadVoies() {
         const data = await res.json();
 
         data.forEach(row => voies.push(row.voie));
+
+        // Charge tous les jeux de données à l’avance
+        const [ecartRes, flecheRes, gaRes] = await Promise.all([
+            fetch('/api/voiesBoulogne/ecart'),
+            fetch('/api/voiesBoulogne/fleche'),
+            fetch('/api/voiesBoulogne/ga'),
+        ]);
+
+        const [ecartData, flecheData, gaData] = await Promise.all([
+            ecartRes.json(),
+            flecheRes.json(),
+            gaRes.json(),
+        ]);
+
+        // Fusionne les données globales pour les anomalies
+        latestDataGlobal = ecartData.map(d => ({
+            voie: d.voie,
+            distance: d.distance,
+            ecarts_1435: d.ecarts_1435,
+            fleches: flecheData.find(f => f.voie === d.voie && f.distance === d.distance)?.fleches,
+            ga_arrondi: gaData.find(g => g.voie === d.voie && g.distance === d.distance)?.ga_arrondi
+        }));
+
+        voieActive = voies[0];
+        loadGraphData(voieActive);
         createTableVoies(voies);
     } catch (err) {
         console.error('Erreur lors du chargement des voies :', err);
     }
 }
 
+
 function createTableVoies(voies) {
     const container = document.getElementById("container");
     container.innerHTML = '';
+
     voies.forEach((voie) => {
         const row = document.createElement("tr");
         const cell = document.createElement("td");
@@ -24,11 +55,31 @@ function createTableVoies(voies) {
         row.appendChild(cell);
         container.appendChild(row);
 
+        // Appliquer la couleur active ou anomalie
+        if (voie === voieActive) {
+            row.classList.add('active-voie');
+        } else if (voieHasAnomaly(voie)) {
+            row.classList.add('anomalie-voie');
+        }
+
         row.addEventListener('click', () => {
-            loadGraphData(voie);
+            voieActive = voie;
+            loadGraphData(voie).then(() => {
+                createTableVoies(voies); // Mettre à jour les couleurs après chargement
+            });
         });
     });
 }
+function voieHasAnomaly(voie) {
+    return latestDataGlobal.some(d =>
+        d.voie === voie && (
+            d.ecarts_1435 > 1460 ||
+            // d.fleches > 100 ||      // seuils à ajuster selon ton besoin
+            d.ga_arrondi > 50
+        )
+    );
+}
+
 
 async function loadGraphData(voie) {
     try {
@@ -92,7 +143,7 @@ function updateCharts(data, voieLabel) {
             type: 'line',
             data: {
                 datasets: [{
-                    label: `${config.label} pour ${voieLabel}`,
+                    // label: `${config.label} pour ${voieLabel}`,
                     data: chartData,
                     backgroundColor: 'transparent',
                     borderColor: chartData.map(p => p.backgroundColor),
@@ -104,8 +155,10 @@ function updateCharts(data, voieLabel) {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: true },
+                    legend: { display: false },
+                    title: { display: false }, // ⬅️ Pas de titre
                     tooltip: {
                         callbacks: {
                             label: context => `Id: ${context.raw.x}, ${config.label}: ${context.raw.y}`
@@ -115,14 +168,13 @@ function updateCharts(data, voieLabel) {
                 scales: {
                     x: {
                         type: 'linear',
-                        title: { display: true, text: 'Id' },
                         ticks: {
                             beginAtZero: true,
                             stepSize: 10,
                         }
                     },
                     y: {
-                        title: { display: true, text: config.label }
+                        // No title
                     }
                 }
             }

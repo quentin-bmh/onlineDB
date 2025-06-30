@@ -7,75 +7,71 @@
     <link rel="stylesheet" href="/css/voiesBoulogne.css">   
 </head>
 <body>
-    <div class="voies">
-        <h2>Liste des voies</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Voie</th>
-            </tr>
-          </thead>
-          <tbody id="container">
-          </tbody>
-        </table>
-    </div>
-  
-    <div class="graphs">
-        <div class="graph">
-            <div class="chart-container">
-                <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
-                <div class="anomalies-table" id="table1">
-                    <h4>Valeurs Anormales - Ecarts_1435</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>M</th>
-                                <th>Ecarts_1435</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table1-body">
-                            <!-- Les données anormales seront injectées ici -->
-                        </tbody>
-                    </table>
-                </div>
+    <div class="grid-layout">    
+        <div class="voies">
+            <h2>Liste des voies</h2>
+            <table>
+            <thead>
+                <tr>
+                </tr>
+            </thead>
+            <tbody id="container">
+            </tbody>
+            </table>
+        </div>
+    
+        <div class="graphs">
+            <div class="chart-wrapper"><canvas id="chart1"></canvas></div>
+            <div class="chart-wrapper"><canvas id="chart2"></canvas></div>                    
+            <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
+        </div>
+        <div class="ano">
+            <div class="anomalies-table" id="table1">
+                <h4>Valeurs Anormales - Ecarts_1435</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>M</th>
+                            <th>Ecarts_1435</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table1-body">
+                        <!-- Les données anormales seront injectées ici -->
+                    </tbody>
+                </table>
             </div>
-            <div class="chart-container">
-                <div class="chart-wrapper"><canvas id="chart2"></canvas></div>
-                <div class="anomalies-table" id="table2">
-                    <h4>Valeurs Anormales - Flèches</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>M</th>
-                                <th>Flèches</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table2-body">
-                            <!-- Les données anormales seront injectées ici -->
-                        </tbody>
-                    </table>
-                </div>
+            <div class="anomalies-table" id="table2">
+                <h4>Valeurs Anormales - Flèches</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>M</th>
+                            <th>Flèches</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table2-body">
+                        <!-- Les données anormales seront injectées ici -->
+                    </tbody>
+                </table>
             </div>
-            <div class="chart-container">
-                <div class="chart-wrapper"><canvas id="chart3"></canvas></div>
-                <div class="anomalies-table" id="table3">
-                    <h4>Valeurs Anormales - Ga1</h4>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>M</th>
-                                <th>Ga1</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table3-body">
-                            <!-- Les données anormales seront injectées ici -->
-                        </tbody>
-                    </table>
-                </div>
+            <div class="anomalies-table" id="table3">
+                <h4>Valeurs Anormales - Ga1</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>M</th>
+                            <th>Ga1</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table3-body">
+                        <!-- Les données anormales seront injectées ici -->
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
-      
+        <button class="armement"><a href="/views/accueil.html">Schéma d'armements</a></button>
+        <button class="exit"><a href="/views/accueil.html">Accueil</a></button>
+     </div> 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/js/voiesBoulogne.js"></script>
 </body>
