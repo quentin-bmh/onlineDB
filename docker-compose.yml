@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  online-db:
+    build: .
+    container_name: online-db
+    restart: always
+    ports:
+      - "3000:3000"  #    rediriger ensuite dans NPM
+    volumes:
+      - .:/app
+    networks:
+      - webproxy  # optionnel si tu veux que NPM le voie
+
+networks:
+  webproxy:
+    external: true  # NPM doit   tre dans ce r  seau aussi
