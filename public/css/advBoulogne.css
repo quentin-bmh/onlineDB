@@ -171,6 +171,7 @@ body {
 .voie-content {
   flex: 1;
   display: none;
+  visibility: hidden;
   overflow-y: auto;
   padding: 10px;
   animation-duration: 0.5s;
@@ -178,30 +179,19 @@ body {
 }
 
 .voie-content.active {
-  display: block;
+  display: flex;
+  visibility: visible;
   animation-name: slideInUp;
 }
 
 @keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @keyframes slideOutDown {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(100%);
-  }
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(100%); opacity: 0; }
 }
 
 .voie-toggle {
@@ -291,13 +281,13 @@ th, td {
 
 
 
-
+/* partie croisement */
 
 #voie-croisement {
+  flex-direction: column;
   padding: 20px;
   font-family: Arial, sans-serif;
 }
-
 .croisement-image {
   width: 70%;
   max-width: 500px;
@@ -306,11 +296,9 @@ th, td {
   margin: 0 auto 20px;
   border-radius: 8px;
 }
-
 .table-wrapper {
   overflow-x: auto;
 }
-
 .croisement-table {
   width: 100%;
   min-width: 800px;
@@ -318,34 +306,27 @@ th, td {
   text-align: center;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
-
 .croisement-table th,
 .croisement-table td {
   padding: 12px;
   border: 1px solid #ddd;
 }
-
 .croisement-table thead {
   background-color: #f0f0f0;
   font-weight: bold;
 }
-
 .croisement-table tbody td:hover {
   background-color: #f0f8ff;
   transition: background-color 0.2s ease;
   color: black;
 }
 
-
-
-
-
+/* partie écartement */
 #voie-ecartement {
   padding: 10px;
   font-family: Arial, sans-serif;
+  flex-direction: column;
 }
-
-/* Partie haute compacte et bien alignée */
 .ecartement-top {
   display: flex;
   gap: 10px;
@@ -353,22 +334,16 @@ th, td {
   justify-content: center;
   flex-wrap: wrap;
 }
-
-/* Image plus petite */
 .attaches-image {
   width: 40%;
   max-width: none;
   height: auto;
   border-radius: 8px;
 }
-
-/* Tableau plus petit et sans scroll */
 .table-wrapper {
   width: 30%;
   overflow: hidden;
 }
-
-/* Tableau compact */
 .attaches-table {
   width: 100%;
   border-collapse: collapse;
@@ -376,13 +351,11 @@ th, td {
   font-size: 13px;
   table-layout: fixed;
 }
-
 .attaches-table th:first-child,
 .attaches-table td:first-child {
   width: 60px;
   max-width: 60px;
 }
-
 .attaches-table th:nth-child(2),
 .attaches-table td:nth-child(2),
 .attaches-table th:nth-child(3),
@@ -400,47 +373,35 @@ th, td {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Lignes alternées blanc / gris clair */
 .attaches-table tbody tr:nth-child(odd) {
   background-color: #ffffff;
 }
-
 .attaches-table tbody tr:nth-child(even) {
   background-color: #f9f9f9;
 }
-
 .attaches-table thead {
   background-color: #f5f5f5;
   font-weight: bold;
 }
-
 .attaches-table td:hover {
   background-color: #f0f8ff;
 }
 
-/* Partie basse centrée */
 .ecartement-bottom {
   display: flex;
   justify-content: center;
   margin-top: 10px;
 }
-
-/* Conteneur de l'image + cartes */
 .ecartements-image-wrapper {
   position: relative;
   display: inline-block;
 }
-
-/* Image des écartements */
 .ecartements-image {
   width: 100%;
   max-width: 1000px;
   display: block;
   border-radius: 8px;
 }
-
-/* Cartes de valeur (ex: "1490") */
 .ecartement-card {
   position: absolute;
   background-color: #14ff3b;
@@ -466,10 +427,9 @@ th, td {
 
 
 
+/* partie plancher */
 
-
-
-#voie-plancher {
+#voie-test {
   display: flex;
   gap: 40px;
   padding: 20px;
@@ -477,10 +437,9 @@ th, td {
   flex-direction: row;
   justify-content: center;
 }
-#voie-plancher canvas{
+#voie-test canvas{
   background-color: #000000;
 }
-
 .plancher-section {
   max-width: 450px;
   display: flex;
@@ -488,8 +447,6 @@ th, td {
   align-items: center;
   gap: 20px;
 }
-
-/* Conteneur du chart avec texte centré */
 .chart-container {
   position: relative;
   width: 250px;
@@ -499,8 +456,6 @@ th, td {
   justify-content: center;
   align-items: center;
 }
-
-/* Texte au centre du camembert */
 .chart-center-text {
   position: absolute;
   top: 50%;
@@ -512,15 +467,12 @@ th, td {
   pointer-events: none;
   user-select: none;
 }
-
 .chart-subtext {
   margin-top: 8px;
   font-size: 14px;
   color: #666;
   text-align: center;
 }
-
-/* Tableau sous le chart */
 .plancher-table {
   width: 100%;
   border-collapse: collapse;
@@ -528,7 +480,6 @@ th, td {
   font-size: 14px;
   table-layout: fixed;
 }
-
 .plancher-table th,
 .plancher-table td {
   border: 1px solid #ccc;
@@ -537,28 +488,25 @@ th, td {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .plancher-table thead {
   background-color: #f0f0f0;
   font-weight: bold;
 }
-
-/* Partie 3 : mini tableau 1 colonne 2 lignes */
 .mini-table {
   flex: 0 0 150px; /* largeur fixe */
   border-collapse: collapse;
+  height: 50px;
   font-size: 14px;
   text-align: center;
+  justify-content: center;
   border: 1px solid #ccc;
 }
-
 .mini-table th,
 .mini-table td {
   border: 1px solid #ccc;
   padding: 8px 12px;
   background-color: #fafafa;
 }
-
 .mini-table thead {
   background-color: #eee;
   font-weight: bold;
