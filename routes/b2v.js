@@ -1,11 +1,12 @@
 const express = require('express');
-const client = require('../db');
+const pool = require('../config/db');
+
 const router = express.Router();
 
-router.get('/api/b2v/dates', async (req, res) => {
+router.get('/b2v/dates', async (req, res) => {
   console.log('🔍 GET /api/b2v/dates - Début');
   try {
-    const result = await client.query(`
+    const result = await pool.query(`
       SELECT DISTINCT DATE(created_at) as date FROM b2v ORDER BY date DESC;
     `);
     console.log('✅ Dates distinctes récupérées:', result.rows.length);
@@ -16,7 +17,7 @@ router.get('/api/b2v/dates', async (req, res) => {
   }
 });
 
-router.get('/api/b2v', async (req, res) => {
+router.get('/b2v', async (req, res) => {
   console.log('🔍 GET /api/b2v - Début');
   try {
     const { adv } = req.query;
@@ -30,7 +31,7 @@ router.get('/api/b2v', async (req, res) => {
     }
     query += ' ORDER BY created_at DESC';
 
-    const result = await client.query(query, params);
+    const result = await pool.query(query, params);
     console.log(`✅ ${result.rows.length} enregistrements récupérés`);
     res.json(result.rows);
   } catch (err) {
@@ -39,10 +40,10 @@ router.get('/api/b2v', async (req, res) => {
   }
 });
 
-router.get('/api/b2v/advs', async (req, res) => {
+router.get('/b2v/advs', async (req, res) => {
   console.log('🔍 GET /api/b2v/advs - Début');
   try {
-    const result = await client.query('SELECT DISTINCT adv FROM b2v ORDER BY adv');
+    const result = await pool.query('SELECT DISTINCT adv FROM b2v ORDER BY adv');
     console.log('✅ Liste ADV récupérée:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
@@ -51,7 +52,7 @@ router.get('/api/b2v/advs', async (req, res) => {
   }
 });
 
-router.put('/api/b2v/:id', async (req, res) => {
+router.put('/b2v/:id', async (req, res) => {
   console.log('\n--- 🔄 Début de mise à jour ADV ---');
   const { id } = req.params;
   console.log('🆔 ID:', id);
@@ -65,7 +66,7 @@ router.put('/api/b2v/:id', async (req, res) => {
   }
 
   try {
-    const { rows } = await client.query('SELECT * FROM b2v WHERE id = $1', [id]);
+    const { rows } = await pool.query('SELECT * FROM b2v WHERE id = $1', [id]);
     if (rows.length === 0) {
       console.warn('⚠️ ADV non trouvé avec ID:', id);
       return res.status(404).json({ error: "ADV non trouvé" });
@@ -118,7 +119,7 @@ router.put('/api/b2v/:id', async (req, res) => {
     const values = keys.map(k => current[k]);
 
     console.log('💾 Insertion dans b2v_historique');
-    await client.query(`
+    await pool.query(`
       INSERT INTO b2v_historique (
         ${keys.join(', ')},
         snapshot_date, user_id, b2v_id, operation
@@ -133,7 +134,7 @@ router.put('/api/b2v/:id', async (req, res) => {
     const vals = fields.map(f => updatedData[f]);
     const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
 
-    const result = await client.query(
+    const result = await pool.query(
       `UPDATE b2v SET ${setClause} WHERE id = $${fields.length + 1} RETURNING *`,
       [...vals, id]
     );
@@ -147,7 +148,7 @@ router.put('/api/b2v/:id', async (req, res) => {
   }
 });
 
-router.get('/api/b2v_historique/:id', async (req, res) => {
+router.get('/b2v_historique/:id', async (req, res) => {
   const id = parseInt(req.params.id);
   console.log(`🔍 GET /api/b2v_historique/${id} - Début`);
   if (isNaN(id)) {
@@ -156,7 +157,7 @@ router.get('/api/b2v_historique/:id', async (req, res) => {
   }
 
   try {
-    const result = await client.query('SELECT * FROM b2v_historique WHERE b2v_id = $1', [id]);
+    const result = await pool.query('SELECT * FROM b2v_historique WHERE b2v_id = $1', [id]);
     if (result.rows.length === 0) {
       console.warn('⚠️ Historique non trouvé pour ID:', id);
       return res.status(404).json({ error: "Historique non trouvé" });
@@ -169,7 +170,7 @@ router.get('/api/b2v_historique/:id', async (req, res) => {
   }
 });
 
-router.get('/api/b2v_historique/:id/dates', async (req, res) => {
+router.get('/b2v_historique/:id/dates', async (req, res) => {
   const { id } = req.params;
   console.log(`🔍 GET /api/b2v_historique/${id}/dates - Début`);
 
@@ -179,7 +180,7 @@ router.get('/api/b2v_historique/:id/dates', async (req, res) => {
   }
 
   try {
-    const result = await client.query(`
+    const result = await pool.query(`
       SELECT snapshot_date 
       FROM b2v_historique 
       WHERE b2v_id = $1 
@@ -194,7 +195,7 @@ router.get('/api/b2v_historique/:id/dates', async (req, res) => {
   }
 });
 
-router.get('/api/b2v_historique/:id/date/:snapshot_date', async (req, res) => {
+router.get('/b2v_historique/:id/date/:snapshot_date', async (req, res) => {
   const { id, snapshot_date } = req.params;
   console.log(`📥 GET /api/b2v_historique/${id}/date/${snapshot_date} - Appel reçu`);
 
@@ -213,7 +214,7 @@ router.get('/api/b2v_historique/:id/date/:snapshot_date', async (req, res) => {
   }
 
   try {
-    const result = await client.query(`
+    const result = await pool.query(`
       SELECT * FROM b2v_historique
       WHERE b2v_id = $1 AND snapshot_date <= $2::timestamptz
       ORDER BY snapshot_date DESC
