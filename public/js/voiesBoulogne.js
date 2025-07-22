@@ -112,7 +112,7 @@ function updateCharts(data, voieLabel) {
 
     const chartConfigs = [
         { id: 'chart1', label: 'E', key: 'e', color: 'blue', threshold: 1460, tableId: 'table1-body' },
-        { id: 'chart2', label: 'D', key: 'd', color: 'green', threshold: 2.5, tableId: 'table2-body' },
+        { id: 'chart2', label: 'D', key: 'd', color: 'green', threshold: 20, tableId: 'table2-body' },
         { id: 'chart3', label: 'G3', key: 'g3', color: 'purple', threshold: 30, tableId: 'table3-body' }
     ];
 
@@ -211,3 +211,23 @@ function updateCharts(data, voieLabel) {
 }
 
 loadVoies();
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowUp') {
+        navigateVoie(-1);
+    } else if (event.key === 'ArrowDown') {
+        navigateVoie(1);
+    }
+});
+
+function navigateVoie(direction) {
+    const currentIndex = voies.indexOf(voieActive);
+    const newIndex = currentIndex + direction;
+
+    if (newIndex >= 0 && newIndex < voies.length) {
+        voieActive = voies[newIndex];
+        loadGraphData(voieActive).then(() => {
+            createTableVoies(voies);
+            scrollToActiveVoie(); // bonus
+        });
+    }
+}

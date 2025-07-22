@@ -437,9 +437,7 @@ th, td {
   flex-direction: row;
   justify-content: center;
 }
-#voie-test canvas{
-  background-color: #000000;
-}
+
 .plancher-section {
   max-width: 450px;
   display: flex;

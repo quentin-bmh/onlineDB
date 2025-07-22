@@ -127,34 +127,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// const boisCtx = document.getElementById('boisChart').getContext('2d');
-//   const boisChart = new Chart(boisCtx, {
-//     type: 'doughnut',
-//     data: {
-//       labels: ['Bon état', 'À remplacer'],
-//       datasets: [{
-//         data: [35, 5],
-//         backgroundColor: ['#4caf50', '#f44336']
-//       }]
-//     },
-//     options: {
-//       cutout: '70%',
-//       plugins: { legend: { display: false } }
-//     }
-//   });
+const boisCtx = document.getElementById('boisChart').getContext('2d');
+  const boisChart = new Chart(boisCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Bon état', 'À remplacer'],
+      datasets: [{
+        data: [35, 5],
+        backgroundColor: ['#4caf50', '#f44336']
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: { legend: { display: false } }
+    }
+  });
 
-//   const jointsCtx = document.getElementById('jointsChart').getContext('2d');
-//   const jointsChart = new Chart(jointsCtx, {
-//     type: 'doughnut',
-//     data: {
-//       labels: ['Bon état', 'À reprendre'],
-//       datasets: [{
-//         data: [40, 5],
-//         backgroundColor: ['#2196f3', '#ff9800']
-//       }]
-//     },
-//     options: {
-//       cutout: '70%',
-//       plugins: { legend: { display: false } }
-//     }
-//   });
+  const jointsCtx = document.getElementById('jointsChart').getContext('2d');
+  const jointsChart = new Chart(jointsCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Bon état', 'À reprendre'],
+      datasets: [{
+        data: [40, 5],
+        backgroundColor: ['#4caf50', '#f44336']
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: { legend: { display: false } }
+    }
+  });
