@@ -5,38 +5,38 @@ const router = express.Router();
 
 router.get('/voiesBoulogne', async (req, res) => {
   try {
-    const result = await pool.query('SELECT DISTINCT voie from voies order by voie');
+    const result = await pool.query('SELECT DISTINCT voie from voies2 order by voie');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+
 
 router.get('/voiesBoulogne/ecart', async (req, res) => {
   try {
-    const result = await pool.query('SELECT DISTINCT voie, distance, ecarts_1435 from voies order by voie, distance');
+    const result = await pool.query('SELECT DISTINCT voie, distance, e from voies2 order by voie, distance');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-router.get('/voiesBoulogne/fleche', async (req, res) => {
+router.get('/voiesBoulogne/devers', async (req, res) => {
   try {
-    const result = await pool.query('SELECT DISTINCT voie, distance, fleches from voies order by voie, distance');
+    const result = await pool.query('SELECT DISTINCT voie, distance, "d" FROM voies2 ORDER BY voie, distance');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 router.get('/voiesBoulogne/ga', async (req, res) => {
   try {
-    const result = await pool.query('SELECT DISTINCT voie, distance, ga_arrondi from voies order by voie, distance');
+    const result = await pool.query('SELECT DISTINCT voie, distance, g3 from voies2 order by voie, distance');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
 module.exports = router;

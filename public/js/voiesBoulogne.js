@@ -3,8 +3,6 @@ let charts = [];
 let voieActive = null;
 let latestDataGlobal = [];
 
-
-
 async function loadVoies() {
     try {
         const res = await fetch('/api/voiesBoulogne');
@@ -13,25 +11,25 @@ async function loadVoies() {
         data.forEach(row => voies.push(row.voie));
 
         // Charge tous les jeux de données à l’avance
-        const [ecartRes, flecheRes, gaRes] = await Promise.all([
+        const [ecartRes, dRes, g3Res] = await Promise.all([
             fetch('/api/voiesBoulogne/ecart'),
-            fetch('/api/voiesBoulogne/fleche'),
+            fetch('/api/voiesBoulogne/devers'),
             fetch('/api/voiesBoulogne/ga'),
         ]);
 
-        const [ecartData, flecheData, gaData] = await Promise.all([
+        const [ecartData, dData, g3Data] = await Promise.all([
             ecartRes.json(),
-            flecheRes.json(),
-            gaRes.json(),
+            dRes.json(),
+            g3Res.json(),
         ]);
 
-        // Fusionne les données globales pour les anomalies
+        // Fusionne les données globales
         latestDataGlobal = ecartData.map(d => ({
             voie: d.voie,
             distance: d.distance,
-            ecarts_1435: d.ecarts_1435,
-            fleches: flecheData.find(f => f.voie === d.voie && f.distance === d.distance)?.fleches,
-            ga_arrondi: gaData.find(g => g.voie === d.voie && g.distance === d.distance)?.ga_arrondi
+            e: d.e,
+            d: dData.find(f => f.voie === d.voie && f.distance === d.distance)?.d,
+            g3: g3Data.find(g => g.voie === d.voie && g.distance === d.distance)?.g3
         }));
 
         voieActive = voies[0];
@@ -42,6 +40,14 @@ async function loadVoies() {
     }
 }
 
+function voieHasAnomaly(voie) {
+    return latestDataGlobal.some(d =>
+        d.voie === voie && (
+            d.e > 1460 ||
+            d.g3 > 50
+        )
+    );
+}
 
 function createTableVoies(voies) {
     const container = document.getElementById("container");
@@ -55,7 +61,6 @@ function createTableVoies(voies) {
         row.appendChild(cell);
         container.appendChild(row);
 
-        // Appliquer la couleur active ou anomalie
         if (voie === voieActive) {
             row.classList.add('active-voie');
         } else if (voieHasAnomaly(voie)) {
@@ -65,43 +70,33 @@ function createTableVoies(voies) {
         row.addEventListener('click', () => {
             voieActive = voie;
             loadGraphData(voie).then(() => {
-                createTableVoies(voies); // Mettre à jour les couleurs après chargement
+                createTableVoies(voies);
             });
         });
     });
 }
-function voieHasAnomaly(voie) {
-    return latestDataGlobal.some(d =>
-        d.voie === voie && (
-            d.ecarts_1435 > 1460 ||
-            // d.fleches > 100 ||      // seuils à ajuster selon ton besoin
-            d.ga_arrondi > 50
-        )
-    );
-}
-
 
 async function loadGraphData(voie) {
     try {
-        const [ecartRes, flecheRes, gaRes] = await Promise.all([
+        const [ecartRes, dRes, g3Res] = await Promise.all([
             fetch('/api/voiesBoulogne/ecart'),
-            fetch('/api/voiesBoulogne/fleche'),
+            fetch('/api/voiesBoulogne/devers'),
             fetch('/api/voiesBoulogne/ga'),
         ]);
 
-        const [ecartData, flecheData, gaData] = await Promise.all([
+        const [ecartData, dData, g3Data] = await Promise.all([
             ecartRes.json(),
-            flecheRes.json(),
-            gaRes.json(),
+            dRes.json(),
+            g3Res.json(),
         ]);
 
         const mergedData = ecartData
             .filter(d => d.voie === voie)
             .map(d => ({
                 id: d.distance,
-                ecart1435: d.ecarts_1435,
-                fleches: flecheData.find(f => f.voie === voie && f.distance === d.distance)?.fleches,
-                ga1: gaData.find(g => g.voie === voie && g.distance === d.distance)?.ga_arrondi
+                e: d.e,
+                d: dData.find(f => f.voie === voie && f.distance === d.distance)?.d,
+                g3: g3Data.find(g => g.voie === voie && g.distance === d.distance)?.g3
             }));
 
         updateCharts(mergedData, voie);
@@ -116,9 +111,9 @@ function updateCharts(data, voieLabel) {
     charts = [];
 
     const chartConfigs = [
-        { id: 'chart1', label: 'Ecarts_1435', key: 'ecart1435', color: 'blue', threshold: 1460, tableId: 'table1-body' },
-        { id: 'chart2', label: 'Flèches', key: 'fleches', color: 'blue', tableId: 'table2-body' },
-        { id: 'chart3', label: 'Ga1', key: 'ga1', color: 'blue', tableId: 'table3-body' }
+        { id: 'chart1', label: 'E', key: 'e', color: 'blue', threshold: 1460, tableId: 'table1-body' },
+        { id: 'chart2', label: 'D', key: 'd', color: 'green', threshold: 2.5, tableId: 'table2-body' },
+        { id: 'chart3', label: 'G3', key: 'g3', color: 'purple', threshold: 30, tableId: 'table3-body' }
     ];
 
     chartConfigs.forEach(config => {
@@ -143,7 +138,6 @@ function updateCharts(data, voieLabel) {
             type: 'line',
             data: {
                 datasets: [{
-                    // label: `${config.label} pour ${voieLabel}`,
                     data: chartData,
                     backgroundColor: 'transparent',
                     borderColor: chartData.map(p => p.backgroundColor),
@@ -158,10 +152,10 @@ function updateCharts(data, voieLabel) {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { display: false },
-                    title: { display: false }, // ⬅️ Pas de titre
+                    title: { display: false },
                     tooltip: {
                         callbacks: {
-                            label: context => `Id: ${context.raw.x}, ${config.label}: ${context.raw.y}`
+                            label: context => `Distance: ${context.raw.x}, ${config.label}: ${context.raw.y}`
                         }
                     }
                 },
@@ -173,9 +167,7 @@ function updateCharts(data, voieLabel) {
                             stepSize: 10,
                         }
                     },
-                    y: {
-                        // No title
-                    }
+                    y: {}
                 }
             }
         });
