@@ -4,42 +4,54 @@ let marker;
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
   loadTypeButtons();
+  setupToggleMenu();
+  initCharts();
 });
 
 function initMap() {
-  map = L.map('map').setView([46.5, 2.5], 7);
+    map = L.map('map').setView([46.5, 2.5], 7);
 
-  const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  });
+    const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    });
 
-  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri'
-  });
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles &copy; Esri'
+    });
 
-  satelliteLayer.addTo(map);
+    satelliteLayer.addTo(map);
 
-  L.control.layers({
-    "Plan Standard": normalLayer,
-    "Satellite": satelliteLayer
-  }).addTo(map);
+    L.control.layers({
+      "Plan Standard": normalLayer,
+      "Satellite": satelliteLayer
+    }).addTo(map);
 }
 
 function updateMap(adv) {
-  const lat = parseFloat(adv["lat"] || adv["Latitude"]);
-  const lng = parseFloat(adv["long"] || adv["Longitude"]);
+    const lat = parseFloat(adv["lat"] ?? adv["Latitude"]);
+    const lng = parseFloat(adv["long"] ?? adv["Longitude"]);
 
-  if (!lat || !lng) return alert("Coordonnées manquantes pour cet ADV");
+    if (!lat || !lng) {
+      alert("Coordonnées manquantes pour cet ADV");
+      return;
+    }
 
-  if (marker) map.removeLayer(marker);
+    if (marker) map.removeLayer(marker);
 
-  marker = L.marker([lat, lng])
-    .addTo(map)
-    .bindPopup(`<b>${adv["adv"] || adv["ADV"]}</b>`)
-    .openPopup();
+    marker = L.marker([lat, lng])
+      .addTo(map)
+      .bindPopup(`<b>${adv["adv"] ?? adv["ADV"] ?? "ADV"}</b>`)
+      .openPopup();
 
-  map.setView([lat, lng], 20);
+    map.setView([lat, lng], 20);
+
+    // Très utile si la carte est dans un container dynamique (onglet, menu déroulant, etc.)
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
 }
+
+
 function createTable(data) {
   const tbody = document.querySelector("#advTable tbody");
   tbody.innerHTML = ''; // nettoyage avant remplissage
@@ -64,68 +76,117 @@ function createTable(data) {
 }
 function loadTypeButtons() {
   fetch('/api/adv_types')
-  .then(res => res.json())
-  .then(types => {
-    const advSection = document.querySelector('.adv-section');
-    if (!advSection) return;
+    .then(res => res.json())
+    .then(types => {
+      const advSection = document.querySelector('.adv-section');
+      if (!advSection) return;
 
-    types.forEach(({ type }) => {
-      const button = document.createElement('button');
-      button.textContent = type;
-      button.classList.add('data-btn');
-      button.setAttribute('data-type', type);
+      types.forEach(({ type }) => {
+        const button = document.createElement('button');
+        button.textContent = type;
+        button.classList.add('data-btn');
+        button.setAttribute('data-type', type);
 
-      button.addEventListener('click', () => {
-        console.log(`Type ADV sélectionné : ${type}`);
-        document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
-        button.classList.add('active-type');
+        button.addEventListener('click', () => {
+          document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
+          button.classList.add('active-type');
 
-        fetch(`/api/adv_from/${type}`)
-          .then(res => res.json())
-          .then(data => {
-            console.log(`ADV trouvés pour le type ${type}:`, data);
-            const title = document.getElementById('advTypeTitle');
-            if (title) title.textContent = `Résultats pour le type : ${type}`;
+          fetch(`/api/adv_from/${encodeURIComponent(type)}`)
+            .then(res => res.json())
+            .then(data => {
+              createTable(data);
 
-            createTable(data);
-            if (data.length > 0) {
-              updateMap(data[0]);
-              const firstRow = document.querySelector("#advTable tbody tr");
-              if (firstRow) firstRow.classList.add("active-adv");
-            }
-          })
-          .catch(err => {
-            console.error(`Erreur lors du chargement des ADV pour ${type} :`, err);
-          });
+              if (data.length > 0) {
+                updateMap(data[0]);
+                displayAdvDetailsFromAdv(data[0]);
+                const firstRow = document.querySelector("#advTable tbody tr");
+                if (firstRow) firstRow.classList.add("active-adv");
+              }
+            })
+            .catch(err => {
+              console.error("Erreur lors du chargement des ADV par type:", err);
+            });
+        });
+
+        advSection.appendChild(button);
       });
-
-      advSection.appendChild(button);
+    })
+    .catch(err => {
+      console.error('Erreur lors du chargement des types ADV :', err);
     });
-  })
-  .catch(err => {
-    console.error('Erreur lors du chargement des types ADV :', err);
-  });
+}
+
+function displayAdvDetails(adv) {
+  const container = document.getElementById('info-container');
+  container.innerHTML = ''; // reset
+
+  // Mapping clé dans adv => label + id span
+  const fieldsMap = {
+    tangente:       { label: 'Tangente',          key: 'tangente' },
+    modele:         { label: 'Modèle',            key: 'modele' },
+    plancher:       { label: 'Plancher',          key: 'plancher' },
+    pose:           { label: 'Pose',              key: 'pose' },
+    rail:           { label: 'Rail',              key: 'rails' },           // attention au pluriel dans l'exemple
+    sensDerivation: { label: 'Sens dérivation',   key: 'sens_deviation' },  // note underscore
+    typeAttaches:   { label: "Type d'attaches",   key: 'type_attaches' },
+  };
+
+  for (const [spanId, { label, key }] of Object.entries(fieldsMap)) {
+    const val = adv[key];
+    if (val !== null && val !== undefined && val !== '') {
+      const item = document.createElement('div');
+      item.className = 'info-item';
+
+      const labelEl = document.createElement('label');
+      labelEl.setAttribute('for', spanId);
+      labelEl.textContent = label + ':';
+
+      const spanEl = document.createElement('span');
+      spanEl.id = spanId;
+      spanEl.textContent = val;
+
+      item.appendChild(labelEl);
+      item.appendChild(spanEl);
+      container.appendChild(item);
+    }
+  }
+}
+
+function displayAdvDetailsFromAdv(adv) {
+  const advName = adv["ADV"] || adv["adv"];
+  if (!advName) {
+    console.warn("ADV manquant dans l'objet :", adv);
+    return;
+  }
+
+  fetch(`/api/general_data?adv=${encodeURIComponent(advName)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      displayAdvDetails(data);
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant les détails ADV:", err);
+    });
 }
 
 
+function setupToggleMenu() {
+  const toggleTab = document.querySelector('.toggle-tab');
+  const toggleMenu = document.querySelector('.toggle-menu');
+  const contentSections = document.querySelectorAll('.voie-content');
 
+  if (!toggleTab || !toggleMenu) return;
 
+  toggleTab.addEventListener('click', () => {
+    const isOpen = toggleMenu.style.display === 'block';
+    toggleMenu.style.display = isOpen ? 'none' : 'block';
+    toggleTab.classList.toggle('active', !isOpen);
+  });
 
-
-const toggleTab = document.querySelector('.toggle-tab');
-const toggleMenu = document.querySelector('.toggle-menu');
-const contentSections = document.querySelectorAll('.voie-content');
-
-toggleTab.addEventListener('click', () => {
-  const isOpen = toggleMenu.style.display === 'block';
-  toggleMenu.style.display = isOpen ? 'none' : 'block';
-  toggleTab.classList.toggle('active', !isOpen);
-});
-document.addEventListener('DOMContentLoaded', () => {
-  const allVoies = document.querySelectorAll('.voie-content');
-
-  // Cacher toutes les voies au début
-  allVoies.forEach(voie => {
+  contentSections.forEach(voie => {
     voie.classList.remove('active');
     voie.style.display = 'none';
     voie.style.visibility = 'hidden';
@@ -133,14 +194,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Activer la première voie si aucune n'est active
   let active = document.querySelector('.voie-content.active');
-  if (!active && allVoies.length > 0) {
-    active = allVoies[0];
+  if (!active && contentSections.length > 0) {
+    active = contentSections[0];
     active.classList.add('active');
     active.style.display = 'block';
     active.style.visibility = 'visible';
   }
 
-  // Gestion des clics sur boutons
+
   document.querySelectorAll('.toggle-menu button').forEach(button => {
     button.addEventListener('click', () => {
       const targetId = button.getAttribute('data-target');
@@ -149,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (!next || current === next) return;
 
-      // Cacher l'actuel
       if (current) {
         current.classList.remove('active');
         current.style.animationName = 'slideOutDown';
@@ -158,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
           current.style.display = 'none';
           current.style.visibility = 'hidden';
 
-          // Afficher le suivant
           next.classList.add('active');
           next.style.display = 'flex';
           next.style.visibility = 'visible';
@@ -172,38 +231,42 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-});
+}
 
-const boisCtx = document.getElementById('boisChart').getContext('2d');
-  const boisChart = new Chart(boisCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Bon état', 'À remplacer'],
-      datasets: [{
-        data: [35, 5],
-        backgroundColor: ['#4caf50', '#f44336']
-      }]
-    },
-    options: {
-      cutout: '70%',
-      plugins: { legend: { display: false } }
-    }
-  });
+function initCharts() {
+  const boisCtx = document.getElementById('boisChart')?.getContext('2d');
+  if (boisCtx) {
+    new Chart(boisCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bon état', 'À remplacer'],
+        datasets: [{
+          data: [35, 5],
+          backgroundColor: ['#4caf50', '#f44336']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 
-  const jointsCtx = document.getElementById('jointsChart').getContext('2d');
-  const jointsChart = new Chart(jointsCtx, {
-    type: 'doughnut',
-    data: {
-      labels: ['Bon état', 'À reprendre'],
-      datasets: [{
-        data: [40, 5],
-        backgroundColor: ['#4caf50', '#f44336']
-      }]
-    },
-    options: {
-      cutout: '70%',
-      plugins: { legend: { display: false } }
-    }
-  });
-
-
+  const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
+  if (jointsCtx) {
+    new Chart(jointsCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bon état', 'À reprendre'],
+        datasets: [{
+          data: [40, 5],
+          backgroundColor: ['#4caf50', '#f44336']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
