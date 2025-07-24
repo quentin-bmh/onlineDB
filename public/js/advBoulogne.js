@@ -1,66 +1,116 @@
 let map;
 let marker;
 
-fetch('/api/advBoulogne')
-    .then(res => res.json())
-    .then(data => {
-      console.log('Données ADV chargées :', data[0]);
-        createTable(data);
-        initMap();
-        if (data.length > 0) updateMap(data[0]);
-    })
-    .catch(err => {
-      console.error('Erreur lors du chargement des données ADV :', err);
-    });
-
-function createTable(data) {
-    const tbody = document.querySelector("#advTable tbody");
-    data.forEach((adv, index) => {
-        const lat = parseFloat(adv["Latitude"]);
-        const lng = parseFloat(adv["Longitude"]);
-
-        if (!lat || !lng) return;
-
-        const row = document.createElement("tr");
-        row.innerHTML = `
-        <td>${adv["ADV"] || `ADV ${index}`}</td>
-        `;
-        // <td>${lat.toFixed(5)}</td>
-        // <td>${lng.toFixed(5)}</td>
-
-        row.addEventListener("click", () => updateMap(adv));
-        tbody.appendChild(row);
-    });
-}
+document.addEventListener('DOMContentLoaded', () => {
+  initMap();
+  loadTypeButtons();
+});
 
 function initMap() {
-    map = L.map('map').setView([46.5, 2.5], 7);
+  map = L.map('map').setView([46.5, 2.5], 7);
 
-    const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    });
+  const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  });
 
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
-    });
-    satelliteLayer.addTo(map);
-    L.control.layers({
-        "Plan Standard": normalLayer,
-        "Satellite": satelliteLayer
-    }).addTo(map);
+  const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri'
+  });
+
+  satelliteLayer.addTo(map);
+
+  L.control.layers({
+    "Plan Standard": normalLayer,
+    "Satellite": satelliteLayer
+  }).addTo(map);
 }
-
 
 function updateMap(adv) {
-    const lat = parseFloat(adv["Latitude"]);
-    const lng = parseFloat(adv["Longitude"]);
+  const lat = parseFloat(adv["lat"] || adv["Latitude"]);
+  const lng = parseFloat(adv["long"] || adv["Longitude"]);
 
-    if (!lat || !lng) return alert("Coordonnées manquantes pour cet ADV");
+  if (!lat || !lng) return alert("Coordonnées manquantes pour cet ADV");
 
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([lat, lng]).addTo(map).bindPopup(`<b>${adv["ADV"]}</b>`).openPopup();
-    map.setView([lat, lng], 20);
+  if (marker) map.removeLayer(marker);
+
+  marker = L.marker([lat, lng])
+    .addTo(map)
+    .bindPopup(`<b>${adv["adv"] || adv["ADV"]}</b>`)
+    .openPopup();
+
+  map.setView([lat, lng], 20);
 }
+function createTable(data) {
+  const tbody = document.querySelector("#advTable tbody");
+  tbody.innerHTML = ''; // nettoyage avant remplissage
+
+  data.forEach((adv, index) => {
+    const name = adv["adv"] || adv["ADV"] || `ADV ${index}`;
+
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${name}</td>`;
+
+    row.addEventListener("click", () => {
+      updateMap(adv);
+
+      // Enlever la classe active à toutes les lignes
+      document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
+      // Ajouter à la ligne cliquée
+      row.classList.add("active-adv");
+    });
+
+    tbody.appendChild(row);
+  });
+}
+function loadTypeButtons() {
+  fetch('/api/adv_types')
+  .then(res => res.json())
+  .then(types => {
+    const advSection = document.querySelector('.adv-section');
+    if (!advSection) return;
+
+    types.forEach(({ type }) => {
+      const button = document.createElement('button');
+      button.textContent = type;
+      button.classList.add('data-btn');
+      button.setAttribute('data-type', type);
+
+      button.addEventListener('click', () => {
+        console.log(`Type ADV sélectionné : ${type}`);
+        document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
+        button.classList.add('active-type');
+
+        fetch(`/api/adv_from/${type}`)
+          .then(res => res.json())
+          .then(data => {
+            console.log(`ADV trouvés pour le type ${type}:`, data);
+            const title = document.getElementById('advTypeTitle');
+            if (title) title.textContent = `Résultats pour le type : ${type}`;
+
+            createTable(data);
+            if (data.length > 0) {
+              updateMap(data[0]);
+              const firstRow = document.querySelector("#advTable tbody tr");
+              if (firstRow) firstRow.classList.add("active-adv");
+            }
+          })
+          .catch(err => {
+            console.error(`Erreur lors du chargement des ADV pour ${type} :`, err);
+          });
+      });
+
+      advSection.appendChild(button);
+    });
+  })
+  .catch(err => {
+    console.error('Erreur lors du chargement des types ADV :', err);
+  });
+}
+
+
+
+
+
 
 const toggleTab = document.querySelector('.toggle-tab');
 const toggleMenu = document.querySelector('.toggle-menu');
@@ -124,9 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-
-
-
 const boisCtx = document.getElementById('boisChart').getContext('2d');
   const boisChart = new Chart(boisCtx, {
     type: 'doughnut',
@@ -158,3 +205,5 @@ const boisCtx = document.getElementById('boisChart').getContext('2d');
       plugins: { legend: { display: false } }
     }
   });
+
+
