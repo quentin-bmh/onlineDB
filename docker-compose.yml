@@ -4,7 +4,7 @@ services:
   online-db:
     build: .
     container_name: online-db
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"  #    rediriger ensuite dans NPM
     volumes:

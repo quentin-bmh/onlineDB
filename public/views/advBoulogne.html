@@ -29,6 +29,12 @@
       <div id="map"></div>
     </div>  
     <div id="dataVoie-container">
+      <div class="voie-content" id="hub">
+          <button data-target="voie-croisement">Croisement</button>
+          <button data-target="voie-ecartement">Ecartement/Attaches</button>
+          <button data-target="voie-test">Plancher/Joints</button>
+          <button data-target="voie-aiguillage">Demi-Aiguillage</button>
+      </div>
       <div class="voie-content" id="voie-croisement">
         <img src="../assets/cote.png" alt="Vue du croisement" class="croisement-image" />
         <table class="croisement-table">
@@ -161,12 +167,8 @@
       </div>
       
       <div class="voie-toggle">
-        <div class="toggle-tab">▲</div>
         <div class="toggle-menu">
-          <button data-target="voie-croisement">Croisement</button>
-          <button data-target="voie-ecartement">Ecartement/Attaches</button>
-          <button data-target="voie-test">Plancher/Joints</button>
-          <button data-target="voie-aiguillage">Demi-Aiguillage</button>
+          <button data-target="hub">Menu</button>
         </div>
       </div>
     </div>

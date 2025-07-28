@@ -79,9 +79,12 @@ function loadTypeButtons() {
     .then(res => res.json())
     .then(types => {
       const advSection = document.querySelector('.adv-section');
-      if (!advSection) return;
+      if (!advSection || types.length === 0) return;
 
-      types.forEach(({ type }) => {
+      // Pour garder une référence au premier bouton
+      let firstButton = null;
+
+      types.forEach(({ type }, index) => {
         const button = document.createElement('button');
         button.textContent = type;
         button.classList.add('data-btn');
@@ -90,6 +93,14 @@ function loadTypeButtons() {
         button.addEventListener('click', () => {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
+
+          // Gestion de la visibilité du bouton "Demi-Aiguillage"
+          const boutonAiguillage = document.querySelector('button[data-target="voie-aiguillage"]');
+          if (type === 'TO') {
+            if (boutonAiguillage) boutonAiguillage.style.display = 'none';
+          } else {
+            if (boutonAiguillage) boutonAiguillage.style.display = 'inline-block'; // ou 'block' selon ton CSS
+          }
 
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
             .then(res => res.json())
@@ -108,13 +119,22 @@ function loadTypeButtons() {
             });
         });
 
+
         advSection.appendChild(button);
+        if (index === 0) {
+          firstButton = button;
+        }
       });
+      if (firstButton) {
+        firstButton.click();
+      }
     })
     .catch(err => {
       console.error('Erreur lors du chargement des types ADV :', err);
     });
 }
+
+
 
 function displayAdvDetails(adv) {
   const container = document.getElementById('info-container');
@@ -174,17 +194,9 @@ function displayAdvDetailsFromAdv(adv) {
 
 
 function setupToggleMenu() {
-  const toggleTab = document.querySelector('.toggle-tab');
-  const toggleMenu = document.querySelector('.toggle-menu');
   const contentSections = document.querySelectorAll('.voie-content');
-
-  if (!toggleTab || !toggleMenu) return;
-
-  toggleTab.addEventListener('click', () => {
-    const isOpen = toggleMenu.style.display === 'block';
-    toggleMenu.style.display = isOpen ? 'none' : 'block';
-    toggleTab.classList.toggle('active', !isOpen);
-  });
+  const hub = document.getElementById('hub');
+  const toggleMenu = document.querySelector('.voie-toggle');
 
   contentSections.forEach(voie => {
     voie.classList.remove('active');
@@ -197,41 +209,67 @@ function setupToggleMenu() {
   if (!active && contentSections.length > 0) {
     active = contentSections[0];
     active.classList.add('active');
-    active.style.display = 'block';
+    active.style.display = 'flex';
     active.style.visibility = 'visible';
   }
 
+  // Afficher ou masquer .voie-toggle selon que la voie active est #hub
+  if (active && active.id === 'hub') {
+    toggleMenu.style.display = 'none';
+  } else {
+    toggleMenu.style.display = 'block';
+  }
+}
 
-  document.querySelectorAll('.toggle-menu button').forEach(button => {
-    button.addEventListener('click', () => {
-      const targetId = button.getAttribute('data-target');
-      const current = document.querySelector('.voie-content.active');
-      const next = document.getElementById(targetId);
 
-      if (!next || current === next) return;
 
-      if (current) {
-        current.classList.remove('active');
-        current.style.animationName = 'slideOutDown';
+document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
+  button.addEventListener('click', () => {
+    const targetId = button.getAttribute('data-target');
+    const current = document.querySelector('.voie-content.active');
+    const next = document.getElementById(targetId);
 
-        setTimeout(() => {
-          current.style.display = 'none';
-          current.style.visibility = 'hidden';
+    if (!next || current === next) return;
 
-          next.classList.add('active');
-          next.style.display = 'flex';
-          next.style.visibility = 'visible';
-          next.style.animationName = 'slideInUp';
-        }, 500);
-      } else {
+    if (current) {
+      current.classList.remove('active');
+      current.style.animationName = 'slideOutDown';
+
+      setTimeout(() => {
+        current.style.display = 'none';
+        current.style.visibility = 'hidden';
+
         next.classList.add('active');
-        next.style.display = 'block';
+        next.style.display = 'flex';
         next.style.visibility = 'visible';
         next.style.animationName = 'slideInUp';
+
+        // ➕ Mise à jour de .voie-toggle ici
+        const toggleMenu = document.querySelector('.voie-toggle');
+        if (next.id === 'hub') {
+          toggleMenu.style.display = 'none';
+        } else {
+          toggleMenu.style.display = 'block';
+        }
+
+      }, 500);
+    } else {
+      next.classList.add('active');
+      next.style.display = 'block';
+      next.style.visibility = 'visible';
+      next.style.animationName = 'slideInUp';
+
+      // ➕ Et ici aussi si aucun `current` n'était actif
+      const toggleMenu = document.querySelector('.voie-toggle');
+      if (next.id === 'hub') {
+        toggleMenu.style.display = 'none';
+      } else {
+        toggleMenu.style.display = 'block';
       }
-    });
+    }
   });
-}
+});
+
 
 function initCharts() {
   const boisCtx = document.getElementById('boisChart')?.getContext('2d');

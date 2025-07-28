@@ -48,13 +48,79 @@ router.get('/adv_from/:type', async (req, res) => {
       'SELECT * FROM general_data WHERE type = $1',
       [type]
     );
-
     res.json(result.rows);
   } catch (error) {
     console.error('Erreur lors de la récupération des ADV par type:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
+
+router.get('/bs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM adv_bs;');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/to', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM adv_to;');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/tj', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM adv_tj;');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/bs/:name', async (req, res) => {
+  const advName = req.params.name;
+  try {
+    const result = await pool.query('SELECT * FROM adv_bs where adv = $1', [advName]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/to/:name', async (req, res) => {
+  const advName = req.params.name;
+  try {
+    const result = await pool.query('SELECT * FROM adv_to where adv = $1', [advName]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/tj/:name', async (req, res) => {
+  const advName = req.params.name;
+  try {
+    const result = await pool.query('SELECT * FROM adv_tj where adv = $1', [advName]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/da/:name', async (req, res) => {
+  const advName = req.params.name;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM b2v_da WHERE adv = $1',
+      [advName]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 
 
 module.exports = router;
