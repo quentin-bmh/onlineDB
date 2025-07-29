@@ -54,26 +54,47 @@ function updateMap(adv) {
 
 function createTable(data) {
   const tbody = document.querySelector("#advTable tbody");
-  tbody.innerHTML = ''; // nettoyage avant remplissage
+  tbody.innerHTML = ''; // nettoyage
 
   data.forEach((adv, index) => {
-    const name = adv["adv"] || adv["ADV"] || `ADV ${index}`;
-
+    const name = adv["adv"];
+    const type = adv["type"]; // très important
+    // console.log(`Création de la ligne pour ADV: ${name}, Type: ${type}`);
     const row = document.createElement("tr");
     row.innerHTML = `<td>${name}</td>`;
 
     row.addEventListener("click", () => {
+      // 1. UI
       updateMap(adv);
-
-      // Enlever la classe active à toutes les lignes
       document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
-      // Ajouter à la ligne cliquée
       row.classList.add("active-adv");
+
+      // 2. Charger les infos détaillées selon le type
+      if (type && name) {
+        const lowerType = type.toLowerCase(); // bs / to / tj
+        fetch(`/api/${lowerType}/${encodeURIComponent(name)}`)
+          .then(res => {
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
+            return res.json();
+          })
+          .then(data => {
+            // data = réponse détaillée selon le type
+            const advData = Array.isArray(data) ? data[0] : data;
+            console.log(`Données ADV récupérées pour ${name}:`, advData);
+            getAdvData(advData); // tu peux adapter ici
+          })
+          .catch(err => {
+            console.error("Erreur lors de la récupération des données ADV détaillées:", err);
+          });
+      } else {
+        console.warn("Type ou nom ADV manquant:", { type, name });
+      }
     });
 
     tbody.appendChild(row);
   });
 }
+
 function loadTypeButtons() {
   fetch('/api/adv_types')
     .then(res => res.json())
@@ -93,13 +114,11 @@ function loadTypeButtons() {
         button.addEventListener('click', () => {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
-
-          // Gestion de la visibilité du bouton "Demi-Aiguillage"
           const boutonAiguillage = document.querySelector('button[data-target="voie-aiguillage"]');
           if (type === 'TO') {
             if (boutonAiguillage) boutonAiguillage.style.display = 'none';
           } else {
-            if (boutonAiguillage) boutonAiguillage.style.display = 'inline-block'; // ou 'block' selon ton CSS
+            if (boutonAiguillage) boutonAiguillage.style.display = 'inline-block';
           }
 
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
@@ -109,9 +128,12 @@ function loadTypeButtons() {
 
               if (data.length > 0) {
                 updateMap(data[0]);
-                displayAdvDetailsFromAdv(data[0]);
+                getAdvDetails(data[0]);
+                getAdvData(data[0]);
                 const firstRow = document.querySelector("#advTable tbody tr");
-                if (firstRow) firstRow.classList.add("active-adv");
+                if (firstRow) {
+                  firstRow.click(); // simulate real click
+                }
               }
             })
             .catch(err => {
@@ -146,8 +168,8 @@ function displayAdvDetails(adv) {
     modele:         { label: 'Modèle',            key: 'modele' },
     plancher:       { label: 'Plancher',          key: 'plancher' },
     pose:           { label: 'Pose',              key: 'pose' },
-    rail:           { label: 'Rail',              key: 'rails' },           // attention au pluriel dans l'exemple
-    sensDerivation: { label: 'Sens dérivation',   key: 'sens_deviation' },  // note underscore
+    rail:           { label: 'Rail',              key: 'rails' },
+    sensDerivation: { label: 'Sens dérivation',   key: 'sens_deviation' },
     typeAttaches:   { label: "Type d'attaches",   key: 'type_attaches' },
   };
 
@@ -159,7 +181,7 @@ function displayAdvDetails(adv) {
 
       const labelEl = document.createElement('label');
       labelEl.setAttribute('for', spanId);
-      labelEl.textContent = label + ':';
+      labelEl.textContent = label + ' :';
 
       const spanEl = document.createElement('span');
       spanEl.id = spanId;
@@ -172,7 +194,33 @@ function displayAdvDetails(adv) {
   }
 }
 
-function displayAdvDetailsFromAdv(adv) {
+function getAdvData(adv) {
+  const name = (adv["adv"] || adv["ADV"] || '').trim();
+  const type = (adv["type"] || '').toLowerCase();
+
+  if (!name || !type) {
+    console.warn("ADV ou type manquant dans l'objet :", adv);
+    return;
+  }
+
+  fetch(`/api/${type}/${encodeURIComponent(name)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      // On gère à la fois les réponses tableau et objet
+      const advData = Array.isArray(data) ? data[0] : data;
+      if (!advData) {
+        console.warn("Pas de données reçues pour :", name);
+        return;
+      }
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant les détails ADV:", err);
+    });
+}
+function getAdvDetails(adv) {
   const advName = adv["ADV"] || adv["adv"];
   if (!advName) {
     console.warn("ADV manquant dans l'objet :", adv);
@@ -188,9 +236,10 @@ function displayAdvDetailsFromAdv(adv) {
       displayAdvDetails(data);
     })
     .catch(err => {
-      console.error("Erreur en chargeant les détails ADV:", err);
+      console.error("Erreur en chargeant les détails depuis general_data:", err);
     });
 }
+
 
 
 function setupToggleMenu() {
