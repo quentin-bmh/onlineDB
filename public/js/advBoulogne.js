@@ -68,7 +68,7 @@ function createTable(data) {
       updateMap(adv);
       document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
       row.classList.add("active-adv");
-
+      resetVoieContent();
       // 2. Charger les infos détaillées selon le type
       if (type && name) {
         const lowerType = type.toLowerCase(); // bs / to / tj
@@ -238,6 +238,33 @@ function getAdvDetails(adv) {
     .catch(err => {
       console.error("Erreur en chargeant les détails depuis general_data:", err);
     });
+}
+
+function resetVoieContent() {
+  const allVoies = document.querySelectorAll('.voie-content');
+  const hub = document.getElementById('hub');
+  const toggleMenu = document.querySelector('.voie-toggle');
+
+  if (!hub) {
+    console.warn("Élément #hub non trouvé !");
+    return;
+  }
+
+  // Masquer tous les .voie-content
+  allVoies.forEach(voie => {
+    voie.classList.remove('active');
+    voie.style.display = 'none';
+    voie.style.visibility = 'hidden';
+    voie.style.animationName = ''; // désactive toute animation précédente
+  });
+
+  // Activer #hub correctement
+  hub.classList.add('active');
+  hub.style.display = 'flex'; // ou 'block' selon ton layout
+  hub.style.visibility = 'visible';
+  hub.style.animationName = 'slideInUp';
+
+  if (toggleMenu) toggleMenu.style.display = 'none';
 }
 
 
