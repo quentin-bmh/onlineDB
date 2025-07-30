@@ -80,7 +80,7 @@ function createTable(data) {
           .then(data => {
             // data = réponse détaillée selon le type
             const advData = Array.isArray(data) ? data[0] : data;
-            console.log(`Données ADV récupérées pour ${name}:`, advData);
+            // console.log(`Données ADV récupérées pour ${name}:`, advData);
             getAdvData(advData); // tu peux adapter ici
           })
           .catch(err => {
@@ -156,8 +156,6 @@ function loadTypeButtons() {
     });
 }
 
-
-
 function displayAdvDetails(adv) {
   const container = document.getElementById('info-container');
   container.innerHTML = ''; // reset
@@ -215,6 +213,10 @@ function getAdvData(adv) {
         console.warn("Pas de données reçues pour :", name);
         return;
       }
+      switchVoieTypeContent(type);
+      updateEcartements(advData, type);
+      updateBois(advData);
+      updateCharts(advData);
     })
     .catch(err => {
       console.error("Erreur en chargeant les détails ADV:", err);
@@ -245,11 +247,6 @@ function resetVoieContent() {
   const hub = document.getElementById('hub');
   const toggleMenu = document.querySelector('.voie-toggle');
 
-  if (!hub) {
-    console.warn("Élément #hub non trouvé !");
-    return;
-  }
-
   // Masquer tous les .voie-content
   allVoies.forEach(voie => {
     voie.classList.remove('active');
@@ -260,13 +257,58 @@ function resetVoieContent() {
 
   // Activer #hub correctement
   hub.classList.add('active');
-  hub.style.display = 'flex'; // ou 'block' selon ton layout
+  hub.style.display = 'flex';
   hub.style.visibility = 'visible';
   hub.style.animationName = 'slideInUp';
 
   if (toggleMenu) toggleMenu.style.display = 'none';
 }
 
+function updateBois(adv) {
+  if (!adv || typeof adv !== 'object') return;
+
+  // === JOINTS ===
+  const jointsBon = Number(adv['joints_bon']) || 0;
+  const jointsRepr = Number(adv['joints_a_repr']) || 0;
+  const jointsGraisser = Number(adv['joints_graisser']) || 0;
+  const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
+
+  const jointsCountEl = document.getElementById('jointsCount');
+  if (jointsCountEl) {
+    jointsCountEl.textContent = jointsBon + jointsRepr;
+  }
+
+  const jointsRow = document.querySelector('#plancher-joints .plancher-table tbody tr');
+  if (jointsRow) {
+    const cells = jointsRow.querySelectorAll('td');
+    if (cells.length >= 4) {
+      cells[0].textContent = jointsPct;       // % joints à remplacer
+      cells[1].textContent = jointsBon;       // joints bon état
+      cells[2].textContent = jointsRepr;      // joints à reprendre
+      cells[3].textContent = jointsGraisser;  // joints à graisser
+    }
+  }
+
+  // === BOIS ===
+  const boisBon = Number(adv['bois_bon']) || 0;
+  const boisRemp = Number(adv['bois_a_remp']) || 0;
+  const boisPct = adv['bois_pct_remp'] !== undefined ? adv['bois_pct_remp'] + '%' : '-';
+
+  const boisCountEl = document.getElementById('boisCount');
+  if (boisCountEl) {
+    boisCountEl.textContent = boisBon + boisRemp;
+  }
+
+  const boisRow = document.querySelector('#plancher-bois .plancher-table tbody tr');
+  if (boisRow) {
+    const cells = boisRow.querySelectorAll('td');
+    if (cells.length >= 3) {
+      cells[0].textContent = boisPct;      // % bois à remplacer
+      cells[1].textContent = boisRemp;     // bois à remplacer
+      cells[2].textContent = boisBon;      // bois bon état
+    }
+  }
+}
 
 
 function setupToggleMenu() {
@@ -347,15 +389,18 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
 });
 
 
+let boisChartInstance = null;
+let jointsChartInstance = null;
+
 function initCharts() {
   const boisCtx = document.getElementById('boisChart')?.getContext('2d');
   if (boisCtx) {
-    new Chart(boisCtx, {
+    boisChartInstance = new Chart(boisCtx, {
       type: 'doughnut',
       data: {
         labels: ['Bon état', 'À remplacer'],
         datasets: [{
-          data: [35, 5],
+          data: [0, 0], // données initiales vides
           backgroundColor: ['#4caf50', '#f44336']
         }]
       },
@@ -368,12 +413,12 @@ function initCharts() {
 
   const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
   if (jointsCtx) {
-    new Chart(jointsCtx, {
+    jointsChartInstance = new Chart(jointsCtx, {
       type: 'doughnut',
       data: {
         labels: ['Bon état', 'À reprendre'],
         datasets: [{
-          data: [40, 5],
+          data: [0, 0],
           backgroundColor: ['#4caf50', '#f44336']
         }]
       },
@@ -384,3 +429,51 @@ function initCharts() {
     });
   }
 }
+function updateCharts(data) {
+  if (boisChartInstance && data.bois_bon != null && data.bois_a_remp != null) {
+    boisChartInstance.data.datasets[0].data = [data.bois_bon, data.bois_a_remp];
+    boisChartInstance.update();
+  }
+
+  if (jointsChartInstance && data.joints_bon != null && data.joints_a_repr != null) {
+    jointsChartInstance.data.datasets[0].data = [data.joints_bon, data.joints_a_repr];
+    jointsChartInstance.update();
+  }
+}
+
+function switchVoieTypeContent(type) {
+  document.querySelectorAll('.voie-type-container').forEach(container => {
+    if (container.dataset.type === type) {
+      container.style.display = 'block';
+    } else {
+      container.style.display = 'none';
+    }
+  });
+}
+
+
+function updateEcartements(adv, type) {
+  if (!adv || typeof adv !== 'object') return;
+
+  const voieEcartement = document.getElementById('voie-ecartement');
+  if (!voieEcartement) return;
+
+  document.querySelectorAll('#voie-ecartement .voie-type-container').forEach(container => {
+    container.style.display = (container.dataset.type === type) ? 'block' : 'none';
+  });
+
+  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
+  if (!targetContainer) {
+    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
+    return;
+  }
+
+  // Remplit les cartes
+  const cards = targetContainer.querySelectorAll('.ecartement-card');
+  cards.forEach((card, index) => {
+    const key = `ecart_${index + 1}`;
+    const value = adv[key];
+    card.textContent = (value !== undefined && value !== null && value !== '') ? value : '-';
+  });
+}
+

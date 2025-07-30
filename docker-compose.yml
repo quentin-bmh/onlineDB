@@ -6,12 +6,12 @@ services:
     container_name: online-db
     restart: unless-stopped
     ports:
-      - "3000:3000"  #    rediriger ensuite dans NPM
+      - "3013:3000"
     volumes:
       - .:/app
     networks:
-      - webproxy  # optionnel si tu veux que NPM le voie
+      - webproxy
 
 networks:
   webproxy:
-    external: true  # NPM doit   tre dans ce r  seau aussi
+    external: true

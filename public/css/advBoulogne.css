@@ -316,12 +316,12 @@ th, td {
 
 #voie-croisement {
   flex-direction: column;
-  padding: 20px;
+  padding: 10px;
   font-family: Arial, sans-serif;
 }
 .croisement-image {
   width: 70%;
-  max-width: 500px;
+  max-width: 580px;
   height: auto;
   display: block;
   margin: 0 auto 20px;
@@ -365,14 +365,21 @@ th, td {
   justify-content: center;
   flex-wrap: wrap;
 }
-.attaches-image {
+.attaches-image-bs{
   width: 40%;
   max-width: none;
   height: auto;
   border-radius: 8px;
 }
+.attaches-image{
+  width: 15%;
+  max-width: none;
+  height: auto;
+  max-height: 300px;
+  border-radius: 8px;
+}
 .table-wrapper {
-  width: 30%;
+  width: 38%;
   overflow: hidden;
 }
 .attaches-table {
@@ -445,14 +452,32 @@ th, td {
   white-space: nowrap;
 }
 
-/* Exemples de positions à ajuster manuellement selon image */
-.card-1 { top: 20%; left: 3%; }
-.card-2 { top: 20%; left: 50%; }
-.card-3 { top: 25%; left: 39%; }
-.card-4 { top: 20%; left: 78%; }
-.card-5 { top: 50%; left: 77%; }
-.card-6 { top: 20%; left: 91%; }
-.card-7 { top: 64%; left: 89%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 20%; left: 3%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 20%; left: 3%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-2 { top: 20%; left: 50%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-3 { top: 25%; left: 39%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-4 { top: 20%; left: 78%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-5 { top: 50%; left: 77%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-6 { top: 20%; left: 91%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-7 { top: 64%; left: 89%; }
+
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 45%; left: 13%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-2 { top: 45%; left: 32%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-3 { top: 45%; left: 61%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-4 { top: 45%; left: 78%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-5 { top: 70%; left: 15%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-6 { top: 50%; left: 43.5%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-7 { top: 40%; left: 49.2%; }
+.voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-8 { top: 19%; left: 78%; }
+
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 45%; left: 13%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-2 { top: 45%; left: 32%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-3 { top: 45%; left: 61%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-4 { top: 45%; left: 78%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-5 { top: 70%; left: 15%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-6 { top: 50%; left: 43.5%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-7 { top: 40%; left: 49.2%; }
+.voie-type-container[data-type="to"] .ecartement-bottom .ecartements-image-wrapper .card-8 { top: 19%; left: 78%; }
 
 
 
@@ -468,7 +493,13 @@ th, td {
   flex-direction: row;
   justify-content: center;
 }
-
+.bois_container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+}
 .plancher-section {
   max-width: 450px;
   display: flex;
