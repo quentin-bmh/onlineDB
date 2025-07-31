@@ -215,6 +215,7 @@ function getAdvData(adv) {
       }
       switchVoieTypeContent(type);
       updateEcartements(advData, type);
+      fillCoeur2cInputs(advData);
       updateAttaches(adv, type);
       updateBois(advData);
       updateCharts(advData);
@@ -509,5 +510,42 @@ function updateAttaches(adv, type) {
 
     effCell.textContent = valEff != null ? `${(parseFloat(valEff) * 100).toFixed(0)}%` : '-';
     ineffCell.textContent = valIneff != null ? `${(parseFloat(valIneff) * 100).toFixed(0)}%` : '-';
+  });
+}
+function fillCoeur2cInputs(advData) {
+  const voieContainers = document.querySelectorAll(".voie-type-container");
+  console.log('data advData:', advData);
+
+  voieContainers.forEach(container => {
+    const type = container.dataset.type;
+    if (type !== "tj" && type !== "to") return;
+
+    // Partie haute
+    const h = container.querySelector(".container_coeur2c_h");
+    if (h) {
+      h.querySelector(".ep_cr_g").value = advData["ep_cr_g_h"] ?? "no-data";
+      h.querySelector(".ep_cal_g").value = advData["ep_cal_g_h"] ?? "no-data";
+      h.querySelector(".nb_cal_g").value = advData["nb_cal_g_h"] ?? "no-data";
+
+      h.querySelector(".ep_cr_d").value = advData["ep_cr_d_h"] ?? "no-data";
+      h.querySelector(".ep_cal_d").value = advData["ep_cal_d_h"] ?? "no-data";
+      h.querySelector(".nb_cal_d").value = advData["nb_cal_d_h"] ?? "no-data";
+
+      h.querySelector(".coeur2c_num_h").value = advData["coeur2c_num_h"] ?? "no-data";
+    }
+
+    // Partie basse
+    const b = container.querySelector(".container_coeur2c_b");
+    if (b) {
+      b.querySelector(".ep_cr_g").value = advData["ep_cr_g_b"] ?? "no-data";
+      b.querySelector(".ep_cal_g").value = advData["ep_cal_g_b"] ?? "no-data";
+      b.querySelector(".nb_cal_g").value = advData["nb_cal_g_b"] ?? "no-data";
+
+      b.querySelector(".ep_cr_d").value = advData["ep_cr_d_b"] ?? "no-data";
+      b.querySelector(".ep_cal_d").value = advData["ep_cal_d_b"] ?? "no-data";
+      b.querySelector(".nb_cal_d").value = advData["nb_cal_d_b"] ?? "no-data";
+
+      b.querySelector(".coeur2c_num_b").value = advData["coeur2c_num_b"] ?? "no-data";
+    }
   });
 }
