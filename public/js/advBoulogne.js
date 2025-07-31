@@ -68,7 +68,7 @@ function createTable(data) {
       updateMap(adv);
       document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
       row.classList.add("active-adv");
-      resetVoieContent();
+      // resetVoieContent();
       // 2. Charger les infos détaillées selon le type
       if (type && name) {
         const lowerType = type.toLowerCase(); // bs / to / tj
@@ -80,7 +80,7 @@ function createTable(data) {
           .then(data => {
             // data = réponse détaillée selon le type
             const advData = Array.isArray(data) ? data[0] : data;
-            // console.log(`Données ADV récupérées pour ${name}:`, advData);
+            console.log(`Données ADV récupérées pour ${name}:`, advData);
             getAdvData(advData); // tu peux adapter ici
           })
           .catch(err => {
@@ -215,6 +215,7 @@ function getAdvData(adv) {
       }
       switchVoieTypeContent(type);
       updateEcartements(advData, type);
+      updateAttaches(adv, type);
       updateBois(advData);
       updateCharts(advData);
     })
@@ -444,7 +445,7 @@ function updateCharts(data) {
 function switchVoieTypeContent(type) {
   document.querySelectorAll('.voie-type-container').forEach(container => {
     if (container.dataset.type === type) {
-      container.style.display = 'block';
+      container.style.display = 'flex';
     } else {
       container.style.display = 'none';
     }
@@ -477,3 +478,36 @@ function updateEcartements(adv, type) {
   });
 }
 
+function updateAttaches(adv, type) {
+  if (!adv || typeof adv !== 'object') return;
+
+  const voieEcartement = document.getElementById('voie-ecartement');
+  if (!voieEcartement) return;
+
+  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
+  if (!targetContainer) {
+    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
+    return;
+  }
+
+  const rows = targetContainer.querySelectorAll('table.attaches-table tbody tr');
+
+  rows.forEach(row => {
+    const zoneCell = row.cells[0];
+    const effCell = row.cells[1];
+    const ineffCell = row.cells[2];
+
+    if (!zoneCell || !effCell || !ineffCell) return;
+
+    const zone = zoneCell.textContent.trim(); // ex: "1", "2'", etc.
+
+    const keyEff = `att_e_pct_${zone}`;
+    const keyIneff = `att_i_pct_${zone}`;
+
+    const valEff = adv[keyEff];
+    const valIneff = adv[keyIneff];
+
+    effCell.textContent = valEff != null ? `${(parseFloat(valEff) * 100).toFixed(0)}%` : '-';
+    ineffCell.textContent = valIneff != null ? `${(parseFloat(valIneff) * 100).toFixed(0)}%` : '-';
+  });
+}

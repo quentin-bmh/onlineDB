@@ -262,8 +262,8 @@ body {
 }
 #hub button{
   margin: 5px;
-  padding: 16px 30px;
-  font-size: 25px;
+  padding: 25px 40px;
+  font-size: 29px;
   background-color: #555;
   color: white;
   border: none;
@@ -325,6 +325,28 @@ th, td {
   height: auto;
   display: block;
   margin: 0 auto 20px;
+  border-radius: 8px;
+}
+.voie-type-container[data-type="tj"]{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  justify-items: center;
+  align-items: center;
+  padding: 1%;
+}
+.voie-type-container[data-type="tj"] .croisement-img {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+
+}
+.voie-type-container[data-type="tj"] .croisement-img img {
+  width: 95%;
+  max-width: 750px;
+  height: auto;
   border-radius: 8px;
 }
 .table-wrapper {
