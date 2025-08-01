@@ -401,15 +401,157 @@ th, td {
   height: 14%;
 }
 
+.container_coeur2c_h_t,
+.container_coeur2c_b_t {
+  position: relative;
+}
+.container_coeur2c_h_t img,
+.container_coeur2c_b_t img {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+}
 
 
+.container_coeur2c_h_t .p2p_g_h,
+.container_coeur2c_b_t .p2p_g_b{
+  position: absolute;
+  top: 29%;
+  left: 13%;
+  width: 23%;
+  height: 11%;
+}
 
-.voie-type-container[data-type="tj"]{
+.container_coeur2c_h_t .p2p_d_h,
+.container_coeur2c_b_t .p2p_d_b{
+  position: absolute;
+  top: 29%;
+  left: 62%;
+  width: 23%;
+  height: 11%;
+}
+.container_coeur2c_h_t .coeur2c_num_h_t,
+.container_coeur2c_b_t .coeur2c_num_b_t {
+  position: absolute;
+  top: 79%;
+  left: 31%;
+  width: 39%;
+  height: 14%;
+}
+.voie-type-container[data-type="to"] {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-evenly;
+  padding: 20px;
+  gap: 40px;
+}
+
+/* Conteneur de gauche */
+.voie-type-container[data-type="to"] .croisement-img {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40%;
+  gap: 20px;
+  max-width: 600px;
+}
+
+/* Images à l'intérieur de .croisement-img uniquement (cœur haut/bas) */
+.voie-type-container[data-type="to"] .croisement-img img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 8px;
+  border: solid 1px blue; /* Pour test visuel */
+}
+
+/* Image de droite uniquement */
+.voie-type-container[data-type="to"] .traverse-img {
+  position: relative;
+  width: 50%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 8px;
+
+}
+.voie-type-container[data-type="to"] .traverse-img img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 8px;
+  border: solid 1px blue; /* temporaire pour debug */
+}
+.voie-type-container[data-type="to"]  input, .voie-type-container[data-type="tj"]  input{
+  text-align: center;
+}
+
+.traverse-img .p2p_g_h{
+  position: absolute;
+  top: 16%;
+  left: 26.5%;
+  width: 20%;
+  height: 5%;
+}
+.traverse-img .p2p_d_h{
+  position: absolute;
+  top: 16%;
+  left: 54.5%;
+  width: 20%;
+  height: 5%;
+}
+.traverse-img .libre_passage_g{
+  position: absolute;
+  top: 38%;
+  left: 26.5%;
+  width: 20%;
+  height: 5%;
+}
+.traverse-img .libre_passage_d{
+  position: absolute;
+  top: 38%;
+  left: 54.5%;
+  width: 20%;
+  height: 5%;
+}
+.traverse-img .p2p_g_b{
+  position: absolute;
+  top: 64%;
+  left: 26.5%;
+  width: 20%;
+  height: 5%;
+}
+.traverse-img .p2p_d_b{
+  position: absolute;
+  top: 64%;
+  left: 54.5%;
+  width: 20%;
+  height: 5%;
+}
+.traverse-img .coeur2t_num_g{
+  position: absolute;
+  top: 87%;
+  left: 5.5%;
+  width: 28%;
+  height: 5%;
+}
+.traverse-img .coeur2t_num_d{
+  position: absolute;
+  top: 87%;
+  right: 4.5%;
+  width: 28%;
+  height: 5%;
+}
+
+
+.voie-type-container[data-type="tj"] {
   display: flex;
   flex-direction: row;
   justify-content: space-evenly;
-  justify-items: center;
   align-items: center;
+  padding: 20px;
+  gap: 40px;
 }
 .voie-type-container[data-type="tj"] .croisement-img {
   display: flex;
@@ -417,14 +559,32 @@ th, td {
   justify-content: center;
   align-items: center;
   gap: 20px;
-
+  max-width: 750px; /* optionnel, pour éviter débordement */
 }
 .voie-type-container[data-type="tj"] .croisement-img img {
   width: 100%;
   max-width: 750px;
   height: auto;
   border-radius: 8px;
+  border: solid 1px blue; /* temporaire pour debug */
 }
+
+.voie-type-container[data-type="tj"] .traverse-img {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 8px;
+}
+.voie-type-container[data-type="tj"] .traverse-img img {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  border-radius: 8px;
+  border: solid 1px blue; /* temporaire pour debug */
+
+}
+
 .table-wrapper {
   overflow-x: auto;
 }

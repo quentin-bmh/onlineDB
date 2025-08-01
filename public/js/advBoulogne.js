@@ -375,7 +375,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       }, 500);
     } else {
       next.classList.add('active');
-      next.style.display = 'block';
+      next.style.display = 'flex';
       next.style.visibility = 'visible';
       next.style.animationName = 'slideInUp';
 
@@ -533,7 +533,12 @@ function fillCoeur2cInputs(advData) {
 
       h.querySelector(".coeur2c_num_h").value = advData["coeur2c_num_h"] ?? "no-data";
     }
-
+    const ht = container.querySelector(".container_coeur2c_h_t");
+    if (ht) {
+      ht.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
+      ht.querySelector(".p2p_d_h").value = advData["p2p_d_h"] ?? "no-data";
+      ht.querySelector(".coeur2c_num_h_t").value = advData["coeur2c_num_h_t"] ?? "no-data";
+    }
     // Partie basse
     const b = container.querySelector(".container_coeur2c_b");
     if (b) {
@@ -547,5 +552,23 @@ function fillCoeur2cInputs(advData) {
 
       b.querySelector(".coeur2c_num_b").value = advData["coeur2c_num_b"] ?? "no-data";
     }
+    const bt = container.querySelector(".container_coeur2c_b_t");
+    if (bt) {
+      bt.querySelector(".p2p_g_b").value = advData["p2p_g_b"] ?? "no-data";
+      bt.querySelector(".p2p_d_b").value = advData["p2p_d_b"] ?? "no-data";
+      bt.querySelector(".coeur2c_num_b_t").value = advData["coeur2c_num_b_t"] ?? "no-data";
+    }
+    const t = container.querySelector(".traverse-img");
+    if (t) {
+      t.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
+      t.querySelector(".p2p_d_h").value = advData["p2p_d_h"] ?? "no-data";
+      t.querySelector(".libre_passage_g").value = advData["libre_passage_g"] ?? "no-data";
+      t.querySelector(".libre_passage_d").value = advData["libre_passage_d"] ?? "no-data";
+      t.querySelector(".p2p_g_b").value = advData["p2p_g_b"] ?? "no-data";
+      t.querySelector(".p2p_d_b").value = advData["p2p_d_b"] ?? "no-data";
+      t.querySelector(".coeur2t_num_g").value = advData["coeur2t_num_g"] ?? "no-data";
+      t.querySelector(".coeur2t_num_d").value = advData["coeur2t_num_d"] ?? "no-data";
+    }
+
   });
 }
