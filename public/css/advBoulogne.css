@@ -319,13 +319,39 @@ th, td {
   padding: 10px;
   font-family: Arial, sans-serif;
 }
-.croisement-image {
-  width: 70%;
-  max-width: 580px;
+.voie-type-container[data-type="bs"]{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+.voie-type-container[data-type="bs"] input {
+  text-align: center;
+}
+.voie-type-container[data-type="bs"] img {
+  width: 100%;
+  max-width: 550px;
   height: auto;
-  display: block;
-  margin: 0 auto 20px;
   border-radius: 8px;
+  border: solid 1px blue; /* Pour test visuel */
+}
+.voie-type-container[data-type="bs"] .croisement-img-bs{
+  position: relative;
+}
+.voie-type-container[data-type="bs"] .croisement-img-bs .p2p_g{
+  position: absolute;
+  top: 32%;
+  left: 14%;
+  width: 25%;
+  height: 10%;
+}
+.voie-type-container[data-type="bs"] .croisement-img-bs .p2p_d{
+  position: absolute;
+  top: 32%;
+  left: 57%;
+  width: 25%;
+  height: 10%;
 }
 .container_coeur2c_h,
 .container_coeur2c_b {
@@ -531,14 +557,14 @@ th, td {
 }
 .traverse-img .coeur2t_num_g{
   position: absolute;
-  top: 87%;
+  top: 90%;
   left: 5.5%;
   width: 28%;
   height: 5%;
 }
 .traverse-img .coeur2t_num_d{
   position: absolute;
-  top: 87%;
+  top: 90%;
   right: 4.5%;
   width: 28%;
   height: 5%;

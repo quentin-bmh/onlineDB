@@ -514,11 +514,11 @@ function updateAttaches(adv, type) {
 }
 function fillCoeur2cInputs(advData) {
   const voieContainers = document.querySelectorAll(".voie-type-container");
-  console.log('data advData:', advData);
+  // console.log('data advData:', advData);
 
   voieContainers.forEach(container => {
     const type = container.dataset.type;
-    if (type !== "tj" && type !== "to") return;
+    if (type !== "tj" && type !== "to" && type !== "bs") return;
 
     // Partie haute
     const h = container.querySelector(".container_coeur2c_h");
@@ -537,7 +537,7 @@ function fillCoeur2cInputs(advData) {
     if (ht) {
       ht.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
       ht.querySelector(".p2p_d_h").value = advData["p2p_d_h"] ?? "no-data";
-      ht.querySelector(".coeur2c_num_h_t").value = advData["coeur2c_num_h_t"] ?? "no-data";
+      ht.querySelector(".coeur2c_num_h_t").value = advData["coeur2c_num_h"] ?? "no-data";
     }
     // Partie basse
     const b = container.querySelector(".container_coeur2c_b");
@@ -556,7 +556,7 @@ function fillCoeur2cInputs(advData) {
     if (bt) {
       bt.querySelector(".p2p_g_b").value = advData["p2p_g_b"] ?? "no-data";
       bt.querySelector(".p2p_d_b").value = advData["p2p_d_b"] ?? "no-data";
-      bt.querySelector(".coeur2c_num_b_t").value = advData["coeur2c_num_b_t"] ?? "no-data";
+      bt.querySelector(".coeur2c_num_b_t").value = advData["coeur2c_num_b"] ?? "no-data";
     }
     const t = container.querySelector(".traverse-img");
     if (t) {
@@ -569,6 +569,32 @@ function fillCoeur2cInputs(advData) {
       t.querySelector(".coeur2t_num_g").value = advData["coeur2t_num_g"] ?? "no-data";
       t.querySelector(".coeur2t_num_d").value = advData["coeur2t_num_d"] ?? "no-data";
     }
+    const bs = container.querySelector(".croisement-img-bs");
 
+    if (bs) {
+      bs.querySelector(".p2p_g").value = advData["p2p_g"] ?? "no-data";
+      bs.querySelector(".p2p_d").value = advData["p2p_d"] ?? "no-data";
+    }
+
+    fillCroisementTable(container, advData);
   });
+}
+function fillCroisementTable(container, advData) {
+  const table = container.querySelector(".croisement-table");
+  if (!table) return;
+
+  const row = table.querySelector("tbody tr");
+  if (!row) return;
+
+  const cells = row.querySelectorAll("td");
+  if (cells.length < 8) return;
+
+  cells[0].textContent = advData["coeur_num"] ?? "no-data";
+  cells[1].textContent = advData["ep_cr_g"] ?? "no-data";
+  cells[2].textContent = advData["ep_cal_g"] ?? "no-data";
+  cells[3].textContent = advData["nb_cales_g"] ?? "no-data";
+  cells[4].textContent = advData["ep_cr_d"] ?? "no-data";
+  cells[5].textContent = advData["ep_cal_d"] ?? "no-data";
+  cells[6].textContent = advData["nb_cales_d"] ?? "no-data";
+  cells[7].textContent = advData["coeur_etat"] ?? "no-data";
 }
