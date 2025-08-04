@@ -370,7 +370,7 @@ th, td {
 .container_coeur2c_b .ep_cr_g {
   position: absolute;
   top: 4%;
-  left: 16.78%;
+  left: 16.87%;
   width: 7.9%;
   height: 11%;
 }
@@ -378,7 +378,7 @@ th, td {
 .container_coeur2c_b .ep_cal_g {
   position: absolute;
   top: 16%;
-  left: 16.78%;
+  left: 16.87%;
   width: 7.9%;
   height: 11%;
 }
@@ -386,7 +386,7 @@ th, td {
 .container_coeur2c_b .nb_cal_g {
   position: absolute;
   top: 29%;
-  left: 16.78%;
+  left: 16.87%;
   width: 7.9%;
   height: 11%;
 }
@@ -736,14 +736,13 @@ th, td {
   white-space: nowrap;
 }
 
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 20%; left: 3%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 20%; left: 3%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-2 { top: 20%; left: 50%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-3 { top: 25%; left: 39%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-4 { top: 20%; left: 78%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-5 { top: 50%; left: 77%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-6 { top: 20%; left: 91%; }
-.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-7 { top: 64%; left: 89%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 17%; left: 4%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-2 { top: 16%; left: 50%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-3 { top: 25%; left: 34.5%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-4 { top: 18%; left: 73%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-5 { top: 46%; left: 72%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-6 { top: 18%; left: 86%; }
+.voie-type-container[data-type="bs"] .ecartement-bottom .ecartements-image-wrapper .card-7 { top: 56%; left: 84%; }
 
 .voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-1 { top: 45%; left: 13%; }
 .voie-type-container[data-type="tj"] .ecartement-bottom .ecartements-image-wrapper .card-2 { top: 45%; left: 32%; }

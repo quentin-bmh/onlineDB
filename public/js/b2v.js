@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const fetchHistoryDates = async (b2vId) => {
   try {
     const url = `/api/b2v_historique/${b2vId}/dates`;
-    console.log('[fetchHistoryDates] URL appelée :', url);
+    // console.log('[fetchHistoryDates] URL appelée :', url);
     const resp = await fetch(url);
     const data = await resp.json();
-    console.log('[fetchHistoryDates] Données reçues :', data);
+    // console.log('[fetchHistoryDates] Données reçues :', data);
 
     historySelect.innerHTML = '';
 
@@ -55,10 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
 const fetchHistoricalVersion = async (b2vId, snapshotDate) => {
   try {
     const url = `/api/b2v_historique/${b2vId}/date/${encodeURIComponent(snapshotDate)}`;
-    console.log('[fetchHistoricalVersion] URL appelée :', url);
+    // console.log('[fetchHistoricalVersion] URL appelée :', url);
     const resp = await fetch(url);
     const data = await resp.json();
-    console.log('[fetchHistoricalVersion] Données reçues :', data);
+    // console.log('[fetchHistoricalVersion] Données reçues :', data);
 
     if (data) {
       fillForm(data);
@@ -72,10 +72,10 @@ const fetchHistoricalVersion = async (b2vId, snapshotDate) => {
 const fetchB2VData = async (advFilter) => {
   try {
     const url = advFilter ? `/api/b2v?adv=${encodeURIComponent(advFilter)}` : '/api/b2v';
-    console.log('[fetchB2VData] URL appelée :', url);
+    // console.log('[fetchB2VData] URL appelée :', url);
     const resp = await fetch(url);
     const data = await resp.json();
-    console.log('[fetchB2VData] Données reçues :', data);
+    // console.log('[fetchB2VData] Données reçues :', data);
 
     if (data.length) {
       currentB2VData = data[0];
@@ -93,10 +93,10 @@ const fetchB2VData = async (advFilter) => {
 const loadADVs = async () => {
   try {
     const url = '/api/b2v/advs';
-    console.log('[loadADVs] URL appelée :', url);
+    // console.log('[loadADVs] URL appelée :', url);
     const resp = await fetch(url);
     const advs = await resp.json();
-    console.log('[loadADVs] Données reçues :', advs);
+    // console.log('[loadADVs] Données reçues :', advs);
 
     advSelect.innerHTML = '';
     advs.forEach(r => {

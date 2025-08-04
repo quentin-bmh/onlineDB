@@ -272,7 +272,7 @@ function updateBois(adv) {
   // === JOINTS ===
   const jointsBon = Number(adv['joints_bon']) || 0;
   const jointsRepr = Number(adv['joints_a_repr']) || 0;
-  const jointsGraisser = Number(adv['joints_graisser']) || 0;
+  const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
   const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
 
   const jointsCountEl = document.getElementById('jointsCount');
