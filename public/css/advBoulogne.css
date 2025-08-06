@@ -576,7 +576,8 @@ th, td {
   flex-direction: row;
   justify-content: space-evenly;
   align-items: center;
-  padding: 20px;
+  padding: 3px;
+  width: 100%;
   gap: 40px;
 }
 .voie-type-container[data-type="tj"] .croisement-img {
@@ -855,3 +856,55 @@ th, td {
   background-color: #eee;
   font-weight: bold;
 }
+
+
+
+
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    text-align: center;
+  }
+
+.table-container table thead th {
+    /* background-color: #929292; */
+    padding: 4px;
+    border: 1px solid #ccc;
+  }
+
+.table-container table tbody td,
+.table-container table tbody th {
+    padding: 2px;
+    border: 1px solid #ccc;
+  }
+
+.table-container table tbody tr:nth-child(even) {
+    background-color: #969696;
+  }
+.table-container table tbody tr:nth-child(odd) {
+      background-color: #f0e7f7;
+  }
+
+.table-container table tbody td:first-child {
+    text-align: left;
+    background-color: #f0e7f7;
+    font-weight: bold;
+  }
+
+.table-container {
+    display: flex;
+    flex-direction: row;
+    gap: 1%;
+    width: 100%;
+    height: 100%;
+}
+.table-left,
+.table-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 10px;
+  }
+
+

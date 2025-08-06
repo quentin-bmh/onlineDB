@@ -201,18 +201,19 @@ function getAdvData(adv) {
     return;
   }
 
+  // 1. Charger les données principales depuis /api/tj/TJD_4 ou autre
   fetch(`/api/${type}/${encodeURIComponent(name)}`)
     .then(res => {
       if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
       return res.json();
     })
     .then(data => {
-      // On gère à la fois les réponses tableau et objet
       const advData = Array.isArray(data) ? data[0] : data;
       if (!advData) {
         console.warn("Pas de données reçues pour :", name);
         return;
       }
+
       switchVoieTypeContent(type);
       updateEcartements(advData, type);
       fillCoeur2cInputs(advData);
@@ -223,7 +224,31 @@ function getAdvData(adv) {
     .catch(err => {
       console.error("Erreur en chargeant les détails ADV:", err);
     });
+
+  // 2. Charger la bavure (si c’est une voie de type "tj")
+  // if (type === 'tj') {
+  //   fetch(`/api/da?name=${encodeURIComponent(name)}`)
+  //     .then(res => {
+  //       if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
+  //       return res.json();
+  //     })
+  //     .then(data => {
+  //       const advData = Array.isArray(data) ? data[0] : data;
+  //       if (!advData || !advData.bavure) {
+  //         console.warn("Pas de données de bavure reçues pour :", name);
+  //         return;
+  //       }
+
+  //       loadBavuresSeries(name); // Ne la crée qu’une fois si pas déjà là
+  //       updateBavuresTable(name, advData.bavure);
+  //     })
+  //     .catch(err => {
+  //       console.error("Erreur en chargeant la bavure ADV:", err);
+  //     });
+  // }
 }
+
+
 function getAdvDetails(adv) {
   const advName = adv["ADV"] || adv["adv"];
   if (!advName) {
@@ -598,3 +623,123 @@ function fillCroisementTable(container, advData) {
   cells[6].textContent = advData["nb_cales_d"] ?? "no-data";
   cells[7].textContent = advData["coeur_etat"] ?? "no-data";
 }
+
+
+
+
+
+
+
+
+
+
+
+
+// function loadBavuresSeries(baseName) {
+//   createBavuresTable(); // ne fait rien si déjà créé
+
+//   for (let i = 1; i <= 8; i++) {
+//     const advId = `${baseName}_${i}`;
+
+//     fetch(`/api/da?name=${encodeURIComponent(advId)}`)
+//       .then(res => {
+//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+//         return res.json();
+//       })
+//       .then(data => {
+//         const advData = Array.isArray(data) ? data[0] : data;
+//         if (advData && advData.bavure) {
+//           updateBavuresTable(advId, advData.bavure);
+//         } else {
+//           console.warn("Pas de données de bavure pour :", advId);
+//         }
+//       })
+//       .catch(err => {
+//         console.error("Erreur fetch bavure:", advId, err);
+//       });
+//   }
+// }
+
+
+// function createBavuresTable() {
+//   const container = document.querySelector('#voie-aiguillage .voie-type-container[data-type="tj"]');
+//   if (!container) return;
+
+//   // Rendre visible si caché
+//   container.style.display = 'block';
+
+//   // Supprimer ancienne table si présente
+//   const existing = document.getElementById("bavure-table");
+//   if (existing) existing.remove();
+
+//   const table = document.createElement('table');
+//   table.id = 'bavure-table';
+  
+
+//   const headers = ['', '1/2 aig 1', '1/2 aig 2', '1/2 aig 3', '1/2 aig 4', '1/2 aig 5', '1/2 aig 6', '1/2 aig 7', '1/2 aig 8'];
+//   const rows = [
+//     { label: 'Aucune bavure', key: 'aucune' },
+//     { label: 'Bavures éliminées par meulage', key: 'meulage' },
+//     { label: 'Présence de bavures', key: 'presence' }
+//   ];
+
+//   const thead = document.createElement('thead');
+//   const headerRow = document.createElement('tr');
+//   headers.forEach(h => {
+//     const th = document.createElement('th');
+//     th.textContent = h;
+//     th.classList.add('border', 'px-4', 'py-2', 'bg-gray-200');
+//     headerRow.appendChild(th);
+//   });
+//   thead.appendChild(headerRow);
+//   table.appendChild(thead);
+
+//   const tbody = document.createElement('tbody');
+//   rows.forEach(rowInfo => {
+//     const tr = document.createElement('tr');
+//     tr.dataset.type = rowInfo.key;
+
+//     const labelCell = document.createElement('td');
+//     labelCell.textContent = rowInfo.label;
+//     tr.appendChild(labelCell);
+
+//     for (let i = 1; i <= 8; i++) {
+//       const td = document.createElement('td');
+//       td.textContent = '';
+//       tr.appendChild(td);
+//     }
+
+//     tbody.appendChild(tr);
+//   });
+
+//   table.appendChild(tbody);
+//   container.appendChild(table);
+// }
+
+// function updateBavuresTable(advName, bavure) {
+//   if (!bavure) return;
+
+//   const bavureMap = {
+//     "aucune bavure": "aucune",
+//     "bavures éliminées par meulage": "meulage",
+//     "présence de bavures": "presence"
+//   };
+
+//   const rowType = bavureMap[bavure.toLowerCase().trim()];
+//   const match = advName.match(/_(\d)$/); // Extrait le suffixe _1, _2, etc.
+//   const colIndex = match ? parseInt(match[1], 10) : null;
+
+//   if (!rowType || !colIndex || colIndex < 1 || colIndex > 8) return;
+
+//   const table = document.getElementById("bavure-table");
+//   if (!table) return;
+
+//   // On efface tous les X existants avant de placer le nouveau
+//   table.querySelectorAll('tbody td').forEach(td => td.textContent = '');
+
+//   const row = table.querySelector(`tr[data-type="${rowType}"]`);
+//   if (row) {
+//     // +1 car la première colonne est la description (donc index 0)
+//     row.children[colIndex].textContent = "X";
+//   }
+// }

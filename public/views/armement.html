@@ -7,15 +7,210 @@
     <link rel="stylesheet" href="../css/armement.css">
 </head>
 <body>
-            <div class="container_coeur2c_h">
-              <img src="../assets/coeur2c_h.png" alt="coeur de croisement haut" class="croisement-image" />
-              <input id="input1"></input>
-              <input id="input2"></input>
-              <input id="input3"></input>
-              <input id="input4"></input>
-              <input id="input5"></input>
-              <input id="input6"></input>
-              <input id="input7"></input>
-            </div>
+  <div class="table-container">
+    <div class="table-left">
+      <table id="bavure-table" >
+        <thead>
+          <tr>
+            <th>Bavures</th>
+            <th>1/2 aig 1</th>
+            <th>1/2 aig 2</th>
+            <th>1/2 aig 3</th>
+            <th>1/2 aig 4</th>
+            <th>1/2 aig 5</th>
+            <th>1/2 aig 6</th>
+            <th>1/2 aig 7</th>
+            <th>1/2 aig 8</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-type="aucune">
+            <td>Aucune bavure</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="meulage">
+            <td>Bavures éliminées par meulage</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="presence">
+            <td>Présence de bavures</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+        </tbody>
+      </table>
+      <table id="ebrechure_ag">
+        <thead>
+          <tr>
+            <th>Ébréchure aiguille</th>
+            <th>1/2 aig 1</th>
+            <th>1/2 aig 2</th>
+            <th>1/2 aig 3</th>
+            <th>1/2 aig 4</th>
+            <th>1/2 aig 5</th>
+            <th>1/2 aig 6</th>
+            <th>1/2 aig 7</th>
+            <th>1/2 aig 8</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-type="aucune">
+            <td>Aucune ébréchure</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="classement">
+            <td>Classement</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="contact_sous_fente">
+            <td>Contact au dessous de la fente repère</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="contact_au_dessus_fente">
+            <td>Contact au dessus de la fente repère</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="longueur_sous_fente">
+            <td>Longueur ébréchure sous fente repère</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="longueur_totale_zone">
+            <td>Longueur totale de la zone ébréchée</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="presence_ebrechure">
+            <td>Présence d'ébréchure</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+        </tbody>    
+      </table>
+
+      <table id="Application demi-aiguillage">
+        <thead>
+          <tr>
+            <th>Application demi-aiguillage</th>
+            <th>1/2 aig 1</th>
+            <th>1/2 aig 2</th>
+            <th>1/2 aig 3</th>
+            <th>1/2 aig 4</th>
+            <th>1/2 aig 5</th>
+            <th>1/2 aig 6</th>
+            <th>1/2 aig 7</th>
+            <th>1/2 aig 8</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-type="non_conforme">
+            <td>Entrebaîllement</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme">
+            <td>Etat butée</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+      </table>
+    </div>
+    <div class="table-right">
+      <table id="usure_lca">
+        <thead>
+          <tr>
+            <th>Usure latérale contre-aiguille</th>
+            <th>1/2 aig 1</th>
+            <th>1/2 aig 2</th>
+            <th>1/2 aig 3</th>
+            <th>1/2 aig 4</th>
+            <th>1/2 aig 5</th>
+            <th>1/2 aig 6</th>
+            <th>1/2 aig 7</th>
+            <th>1/2 aig 8</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-type="non_conforme_legere">
+            <td>La pige ne passe pas (O < J < 3mm)</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="non_conforme_meulage">
+            <td>La pige ne passe pas (O = J)</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme">
+            <td>La pige passe (J > 3mm)</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="non_conforme_calibre">
+            <td>Le calibre ne passe pas</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme_apres_meulage">
+            <td>Le calibre passe après meulage</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme_sans_meulage">
+            <td>Le calibre passe avant meulage</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="non_conforme_pige">
+            <td>La pige ne passe pas</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme_apres_meulage">
+            <td>La pige passe après meulage</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme_sans_meulage">
+            <td>La pige passe avant meulage</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="classement">
+            <td>Classement</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+        </tbody>
+
+      </table>
+      <table id="usure_la">
+        <thead>
+          <tr>
+            <th>Usure latérale aiguille</th>
+            <th>1/2 aig 1</th>
+            <th>1/2 aig 2</th>
+            <th>1/2 aig 3</th>
+            <th>1/2 aig 4</th>
+            <th>1/2 aig 5</th>
+            <th>1/2 aig 6</th>
+            <th>1/2 aig 7</th>
+            <th>1/2 aig 8</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr data-type="non_conforme_legere">
+            <td>Pente d'usure d'aiguille : Pente ≥ 60°</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="non_conforme_meulage">
+            <td>Pente d'usure d'aiguille : Pente ≤ 60°</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme">
+            <td>Contact / fente repère : Contact au dessus et au dessous</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="non_conforme_calibre">
+            <td>Contact / fente repère : Contact au dessus</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="conforme_apres_meulage">
+            <td>Contact / fente repère : Contact au dessous</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+          <tr data-type="classement">
+            <td>Classement</td>
+            <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+        </tbody>
+
+      </table>
+    </div>
+  </div>
 </body>
 </html>

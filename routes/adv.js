@@ -106,18 +106,25 @@ router.get('/tj/:name', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-router.get('/da/:name', async (req, res) => {
-  const advName = req.params.name;
+router.get('/da', async (req, res) => {
+  const advId = req.query.name;
+  if (!advId) {
+    return res.status(400).json({ error: 'Missing "name" query parameter' });
+  }
+
   try {
     const result = await pool.query(
-      'SELECT * FROM b2v_da WHERE adv = $1',
-      [advName]
+      'SELECT * FROM b2v_da WHERE adv_id = $1',
+      [advId]
     );
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+
+
 
 
 
