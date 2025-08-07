@@ -102,7 +102,8 @@ function loadTypeButtons() {
       const advSection = document.querySelector('.adv-section');
       if (!advSection || types.length === 0) return;
 
-      // Pour garder une référence au premier bouton
+      advSection.innerHTML = ''; // Clear previous buttons
+
       let firstButton = null;
 
       types.forEach(({ type }, index) => {
@@ -114,11 +115,11 @@ function loadTypeButtons() {
         button.addEventListener('click', () => {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
+
+          // Show/hide "Demi-Aiguillage" button depending on type
           const boutonAiguillage = document.querySelector('button[data-target="voie-aiguillage"]');
-          if (type === 'TO') {
-            if (boutonAiguillage) boutonAiguillage.style.display = 'none';
-          } else {
-            if (boutonAiguillage) boutonAiguillage.style.display = 'inline-block';
+          if (boutonAiguillage) {
+            boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
           }
 
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
@@ -132,7 +133,7 @@ function loadTypeButtons() {
                 getAdvData(data[0]);
                 const firstRow = document.querySelector("#advTable tbody tr");
                 if (firstRow) {
-                  firstRow.click(); // simulate real click
+                  firstRow.click();
                 }
               }
             })
@@ -140,7 +141,6 @@ function loadTypeButtons() {
               console.error("Erreur lors du chargement des ADV par type:", err);
             });
         });
-
 
         advSection.appendChild(button);
         if (index === 0) {
@@ -367,7 +367,17 @@ function setupToggleMenu() {
 }
 
 
+function updateToButtonVisibility() {
+  const voieAiguillage = document.getElementById('voie-aiguillage');
+  const toButton = document.querySelector('button[data-type="TO"]');
+  if (!toButton) return;
 
+  // If voie-aiguillage is visible, hide TO button, else show it
+  const isAiguillageVisible = voieAiguillage && voieAiguillage.style.display !== 'none' && voieAiguillage.classList.contains('active');
+  toButton.style.display = isAiguillageVisible ? 'none' : 'inline-block';
+}
+
+// Patch: call this after every voie-content switch
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
   button.addEventListener('click', () => {
     const targetId = button.getAttribute('data-target');
@@ -397,6 +407,9 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
           toggleMenu.style.display = 'block';
         }
 
+        // ➕ Update TO button visibility
+        updateToButtonVisibility();
+
       }, 500);
     } else {
       next.classList.add('active');
@@ -404,13 +417,13 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       next.style.visibility = 'visible';
       next.style.animationName = 'slideInUp';
 
-      // ➕ Et ici aussi si aucun `current` n'était actif
       const toggleMenu = document.querySelector('.voie-toggle');
       if (next.id === 'hub') {
         toggleMenu.style.display = 'none';
       } else {
         toggleMenu.style.display = 'block';
       }
+      updateToButtonVisibility();
     }
   });
 });
