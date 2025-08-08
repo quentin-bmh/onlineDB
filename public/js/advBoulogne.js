@@ -116,11 +116,10 @@ function loadTypeButtons() {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
 
-          // Show/hide "Demi-Aiguillage" button depending on type
-          const boutonAiguillage = document.querySelector('button[data-target="voie-aiguillage"]');
-          if (boutonAiguillage) {
+          // Hide/show ALL "Demi-Aiguillage" buttons depending on type
+          document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
             boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
-          }
+          });
 
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
             .then(res => res.json())
