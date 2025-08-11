@@ -80,7 +80,7 @@ function createTable(data) {
           .then(data => {
             // data = réponse détaillée selon le type
             const advData = Array.isArray(data) ? data[0] : data;
-            console.log(`Données ADV récupérées pour ${name}:`, advData);
+            // console.log(`Données ADV récupérées pour ${name}:`, advData);
             getAdvData(advData); // tu peux adapter ici
           })
           .catch(err => {
@@ -194,13 +194,14 @@ function displayAdvDetails(adv) {
 function getAdvData(adv) {
   const name = (adv["adv"] || adv["ADV"] || '').trim();
   const type = (adv["type"] || '').toLowerCase();
+  const adv_type = (adv["adv_type"] || '').trim(); // G, D, 1, etc.
 
   if (!name || !type) {
     console.warn("ADV ou type manquant dans l'objet :", adv);
     return;
   }
 
-  // 1. Charger les données principales depuis /api/tj/TJD_4 ou autre
+  // 1. Charger les données principales
   fetch(`/api/${type}/${encodeURIComponent(name)}`)
     .then(res => {
       if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
@@ -224,28 +225,31 @@ function getAdvData(adv) {
       console.error("Erreur en chargeant les détails ADV:", err);
     });
 
-  // 2. Charger la bavure (si c’est une voie de type "tj")
-  // if (type === 'tj') {
-  //   fetch(`/api/da?name=${encodeURIComponent(name)}`)
-  //     .then(res => {
-  //       if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
-  //       return res.json();
-  //     })
-  //     .then(data => {
-  //       const advData = Array.isArray(data) ? data[0] : data;
-  //       if (!advData || !advData.bavure) {
-  //         console.warn("Pas de données de bavure reçues pour :", name);
-  //         return;
-  //       }
+  // 2. Charger les bavures (via la nouvelle route)
+  fetch(`/api/da?adv=${encodeURIComponent(name)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data) || data.length === 0) {
+        console.warn("Pas de données de bavure reçues pour :", name);
+        return;
+      }
 
-  //       loadBavuresSeries(name); // Ne la crée qu’une fois si pas déjà là
-  //       updateBavuresTable(name, advData.bavure);
-  //     })
-  //     .catch(err => {
-  //       console.error("Erreur en chargeant la bavure ADV:", err);
-  //     });
-  // }
+      // Remplir le tableau #bavure-table
+      console.log("Données de bavure reçues :", data);
+      updateBavuresTable(data);
+      updateEbrechureTable(data);
+      updateAppDM(data);
+      updateUsureLcaTable(data);
+      updateUsureLaTable(data);
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant la bavure ADV:", err);
+    });
 }
+
 
 
 function getAdvDetails(adv) {
@@ -636,122 +640,309 @@ function fillCroisementTable(container, advData) {
   cells[7].textContent = advData["coeur_etat"] ?? "no-data";
 }
 
+function updateBavuresTable(data) {
+  const mappingBavure = {
+    "aucune bavure": "aucune",
+    "bavures éliminées par meulage": "meulage",
+    "présence de bavures": "presence"
+  };
 
+  ['tj', 'bs'].forEach(type => {
+    const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
+    if (!container) {
+      console.warn(`#voie-aiguillage .voie-type-container[data-type="${type}"] not found`);
+      return;
+    }
 
+    const table = container.querySelector("#bavure-table");
+    if (!table) {
+      console.warn(`#bavure-table not found in ${type} container`);
+      return;
+    }
 
+    // Clear all cells except the first column
+    table.querySelectorAll("tbody tr").forEach(row => {
+      for (let i = 1; i < row.cells.length; i++) {
+        row.cells[i].textContent = "";
+      }
+    });
 
+    data.forEach(item => {
+      if (!item.bavure || !item.adv_type) return;
+      const bavureKey = mappingBavure[item.bavure.toLowerCase()];
+      if (!bavureKey) return;
 
+      const row = table.querySelector(`tbody tr[data-type="${bavureKey}"]`);
+      if (!row) return;
 
+      const advType = item.adv_type.toUpperCase();
 
+      if (type === "bs") {
+        // For BS, columns: 1 = G, 2 = D
+        if (advType === "G" && row.cells[1]) row.cells[1].textContent = "✗";
+        if (advType === "D" && row.cells[2]) row.cells[2].textContent = "✗";
+      } else if (type === "tj") {
+        // For TJ, columns: 1..8 = 1..8
+        const colIndex = parseInt(advType, 10);
+        if (!isNaN(colIndex) && colIndex >= 1 && colIndex <= 8 && row.cells[colIndex]) {
+          row.cells[colIndex].textContent = "✗";
+        }
+      }
+    });
+  });
+}
 
+function updateEbrechureTable(data) {
+  ['tj', 'bs'].forEach(type => {
+    const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
+    if (!container) return;
+    const table = container.querySelector("#ebrechure_ag");
+    if (!table) return;
 
+    // Clear all cells except the first column
+    table.querySelectorAll("tbody tr").forEach(row => {
+      for (let i = 1; i < row.cells.length; i++) {
+        row.cells[i].textContent = "";
+      }
+    });
 
+    data.forEach(item => {
+      const advType = (item.adv_type || '').toUpperCase();
 
-// function loadBavuresSeries(baseName) {
-//   createBavuresTable(); // ne fait rien si déjà créé
+      // Determine column index for this adv_type
+      let colIndex = null;
+      if (type === "bs") {
+        if (advType === "G") colIndex = 1;
+        if (advType === "D") colIndex = 2;
+      } else if (type === "tj") {
+        const idx = parseInt(advType, 10);
+        if (!isNaN(idx) && idx >= 1 && idx <= 6) colIndex = idx;
+      }
 
-//   for (let i = 1; i <= 8; i++) {
-//     const advId = `${baseName}_${i}`;
+      // 1. ebrechure_a
+      if (item.ebrechure_a && colIndex !== null) {
+        const val = item.ebrechure_a.toLowerCase();
+        if (val.includes("aucune")) {
+          const row = table.querySelector('tr[data-type="aucune_ebrechure"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        } else {
+          const row = table.querySelector('tr[data-type="presence_ebrechure"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        }
+      }
 
-//     fetch(`/api/da?name=${encodeURIComponent(advId)}`)
-//       .then(res => {
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         return res.json();
-//       })
-//       .then(data => {
-//         const advData = Array.isArray(data) ? data[0] : data;
-//         if (advData && advData.bavure) {
-//           updateBavuresTable(advId, advData.bavure);
-//         } else {
-//           console.warn("Pas de données de bavure pour :", advId);
-//         }
-//       })
-//       .catch(err => {
-//         console.error("Erreur fetch bavure:", advId, err);
-//       });
-//   }
-// }
+      // 2. ctc_fente
+      if (item.ctc_fente && colIndex !== null) {
+        if (item.ctc_fente === "dessous") {
+          const row = table.querySelector('tr[data-type="ctc_dessous_fente"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        } else if (item.ctc_fente === "dessus") {
+          const row = table.querySelector('tr[data-type="ctc_dessus_fente"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        }
+      }
 
+      // 3. taille_ebrechure_fente → longueur_sous_fente
+      if (item.taille_ebrechure_fente != null && colIndex !== null) {
+        const row = table.querySelector('tr[data-type="longueur_sous_fente"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.taille_ebrechure_fente;
+      }
 
-// function createBavuresTable() {
-//   const container = document.querySelector('#voie-aiguillage .voie-type-container[data-type="tj"]');
-//   if (!container) return;
+      // 4. taille_tot_ebrechure → longueur_totale_zone
+      if (item.taille_tot_ebrechure != null && colIndex !== null) {
+        const row = table.querySelector('tr[data-type="longueur_totale_zone"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.taille_tot_ebrechure;
+      }
 
-//   // Rendre visible si caché
-//   container.style.display = 'block';
+      // 5. ebrechure_a_classement → ebrechure_a_classement
+      if (item.ebrechure_a_classement != null && colIndex !== null) {
+        const row = table.querySelector('tr[data-type="ebrechure_a_classement"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.ebrechure_a_classement;
+      }
+    });
+  });
+}
 
-//   // Supprimer ancienne table si présente
-//   const existing = document.getElementById("bavure-table");
-//   if (existing) existing.remove();
+function updateAppDM(data) {
+  ['tj', 'bs'].forEach(type => {
+    const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
+    if (!container) return;
+    const table = container.querySelector("#app_demi-aiguillage");
+    if (!table) return;
 
-//   const table = document.createElement('table');
-//   table.id = 'bavure-table';
-  
+    // Clear all cells except the first column
+    table.querySelectorAll("tbody tr").forEach(row => {
+      for (let i = 1; i < row.cells.length; i++) {
+        row.cells[i].textContent = "";
+      }
+    });
 
-//   const headers = ['', '1/2 aig 1', '1/2 aig 2', '1/2 aig 3', '1/2 aig 4', '1/2 aig 5', '1/2 aig 6', '1/2 aig 7', '1/2 aig 8'];
-//   const rows = [
-//     { label: 'Aucune bavure', key: 'aucune' },
-//     { label: 'Bavures éliminées par meulage', key: 'meulage' },
-//     { label: 'Présence de bavures', key: 'presence' }
-//   ];
+    data.forEach(item => {
+      const advType = (item.adv_type || '').toUpperCase();
 
-//   const thead = document.createElement('thead');
-//   const headerRow = document.createElement('tr');
-//   headers.forEach(h => {
-//     const th = document.createElement('th');
-//     th.textContent = h;
-//     th.classList.add('border', 'px-4', 'py-2', 'bg-gray-200');
-//     headerRow.appendChild(th);
-//   });
-//   thead.appendChild(headerRow);
-//   table.appendChild(thead);
+      // Determine column index for this adv_type
+      let colIndex = null;
+      if (type === "bs") {
+        if (advType === "G") colIndex = 1;
+        if (advType === "D") colIndex = 2;
+      } else if (type === "tj") {
+        const idx = parseInt(advType, 10);
+        if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
+      }
 
-//   const tbody = document.createElement('tbody');
-//   rows.forEach(rowInfo => {
-//     const tr = document.createElement('tr');
-//     tr.dataset.type = rowInfo.key;
+      // application_da_etat_bute → etat_butee
+      if (item.application_da_etat_bute && colIndex !== null) {
+        const row = table.querySelector('tr[data-type="etat_butee"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.application_da_etat_bute;
+      }
 
-//     const labelCell = document.createElement('td');
-//     labelCell.textContent = rowInfo.label;
-//     tr.appendChild(labelCell);
+      // application_da_entrebaillement → entrebaillement
+      if (item.application_da_entrebaillement != null && colIndex !== null) {
+        const row = table.querySelector('tr[data-type="entrebaillement"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.application_da_entrebaillement;
+      }
+    });
+  });
+}
 
-//     for (let i = 1; i <= 8; i++) {
-//       const td = document.createElement('td');
-//       td.textContent = '';
-//       tr.appendChild(td);
-//     }
+function updateUsureLcaTable(data) {
+  ['tj', 'bs'].forEach(type => {
+    const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
+    if (!container) return;
+    const table = container.querySelector("#usure_lca");
+    if (!table) return;
 
-//     tbody.appendChild(tr);
-//   });
+    // Clear all cells except the first column
+    table.querySelectorAll("tbody tr").forEach(row => {
+      for (let i = 1; i < row.cells.length; i++) {
+        row.cells[i].textContent = "";
+      }
+    });
 
-//   table.appendChild(tbody);
-//   container.appendChild(table);
-// }
+    data.forEach(item => {
+      const advType = (item.adv_type || '').toUpperCase();
 
-// function updateBavuresTable(advName, bavure) {
-//   if (!bavure) return;
+      // Determine column index for this adv_type
+      let colIndex = null;
+      if (type === "bs") {
+        if (advType === "G") colIndex = 1;
+        if (advType === "D") colIndex = 2;
+      } else if (type === "tj") {
+        const idx = parseInt(advType, 10);
+        if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
+      }
 
-//   const bavureMap = {
-//     "aucune bavure": "aucune",
-//     "bavures éliminées par meulage": "meulage",
-//     "présence de bavures": "presence"
-//   };
+      if (colIndex === null) return;
 
-//   const rowType = bavureMap[bavure.toLowerCase().trim()];
-//   const match = advName.match(/_(\d)$/); // Extrait le suffixe _1, _2, etc.
-//   const colIndex = match ? parseInt(match[1], 10) : null;
+      // usure_lca
+      if (item.usure_lca) {
+        let row = null;
+        const val = item.usure_lca.toLowerCase();
+        if (val.includes("(j < 3mm)")) {
+          row = table.querySelector('tr[data-type="pige_j_moins_3"]');
+        } else if (val.includes("(j = 0)")) {
+          row = table.querySelector('tr[data-type="pige_j_egal_0"]');
+        } else if (val.includes("(j > 3mm)")) {
+          row = table.querySelector('tr[data-type="pige_j_plus_3"]');
+        }
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      }
 
-//   if (!rowType || !colIndex || colIndex < 1 || colIndex > 8) return;
+      // usure_lca_calibre
+      if (item.usure_lca_calibre) {
+        let row = null;
+        if (item.usure_lca_calibre === "ne passe pas") {
+          row = table.querySelector('tr[data-type="calibre_ne_passe_pas"]');
+        } else if (item.usure_lca_calibre === "sans meulage") {
+          row = table.querySelector('tr[data-type="calibre_avant_meulage"]');
+        } else if (item.usure_lca_calibre === "après meulage") {
+          row = table.querySelector('tr[data-type="calibre_apres_meulage"]');
+        }
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      }
 
-//   const table = document.getElementById("bavure-table");
-//   if (!table) return;
+      // usure_lca_pige
+      if (item.usure_lca_pige) {
+        let row = null;
+        if (item.usure_lca_pige === "ne passe pas") {
+          row = table.querySelector('tr[data-type="pige_ne_passe_pas"]');
+        } else if (item.usure_lca_pige === "sans meulage") {
+          row = table.querySelector('tr[data-type="pige_avant_meulage"]');
+        } else if (item.usure_lca_pige === "après meulage") {
+          row = table.querySelector('tr[data-type="pige_apres_meulage"]');
+        }
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      }
 
-//   // On efface tous les X existants avant de placer le nouveau
-//   table.querySelectorAll('tbody td').forEach(td => td.textContent = '');
+      // usure_lca_classement
+      if (item.usure_lca_classement != null) {
+        const row = table.querySelector('tr[data-type="usure_la_classement"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.usure_lca_classement;
+      }
+    });
+  });
+}
 
-//   const row = table.querySelector(`tr[data-type="${rowType}"]`);
-//   if (row) {
-//     // +1 car la première colonne est la description (donc index 0)
-//     row.children[colIndex].textContent = "X";
-//   }
-// }
+function updateUsureLaTable(data) {
+  ['tj', 'bs'].forEach(type => {
+    const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
+    if (!container) return;
+    const table = container.querySelector("#usure_la");
+    if (!table) return;
+
+    // Vide toutes les cellules sauf la première colonne
+    table.querySelectorAll("tbody tr").forEach(row => {
+      for (let i = 1; i < row.cells.length; i++) {
+        row.cells[i].textContent = "";
+      }
+    });
+
+    data.forEach(item => {
+      const advType = (item.adv_type || '').toUpperCase();
+
+      // Détermine l'index de colonne pour ce adv_type
+      let colIndex = null;
+      if (type === "bs") {
+        if (advType === "G") colIndex = 1;
+        if (advType === "D") colIndex = 2;
+      } else if (type === "tj") {
+        const idx = parseInt(advType, 10);
+        if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
+      }
+      if (colIndex === null) return;
+
+      // usure_la_contact
+      if (item.usure_la_contact) {
+        const val = item.usure_la_contact.toLowerCase();
+        if (val.includes("au dessus et au dessous")) {
+          const row = table.querySelector('tr[data-type="contact_haut_bas"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        } else if (val.includes("au dessus")) {
+          const row = table.querySelector('tr[data-type="contact_haut"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        } else if (val.includes("au dessous")) {
+          const row = table.querySelector('tr[data-type="contact_bas"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        }
+      }
+
+      // usure_la_pente
+      if (item.usure_la_pente) {
+        const val = item.usure_la_pente.replace(/\s/g, '').toLowerCase();
+        if (val.includes(">=60°") || val.includes("≥60°") || val.includes(">60°")) {
+          const row = table.querySelector('tr[data-type="pente_usure_sup_60"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        } else if (val.includes("<=60°") || val.includes("≤60°") || val.includes("<60°")) {
+          const row = table.querySelector('tr[data-type="pente_usure_inf_60"]');
+          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+        }
+      }
+
+      // usure_la_classement
+      if (item.usure_la_classement != null) {
+        const row = table.querySelector('tr[data-type="usure_la_classement"]');
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.usure_la_classement;
+      }
+    });
+  });
+}
