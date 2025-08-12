@@ -53,17 +53,18 @@ function updateMap(adv) {
 
 
 function createTable(data) {
+  console.log('appel de la fonction createTable');
   const tbody = document.querySelector("#advTable tbody");
   tbody.innerHTML = ''; // nettoyage
 
   data.forEach((adv, index) => {
     const name = adv["adv"];
-    const type = adv["type"]; // très important
-    // console.log(`Création de la ligne pour ADV: ${name}, Type: ${type}`);
+    const type = adv["type"];
     const row = document.createElement("tr");
     row.innerHTML = `<td>${name}</td>`;
 
     row.addEventListener("click", () => {
+      console.log('row sélectionnée:', name, type, adv);
       // 1. UI
       updateMap(adv);
       document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
@@ -99,6 +100,7 @@ let currentType = '';
 let summaryData = [];
 
 function loadTypeButtons() {
+  console.log('appel de la fonction loadTypeButtons');
   fetch('/api/adv_types')
     .then(res => res.json())
     .then(types => {
@@ -108,7 +110,7 @@ function loadTypeButtons() {
       advSection.innerHTML = ''; // Clear previous buttons
 
       let firstButton = null;
-
+      
       types.forEach(({ type }, index) => {
         const button = document.createElement('button');
         button.textContent = type;
@@ -127,13 +129,13 @@ function loadTypeButtons() {
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
             .then(res => res.json())
             .then(data => {
-              summaryData = data; // update summaryData for summary view
+              summaryData = data;
               createTable(data);
 
               if (data.length > 0) {
                 updateMap(data[0]);
                 getAdvDetails(data[0]);
-                getAdvData(data[0]);
+                // getAdvData(data[0]);
                 const firstRow = document.querySelector("#advTable tbody tr");
                 if (firstRow) {
                   firstRow.click();
@@ -160,10 +162,10 @@ function loadTypeButtons() {
 }
 
 function displayAdvDetails(adv) {
-  const container = document.getElementById('info-container');
-  container.innerHTML = ''; // reset
+  console.log('appel de la fonction displayAdvDetails');
 
-  // Mapping clé dans adv => label + id span
+  const container = document.getElementById('info-container');
+  container.innerHTML = ''; 
   const fieldsMap = {
     tangente:       { label: 'Tangente',          key: 'tangente' },
     modele:         { label: 'Modèle',            key: 'modele' },
@@ -196,6 +198,8 @@ function displayAdvDetails(adv) {
 }
 
 function getAdvData(adv) {
+  // console.trace();
+  console.log('appel de la fonction getAdvData');
   const name = (adv["adv"] || adv["ADV"] || '').trim();
   const type = (adv["type"] || '').toLowerCase();
   const adv_type = (adv["adv_type"] || '').trim(); // G, D, 1, etc.
@@ -242,7 +246,7 @@ function getAdvData(adv) {
       }
 
       // Remplir le tableau #bavure-table
-      console.log("Données de bavure reçues :", data);
+      // console.log("Données de bavure reçues :", data);
       updateBavuresTable(data);
       updateEbrechureTable(data);
       updateAppDM(data);
@@ -255,8 +259,8 @@ function getAdvData(adv) {
 }
 
 
-
 function getAdvDetails(adv) {
+  console.log('appel de la fonction getAdvDetails');
   const advName = adv["ADV"] || adv["adv"];
   if (!advName) {
     console.warn("ADV manquant dans l'objet :", adv);
@@ -275,8 +279,8 @@ function getAdvDetails(adv) {
       console.error("Erreur en chargeant les détails depuis general_data:", err);
     });
 }
-
 function resetVoieContent() {
+  console.log('appel de la fonction resetVoieContent');
   const allVoies = document.querySelectorAll('.voie-content');
   const hub = document.getElementById('hub');
   const toggleMenu = document.querySelector('.voie-toggle');
@@ -297,8 +301,8 @@ function resetVoieContent() {
 
   if (toggleMenu) toggleMenu.style.display = 'none';
 }
-
 function updateBois(adv) {
+  console.log('appel de la fonction updateBois');
   if (!adv || typeof adv !== 'object') return;
 
   // === JOINTS ===
@@ -343,9 +347,8 @@ function updateBois(adv) {
     }
   }
 }
-
-
 function setupToggleMenu() {
+  console.log('appel de la fonction setupToggleMenu');
   const contentSections = document.querySelectorAll('.voie-content');
   const hub = document.getElementById('hub');
   const toggleMenu = document.querySelector('.voie-toggle');
@@ -372,9 +375,8 @@ function setupToggleMenu() {
     toggleMenu.style.display = 'block';
   }
 }
-
-
 function updateToButtonVisibility() {
+  console.log('appel de la fonction updateToButtonVisibility');
   const voieAiguillage = document.getElementById('voie-aiguillage');
   const toButton = document.querySelector('button[data-type="TO"]');
   if (!toButton) return;
@@ -383,8 +385,6 @@ function updateToButtonVisibility() {
   const isAiguillageVisible = voieAiguillage && voieAiguillage.style.display !== 'none' && voieAiguillage.classList.contains('active');
   toButton.style.display = isAiguillageVisible ? 'none' : 'inline-block';
 }
-
-// Patch: call this after every voie-content switch
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
   button.addEventListener('click', () => {
     const targetId = button.getAttribute('data-target');
@@ -438,8 +438,8 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
 
 let boisChartInstance = null;
 let jointsChartInstance = null;
-
 function initCharts() {
+  console.log('appel de la fonction initCharts');
   const boisCtx = document.getElementById('boisChart')?.getContext('2d');
   if (boisCtx) {
     boisChartInstance = new Chart(boisCtx, {
@@ -476,7 +476,9 @@ function initCharts() {
     });
   }
 }
+
 function updateCharts(data) {
+  console.log('appel de la fonction updateCharts');
   if (boisChartInstance && data.bois_bon != null && data.bois_a_remp != null) {
     boisChartInstance.data.datasets[0].data = [data.bois_bon, data.bois_a_remp];
     boisChartInstance.update();
@@ -488,7 +490,10 @@ function updateCharts(data) {
   }
 }
 
+
+
 function switchVoieTypeContent(type) {
+  console.log('appel de la fonction switchVoieTypeContent ');
   document.querySelectorAll('.voie-type-container').forEach(container => {
     if (container.dataset.type === type) {
       container.style.display = 'flex';
@@ -500,6 +505,7 @@ function switchVoieTypeContent(type) {
 
 
 function updateEcartements(adv, type) {
+  console.log('appel de la fonction updateEcartements');
   if (!adv || typeof adv !== 'object') return;
 
   const voieEcartement = document.getElementById('voie-ecartement');
@@ -525,6 +531,7 @@ function updateEcartements(adv, type) {
 }
 
 function updateAttaches(adv, type) {
+  console.log('appel de la fonction updateAttaches');
   if (!adv || typeof adv !== 'object') return;
 
   const voieEcartement = document.getElementById('voie-ecartement');
@@ -558,8 +565,9 @@ function updateAttaches(adv, type) {
   });
 }
 function fillCoeur2cInputs(advData) {
+  console.log('appel de la fonction fillCoeur2cInputs');
+
   const voieContainers = document.querySelectorAll(".voie-type-container");
-  // console.log('data advData:', advData);
 
   voieContainers.forEach(container => {
     const type = container.dataset.type;
@@ -578,12 +586,14 @@ function fillCoeur2cInputs(advData) {
 
       h.querySelector(".coeur2c_num_h").value = advData["coeur2c_num_h"] ?? "no-data";
     }
+
     const ht = container.querySelector(".container_coeur2c_h_t");
     if (ht) {
       ht.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
       ht.querySelector(".p2p_d_h").value = advData["p2p_d_h"] ?? "no-data";
       ht.querySelector(".coeur2c_num_h_t").value = advData["coeur2c_num_h"] ?? "no-data";
     }
+
     // Partie basse
     const b = container.querySelector(".container_coeur2c_b");
     if (b) {
@@ -597,12 +607,14 @@ function fillCoeur2cInputs(advData) {
 
       b.querySelector(".coeur2c_num_b").value = advData["coeur2c_num_b"] ?? "no-data";
     }
+
     const bt = container.querySelector(".container_coeur2c_b_t");
     if (bt) {
       bt.querySelector(".p2p_g_b").value = advData["p2p_g_b"] ?? "no-data";
       bt.querySelector(".p2p_d_b").value = advData["p2p_d_b"] ?? "no-data";
       bt.querySelector(".coeur2c_num_b_t").value = advData["coeur2c_num_b"] ?? "no-data";
     }
+
     const t = container.querySelector(".traverse-img");
     if (t) {
       t.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
@@ -614,17 +626,20 @@ function fillCoeur2cInputs(advData) {
       t.querySelector(".coeur2t_num_g").value = advData["coeur2t_num_g"] ?? "no-data";
       t.querySelector(".coeur2t_num_d").value = advData["coeur2t_num_d"] ?? "no-data";
     }
-    const bs = container.querySelector(".croisement-img-bs");
 
+    const bs = container.querySelector(".croisement-img-bs");
     if (bs) {
       bs.querySelector(".p2p_g").value = advData["p2p_g"] ?? "no-data";
       bs.querySelector(".p2p_d").value = advData["p2p_d"] ?? "no-data";
     }
-
-    fillCroisementTable(container, advData);
   });
+
+  // Appeler UNE SEULE fois après la boucle
+  fillCroisementTable(document, advData);
 }
+
 function fillCroisementTable(container, advData) {
+  console.log('appel de la fonction fillCroisementTable');
   const table = container.querySelector(".croisement-table");
   if (!table) return;
 
@@ -645,6 +660,7 @@ function fillCroisementTable(container, advData) {
 }
 
 function updateBavuresTable(data) {
+  console.log('appel de la fonction updateBavuresTable');
   const mappingBavure = {
     "aucune bavure": "aucune",
     "bavures éliminées par meulage": "meulage",
@@ -697,6 +713,7 @@ function updateBavuresTable(data) {
 }
 
 function updateEbrechureTable(data) {
+  console.log('appel de la fonction updateEbrechureTable');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -768,6 +785,7 @@ function updateEbrechureTable(data) {
 }
 
 function updateAppDM(data) {
+  console.log('appel de la fonction updateAppDM');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -810,6 +828,7 @@ function updateAppDM(data) {
 }
 
 function updateUsureLcaTable(data) {
+  console.log('appel de la fonction updateUsureLcaTable');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -888,6 +907,7 @@ function updateUsureLcaTable(data) {
 }
 
 function updateUsureLaTable(data) {
+  console.log('appel de la fonction updateUsureLaTable');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -951,11 +971,10 @@ function updateUsureLaTable(data) {
   });
 }
 
-// New code for summary/detail toggle
 document.getElementById('show-detail').addEventListener('click', () => {
   document.querySelector('.toggle-summary-detail .active').classList.remove('active');
   document.getElementById('show-detail').classList.add('active');
-  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
+  document.querySelector('.voie-type-container[data-type="summary"]').style.display ='flex';
 
   // Show the correct detailed container(s) based on current type
   switchVoieTypeContent(currentType);
@@ -975,7 +994,7 @@ document.getElementById('show-summary').addEventListener('click', () => {
   });
 
   // Show summary
-  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'flex';
+  document.querySelector('.voie-type-container[data-type="summary"]').style.display ='flex';
 
   // Insert the correct summary table if needed
   renderSummaryTable(currentType, summaryData); // summaryData = your data
@@ -1035,27 +1054,27 @@ function renderSummaryTable(type, data) {
     // Bavure
     if (item.bavure) {
       const row = table.querySelector('tr[data-type="bavure"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
     }
-    // Ébréchure
+    //  ^ibr  chure
     if (item.ebrechure_a) {
       const row = table.querySelector('tr[data-type="ebrechure"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+            if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
     }
     // Application demi-aiguillage
     if (item.application_da_etat_bute || item.application_da_entrebaillement) {
       const row = table.querySelector('tr[data-type="app-dm-ag"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
     }
-    // Usure latérale contre-aiguille
+    // Usure lat  rale contre-aiguille
     if (item.usure_lca) {
       const row = table.querySelector('tr[data-type="usure_lca"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
     }
-    // Usure latérale aiguille
+    // Usure lat  rale aiguille
     if (item.usure_la_contact || item.usure_la_pente || item.usure_la_classement) {
       const row = table.querySelector('tr[data-type="usure_la"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
     }
   });
 }
