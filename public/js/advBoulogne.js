@@ -95,6 +95,9 @@ function createTable(data) {
   });
 }
 
+let currentType = '';
+let summaryData = [];
+
 function loadTypeButtons() {
   fetch('/api/adv_types')
     .then(res => res.json())
@@ -115,8 +118,8 @@ function loadTypeButtons() {
         button.addEventListener('click', () => {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
-
-          // Hide/show ALL "Demi-Aiguillage" buttons depending on type
+          currentType = type.toLowerCase();
+          console.log(`Type sélectionné: ${currentType}`);
           document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
             boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
           });
@@ -124,6 +127,7 @@ function loadTypeButtons() {
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
             .then(res => res.json())
             .then(data => {
+              summaryData = data; // update summaryData for summary view
               createTable(data);
 
               if (data.length > 0) {
@@ -716,7 +720,7 @@ function updateEbrechureTable(data) {
         if (advType === "D") colIndex = 2;
       } else if (type === "tj") {
         const idx = parseInt(advType, 10);
-        if (!isNaN(idx) && idx >= 1 && idx <= 6) colIndex = idx;
+        if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
       }
 
       // 1. ebrechure_a
@@ -944,5 +948,114 @@ function updateUsureLaTable(data) {
         if (row && row.cells[colIndex]) row.cells[colIndex].textContent = item.usure_la_classement;
       }
     });
+  });
+}
+
+// New code for summary/detail toggle
+document.getElementById('show-detail').addEventListener('click', () => {
+  document.querySelector('.toggle-summary-detail .active').classList.remove('active');
+  document.getElementById('show-detail').classList.add('active');
+  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
+
+  // Show the correct detailed container(s) based on current type
+  switchVoieTypeContent(currentType);
+
+  // Toggle buttons: show only #show-summary in detail mode
+  document.getElementById('show-summary').style.display = 'inline-block';
+  document.getElementById('show-detail').style.display = 'none';
+});
+
+document.getElementById('show-summary').addEventListener('click', () => {
+  document.querySelector('.toggle-summary-detail .active').classList.remove('active');
+  document.getElementById('show-summary').classList.add('active');
+
+  // Hide all detailed containers
+  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
+    if (c.dataset.type !== 'summary') c.style.display = 'none';
+  });
+
+  // Show summary
+  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'flex';
+
+  // Insert the correct summary table if needed
+  renderSummaryTable(currentType, summaryData); // summaryData = your data
+});
+
+function renderSummaryTable(type, data) {
+  console.log('renderSummaryTable called with type:', type);
+
+  // Hide both summary tables first
+  const bsTable = document.getElementById('summary-table_bs');
+  const tjTable = document.getElementById('summary-table_tj');
+  if (bsTable) bsTable.style.display = 'none';
+  if (tjTable) tjTable.style.display = 'none';
+
+  // Show the correct summary table
+  let table = null;
+  if (type === 'bs') {
+    table = bsTable;
+    console.log('Showing summary-table_bs');
+  } else if (type === 'tj') {
+    table = tjTable;
+    console.log('Showing summary-table_tj');
+  } else {
+    console.warn('Unknown type for summary:', type);
+  }
+  if (!table) return;
+  table.style.display = 'table';
+
+  // Toggle buttons: show only #show-detail in summary mode
+  document.getElementById('show-summary').style.display = 'none';
+  document.getElementById('show-detail').style.display = 'inline-block';
+
+  // Clear all cells except the first column
+  // table.querySelectorAll('tbody tr').forEach(row => {
+  //   for (let i = 1; i < row.cells.length; i++) {
+  //     row.cells[i].textContent = "";
+  //   }
+  // });
+
+  // Helper to get column index for bs/tj
+  function getColIndex(advType) {
+    if (type === 'bs') {
+      if (advType === 'G') return 1;
+      if (advType === 'D') return 2;
+    } else if (type === 'tj') {
+      const idx = parseInt(advType, 10);
+      if (!isNaN(idx) && idx >= 1 && idx <= 8) return idx;
+    }
+    return null;
+  }
+
+  data.forEach(item => {
+    const advType = (item.adv_type || '').toUpperCase();
+    const colIndex = getColIndex(advType);
+    if (colIndex === null) return;
+
+    // Bavure
+    if (item.bavure) {
+      const row = table.querySelector('tr[data-type="bavure"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+    }
+    // Ébréchure
+    if (item.ebrechure_a) {
+      const row = table.querySelector('tr[data-type="ebrechure"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+    }
+    // Application demi-aiguillage
+    if (item.application_da_etat_bute || item.application_da_entrebaillement) {
+      const row = table.querySelector('tr[data-type="app-dm-ag"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+    }
+    // Usure latérale contre-aiguille
+    if (item.usure_lca) {
+      const row = table.querySelector('tr[data-type="usure_lca"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+    }
+    // Usure latérale aiguille
+    if (item.usure_la_contact || item.usure_la_pente || item.usure_la_classement) {
+      const row = table.querySelector('tr[data-type="usure_la"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+    }
   });
 }

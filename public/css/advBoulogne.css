@@ -957,7 +957,7 @@ th, td {
     font-size: 14px;
     text-align: center;
 }
-.table-container table thead tr {
+.table-container table thead tr , #summary-table_bs thead tr, #summary-table_tj thead tr {
     color: #111827; /* gris foncé (quasi noir) */
     font-weight: 600;
     text-align: left;
@@ -965,7 +965,7 @@ th, td {
     top: 0;
     padding: 8px;
 }
-.table-container table th {
+.table-container table th, #summary-table_bs th, #summary-table_tj th {
   background-color: #d8d7d7;
   color: #111827;
   font-weight: 600;
@@ -979,27 +979,55 @@ th, td {
 
 
 
-.table-container table tbody tr:nth-child(even) {
+.table-container table tbody tr:nth-child(even), #summary-table_bs tbody tr:nth-child(even) , #summary-table_tj tbody tr:nth-child(even) {
   background-color: #ffffff;
 }
 
-.table-container table tbody tr:nth-child(odd) {
+.table-container table tbody tr:nth-child(odd),#summary-table_bs tbody tr:nth-child(odd) , #summary-table_tj tbody tr:nth-child(odd) {
   background-color: #f9fafb;
 }
 
-.table-container table tbody td {
+.table-container table tbody td, #summary-table_bs td, #summary-table_tj td {
   padding: 6px 10px;
   color: #1f2937;
 }
 
-.table-container table tbody td:first-child {
+.table-container table tbody td:first-child , #summary-table_bs tbody td:first-child, #summary-table_tj tbody td:first-child {
   background-color: #f3f4f6; /* comme le header */
   font-weight: 500;
+}
+.voie-type-container[data-type="summary"] {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 20px;
+}
+
+#show-summary, #show-detail {
+  display: block;
+  position: absolute;
+  top: 10px;
+  right: 2px;
+  background-color: #4f46e5; /* violet */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  border: solid 1px #000000;
 }
 
 
 
 
-
-
-
+#summary-table_bs, #summary-table_tj{
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  font-size: 14px;
+  border: solid 3px #000000;
+  border-radius: 8px;
+}

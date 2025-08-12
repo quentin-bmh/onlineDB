@@ -667,6 +667,77 @@
                 </div>
             </div>
         </div>
+        <div class="voie-type-container" data-type="summary" style="display: none;">
+            <table id="summary-table_bs" >
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>1/2 aig Gauche</th>
+                  <th>1/2 aig Droite</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-type="bavure">
+                  <td>Bavures</td>
+                  <td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="ebrechure">
+                  <td>Ébréchure aiguille</td>
+                  <td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="app-dm-ag">
+                  <td>Application demi-aiguillage</td>
+                  <td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="usure_lca">
+                  <td>Usure latérale contre-aiguille</td>
+                  <td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="usure_la">
+                  <td>Usure latérale aiguille</td>
+                  <td>Bon</td><td>Bon</td>
+                </tr>
+              </tbody>
+            </table>
+            <table id="summary-table_tj" >
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>1/2 aig 1</th>
+                  <th>1/2 aig 2</th>
+                  <th>1/2 aig 3</th>
+                  <th>1/2 aig 4</th>
+                  <th>1/2 aig 5</th>
+                  <th>1/2 aig 6</th>
+                  <th>1/2 aig 7</th>
+                  <th>1/2 aig 8</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-type="bavure">
+                  <td>Bavures</td>
+                  <td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="ebrechure">
+                  <td>Ébréchure aiguille</td>
+                  <td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="app-dm-ag">
+                  <td>Application demi-aiguillage</td>
+                  <td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="usure_lca">
+                  <td>Usure latérale contre-aiguille</td>
+                  <td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td>
+                </tr>
+                <tr data-type="usure_la">
+                  <td>Usure latérale aiguille</td>
+                  <td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td><td>Bon</td>
+                </tr>
+              </tbody>
+            </table>
+        </div>
+
       </div>
       <div class="voie-content" id="voie-test" style="display: flex;">
         <div class="bois_container">
@@ -725,6 +796,10 @@
           <button data-target="voie-ecartement">Ecartement/Attaches</button>
           <button data-target="voie-test">Plancher/Joints</button>
           <button data-target="voie-aiguillage">Demi-Aiguillage</button>
+          <div class="toggle-summary-detail">
+            <button id="show-summary">Résumé</button>
+            <button id="show-detail" class="active" style="display: none;">Détail</button>
+          </div>
         </div>
       </div>
     </div>
