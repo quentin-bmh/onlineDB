@@ -390,9 +390,35 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
     const targetId = button.getAttribute('data-target');
     const current = document.querySelector('.voie-content.active');
     const next = document.getElementById(targetId);
-
+    const data = document.getElementById('info-container');
+    const img_ag_tj = document.getElementById('tj_aiguille_img');
+    const left_sidebar = document.getElementById('left-sidebar');
+    const data_section = document.querySelector('.data-actions');
+    const dataADV = document.getElementById('data');
+    const data_voie_container = document.getElementById('dataVoie-container');
+    const map = document.getElementById('map');
     if (!next || current === next) return;
-
+    if (targetId === 'voie-aiguillage') {
+      data.style.display = 'none';
+      img_ag_tj.style.display = 'flex';
+      left_sidebar.style.gridRow = '1 / 4';
+      data_section.style.gridRow = '4 / 6';
+      data_section.style.gridColumn = '1 / 3';
+      dataADV.style.gridColumn = '1 / 3';
+      dataADV.style.gridRow = '6 / 9';
+      data_voie_container.style.gridRow = '1 / 11';
+      map.style.display = 'none';
+    }else{
+      data.style.display = 'flex';
+      img_ag_tj.style.display = 'none';
+      left_sidebar.style.gridRow = '1 / 9';
+      data_section.style.gridRow = '1 / 4';
+      data_section.style.gridColumn = '5 / 7';
+      dataADV.style.gridColumn = '3 / 5';
+      dataADV.style.gridRow = '1 / 4';
+      data_voie_container.style.gridRow = '4 / 11';
+      map.style.display = 'block';
+    }
     if (current) {
       current.classList.remove('active');
       current.style.animationName = 'slideOutDown';

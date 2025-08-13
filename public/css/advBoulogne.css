@@ -11,7 +11,7 @@ body {
 
 .grid-layout {
   display: grid;
-  grid-template-columns: repeat(17, 1fr);
+  grid-template-columns: repeat(20, 1fr);
   grid-template-rows: repeat(10, 1fr);
   gap: 10px;
   height: 100vh;
@@ -152,13 +152,37 @@ body {
   border: solid 1px #0e0e0e;
   border-radius: 5px;
   background-color: rgba(105, 104, 104, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#data::-webkit-scrollbar {
+  display: none;
+}
+#data img {
+  max-width: 90%;
+  max-height: 100%; /* jamais dépasser #data */
+  height: auto;
+  border-radius: 5px;
+  object-fit: contain;
+  display: block;
+}
+
+#info-container {
+  border-radius: 2px;
+  padding-left: 4px;
+  font-size: 14.5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: solid 1px #000000;
 }
 
 #map-container {
-  grid-column: 7 / 18;
+  grid-column: 7 / 21;
   grid-row: 1 / 4;
   height: 100%;
-  border: solid 1px #0e0e0e;
 }
 #map {
   width: 100%;
@@ -168,7 +192,7 @@ body {
 
 #dataVoie-container {
   position: relative;
-  grid-column: 3 / 19;
+  grid-column: 3 / 21;
   grid-row: 4 / 11;
   height: 100%;
   overflow: hidden;
@@ -284,17 +308,9 @@ th, td {
 
 
 
-#info-container {
-  border-radius: 2px;
-  padding-left: 4px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  border-left: solid 1px #000000;
-}
 
 .info-item {
-  margin-bottom: 5px;
+  margin-bottom: 3px;
   display: flex;
   flex-direction: column;
 }
