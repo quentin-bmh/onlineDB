@@ -413,8 +413,8 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       img_ag_tj.style.display = 'none';
       left_sidebar.style.gridRow = '1 / 9';
       data_section.style.gridRow = '1 / 4';
-      data_section.style.gridColumn = '5 / 7';
-      dataADV.style.gridColumn = '3 / 5';
+      data_section.style.gridColumn = '3 / 5';
+      dataADV.style.gridColumn = '5 / 7';
       dataADV.style.gridRow = '1 / 4';
       data_voie_container.style.gridRow = '4 / 11';
       map.style.display = 'block';
@@ -519,14 +519,32 @@ function updateCharts(data) {
 
 
 function switchVoieTypeContent(type) {
-  console.log('appel de la fonction switchVoieTypeContent ');
   document.querySelectorAll('.voie-type-container').forEach(container => {
-    if (container.dataset.type === type) {
+    if (container.dataset.type === 'summary') {
       container.style.display = 'flex';
+
+      // Affiche le bon tableau résumé selon le type
+      const summaryTableBs = container.querySelector('#summary-table_bs');
+      const summaryTableTj = container.querySelector('#summary-table_tj');
+      if (type === 'bs') {
+        if (summaryTableBs) summaryTableBs.style.display = '';
+        if (summaryTableTj) summaryTableTj.style.display = 'none';
+      } else if (type === 'tj') {
+        if (summaryTableBs) summaryTableBs.style.display = 'none';
+        if (summaryTableTj) summaryTableTj.style.display = '';
+      } else {
+        // Par défaut, tout afficher
+        if (summaryTableBs) summaryTableBs.style.display = '';
+        if (summaryTableTj) summaryTableTj.style.display = '';
+      }
     } else {
       container.style.display = 'none';
     }
   });
+  const showDetailBtn = document.getElementById('show-detail');
+  if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
+  const showSummaryBtn = document.getElementById('show-summary');
+  if (showSummaryBtn) showSummaryBtn.style.display = 'none';
 }
 
 
@@ -998,32 +1016,32 @@ function updateUsureLaTable(data) {
 }
 
 document.getElementById('show-detail').addEventListener('click', () => {
-  document.querySelector('.toggle-summary-detail .active').classList.remove('active');
-  document.getElementById('show-detail').classList.add('active');
-  document.querySelector('.voie-type-container[data-type="summary"]').style.display ='flex';
-
-  // Show the correct detailed container(s) based on current type
-  switchVoieTypeContent(currentType);
-
-  // Toggle buttons: show only #show-summary in detail mode
+document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
+  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
+    if (c.dataset.type === currentType) {
+      c.style.display = 'flex';
+    } else if (c.dataset.type !== 'summary') {
+      c.style.display = 'none';
+    }
+  });
+  // Boutons
   document.getElementById('show-summary').style.display = 'inline-block';
   document.getElementById('show-detail').style.display = 'none';
 });
 
 document.getElementById('show-summary').addEventListener('click', () => {
-  document.querySelector('.toggle-summary-detail .active').classList.remove('active');
-  document.getElementById('show-summary').classList.add('active');
-
-  // Hide all detailed containers
   document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
-    if (c.dataset.type !== 'summary') c.style.display = 'none';
+    if (c.dataset.type === 'summary') {
+      c.style.display = 'flex';
+    } else {
+      c.style.display = 'none';
+    }
   });
-
-  // Show summary
-  document.querySelector('.voie-type-container[data-type="summary"]').style.display ='flex';
-
-  // Insert the correct summary table if needed
-  renderSummaryTable(currentType, summaryData); // summaryData = your data
+  // Afficher le bon tableau résumé
+  renderSummaryTable(currentType, summaryData);
+  // Boutons
+  document.getElementById('show-summary').style.display = 'none';
+  document.getElementById('show-detail').style.display = 'inline-block';
 });
 
 function renderSummaryTable(type, data) {

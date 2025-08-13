@@ -545,28 +545,28 @@ th, td {
 }
 .traverse-img .libre_passage_g{
   position: absolute;
-  top: 38%;
+  top: 42%;
   left: 26.5%;
   width: 20%;
   height: 5%;
 }
 .traverse-img .libre_passage_d{
   position: absolute;
-  top: 38%;
+  top: 42%;
   left: 54.5%;
   width: 20%;
   height: 5%;
 }
 .traverse-img .p2p_g_b{
   position: absolute;
-  top: 64%;
+  top: 70%;
   left: 26.5%;
   width: 20%;
   height: 5%;
 }
 .traverse-img .p2p_d_b{
   position: absolute;
-  top: 64%;
+  top: 70%;
   left: 54.5%;
   width: 20%;
   height: 5%;
@@ -680,7 +680,7 @@ th, td {
   border-radius: 8px;
 }
 .table-wrapper {
-  width: 38%;
+  width: 28%;
   overflow: hidden;
 }
 .attaches-table {
@@ -692,15 +692,15 @@ th, td {
 }
 .attaches-table th:first-child,
 .attaches-table td:first-child {
-  width: 60px;
-  max-width: 60px;
+  width: 50px;
+  max-width: 50px;
 }
 .attaches-table th:nth-child(2),
 .attaches-table td:nth-child(2),
 .attaches-table th:nth-child(3),
 .attaches-table td:nth-child(3) {
-  width: 200px;
-  max-width: 200px;
+  width: 150px;
+  max-width: 150px;
 }
 
 .attaches-table th,
