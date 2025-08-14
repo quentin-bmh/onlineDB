@@ -202,7 +202,6 @@ function getAdvData(adv) {
   console.log('appel de la fonction getAdvData');
   const name = (adv["adv"] || adv["ADV"] || '').trim();
   const type = (adv["type"] || '').toLowerCase();
-  const adv_type = (adv["adv_type"] || '').trim(); // G, D, 1, etc.
 
   if (!name || !type) {
     console.warn("ADV ou type manquant dans l'objet :", adv);
@@ -221,8 +220,11 @@ function getAdvData(adv) {
         console.warn("Pas de données reçues pour :", name);
         return;
       }
-
-      switchVoieTypeContent(type);
+      if (document.getElementById('voie-aiguillage')) {
+        showSummaryForCurrentType();
+      } else {
+        switchVoieTypeContent(type);
+      }
       updateEcartements(advData, type);
       fillCoeur2cInputs(advData);
       updateAttaches(adv, type);
@@ -519,33 +521,83 @@ function updateCharts(data) {
 
 
 function switchVoieTypeContent(type) {
+  console.log('appel de la fonction switchVoieTypeContent ');
   document.querySelectorAll('.voie-type-container').forEach(container => {
-    if (container.dataset.type === 'summary') {
+    if (container.dataset.type === type) {
       container.style.display = 'flex';
-
-      // Affiche le bon tableau résumé selon le type
-      const summaryTableBs = container.querySelector('#summary-table_bs');
-      const summaryTableTj = container.querySelector('#summary-table_tj');
-      if (type === 'bs') {
-        if (summaryTableBs) summaryTableBs.style.display = '';
-        if (summaryTableTj) summaryTableTj.style.display = 'none';
-      } else if (type === 'tj') {
-        if (summaryTableBs) summaryTableBs.style.display = 'none';
-        if (summaryTableTj) summaryTableTj.style.display = '';
-      } else {
-        // Par défaut, tout afficher
-        if (summaryTableBs) summaryTableBs.style.display = '';
-        if (summaryTableTj) summaryTableTj.style.display = '';
-      }
     } else {
       container.style.display = 'none';
     }
   });
-  const showDetailBtn = document.getElementById('show-detail');
-  if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
-  const showSummaryBtn = document.getElementById('show-summary');
-  if (showSummaryBtn) showSummaryBtn.style.display = 'none';
 }
+function showSummaryForCurrentType() {
+  // Masquer toutes les voie-type sauf summary dans #voie-aiguillage
+  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
+    c.style.display = (c.dataset.type === 'summary') ? 'flex' : 'none';
+  });
+
+  // Masquer toutes les tables du résumé
+  document.querySelectorAll('#voie-aiguillage #summary table').forEach(tbl => {
+    tbl.style.display = 'none';
+  });
+
+  // Afficher uniquement la table correspondant au currentType
+  const summaryTable = document.querySelector(`#voie-aiguillage #summary-table_${currentType}`);
+  if (summaryTable) {
+    summaryTable.style.display = 'table';
+  }
+
+  // (Optionnel) si tu veux aussi mettre à jour les données
+  if (typeof renderSummaryTable === 'function' && summaryData) {
+    renderSummaryTable(currentType, summaryData);
+  }
+
+  // Mettre à jour les boutons
+  document.getElementById('show-summary').style.display = 'none';
+  document.getElementById('show-detail').style.display = 'inline-block';
+}
+
+// function switchVoieTypeContent(type) {
+//   // Affiche toujours le résumé en premier
+//   document.querySelectorAll('.voie-type-container').forEach(container => {
+//     container.style.display = 'none';
+//     if (container.dataset.type === 'summary') {
+//       container.style.display = 'flex';
+
+//       // Affiche le bon tableau résumé selon le type
+//       const summaryTableBs = container.querySelector('#summary-table_bs');
+//       const summaryTableTj = container.querySelector('#summary-table_tj');
+//       if (type === 'bs') {
+//         if (summaryTableBs) summaryTableBs.style.display = '';
+//         if (summaryTableTj) summaryTableTj.style.display = 'none';
+//       } else if (type === 'tj') {
+//         if (summaryTableBs) summaryTableBs.style.display = 'none';
+//         if (summaryTableTj) summaryTableTj.style.display = '';
+//       } else {
+//         // Par défaut, tout afficher
+//         if (summaryTableBs) summaryTableBs.style.display = '';
+//         if (summaryTableTj) summaryTableTj.style.display = '';
+//       }
+//       return;
+//     }else if (container.dataset.type === type) {
+//         document.querySelectorAll('.voie-type-container').forEach(container => {
+//         if (container.dataset.type === type) {
+//           container.style.display = 'flex';
+//         } else {
+//           container.style.display = 'none';
+//         }
+//       });
+//     } else {
+//       container.style.display = 'none';
+//     }
+//   });
+
+//   // Optionnel : gérer les boutons résumé/détail
+//   const showDetailBtn = document.getElementById('show-detail');
+//   if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
+//   const showSummaryBtn = document.getElementById('show-summary');
+//   if (showSummaryBtn) showSummaryBtn.style.display = 'none';
+// } 
 
 
 function updateEcartements(adv, type) {
@@ -1015,8 +1067,9 @@ function updateUsureLaTable(data) {
   });
 }
 
-document.getElementById('show-detail').addEventListener('click', () => {
-document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
+document.getElementById('show-detail').onclick = function () {
+  // Masquer le résumé, afficher le détail selon le type courant
+  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
   document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
     if (c.dataset.type === currentType) {
       c.style.display = 'flex';
@@ -1027,9 +1080,10 @@ document.querySelector('.voie-type-container[data-type="summary"]').style.displa
   // Boutons
   document.getElementById('show-summary').style.display = 'inline-block';
   document.getElementById('show-detail').style.display = 'none';
-});
+};
 
-document.getElementById('show-summary').addEventListener('click', () => {
+document.getElementById('show-summary').onclick = function () {
+  // Masquer le détail, afficher le résumé
   document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
     if (c.dataset.type === 'summary') {
       c.style.display = 'flex';
@@ -1042,7 +1096,7 @@ document.getElementById('show-summary').addEventListener('click', () => {
   // Boutons
   document.getElementById('show-summary').style.display = 'none';
   document.getElementById('show-detail').style.display = 'inline-block';
-});
+};
 
 function renderSummaryTable(type, data) {
   console.log('renderSummaryTable called with type:', type);
