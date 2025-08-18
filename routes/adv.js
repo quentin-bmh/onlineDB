@@ -32,7 +32,7 @@ router.get('/general_data', async (req, res) => {
 
 router.get('/adv_types', async (req, res) => {
   try {
-    const result = await pool.query('SELECT distinct type FROM general_data order by type;');
+    const result = await pool.query('SELECT distinct type FROM general_data;');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });

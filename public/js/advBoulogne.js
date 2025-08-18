@@ -220,11 +220,13 @@ function getAdvData(adv) {
         console.warn("Pas de données reçues pour :", name);
         return;
       }
-      if (document.getElementById('voie-aiguillage')) {
-        showSummaryForCurrentType();
-      } else {
-        switchVoieTypeContent(type);
-      }
+      // if (document.getElementById('voie-aiguillage')) {
+      //   showSummaryForCurrentType();
+      // } else {
+      //   switchVoieTypeContent(type);
+      // }
+      switchVoieTypeContent(type);
+      showOrHideDataForAiguillage(type);
       updateEcartements(advData, type);
       fillCoeur2cInputs(advData);
       updateAttaches(adv, type);
@@ -249,6 +251,11 @@ function getAdvData(adv) {
 
       // Remplir le tableau #bavure-table
       // console.log("Données de bavure reçues :", data);
+      if (document.getElementById('voie-aiguillage')) {
+        showSummaryForCurrentType();
+      } else {
+        switchVoieTypeContent(type);
+      }
       updateBavuresTable(data);
       updateEbrechureTable(data);
       updateAppDM(data);
@@ -391,6 +398,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
   button.addEventListener('click', () => {
     const targetId = button.getAttribute('data-target');
     const current = document.querySelector('.voie-content.active');
+    const type = button.getAttribute('data-type') || '';
     const next = document.getElementById(targetId);
     const data = document.getElementById('info-container');
     const img_ag_tj = document.getElementById('tj_aiguille_img');
@@ -421,7 +429,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       data_voie_container.style.gridRow = '4 / 11';
       map.style.display = 'block';
     }
-    if (current) {
+if (current) {
       current.classList.remove('active');
       current.style.animationName = 'slideOutDown';
 
@@ -445,6 +453,17 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
         // ➕ Update TO button visibility
         updateToButtonVisibility();
 
+        // ➕ Show/hide #data for voie-aiguillage
+        if (next.id === 'voie-aiguillage') {
+          // Find which voie-type-container is visible
+          const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
+            .find(c => c.style.display !== 'none');
+          const type = visibleType ? visibleType.dataset.type : '';
+          showOrHideDataForAiguillage(type);
+        } else {
+          document.getElementById('data').style.display = 'flex';
+        }
+
       }, 500);
     } else {
       next.classList.add('active');
@@ -459,6 +478,16 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
         toggleMenu.style.display = 'block';
       }
       updateToButtonVisibility();
+
+      // ➕ Show/hide #data for voie-aiguillage
+      if (next.id === 'voie-aiguillage') {
+        const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
+          .find(c => c.style.display !== 'none');
+        const type = visibleType ? visibleType.dataset.type : '';
+        showOrHideDataForAiguillage(type);
+      } else {
+        document.getElementById('data').style.display = 'flex';
+      }
     }
   });
 });
@@ -521,14 +550,53 @@ function updateCharts(data) {
 
 
 function switchVoieTypeContent(type) {
-  console.log('appel de la fonction switchVoieTypeContent ');
-  document.querySelectorAll('.voie-type-container').forEach(container => {
-    if (container.dataset.type === type) {
+  // Always show only the summary when loading voie-aiguillage
+  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(container => {
+    if (container.dataset.type === 'summary') {
       container.style.display = 'flex';
     } else {
       container.style.display = 'none';
     }
   });
+
+  // Show the correct summary table for the type
+  const summaryTableBs = document.getElementById('summary-table_bs');
+  const summaryTableTj = document.getElementById('summary-table_tj');
+  if (type === 'bs') {
+    if (summaryTableBs) summaryTableBs.style.display = '';
+    if (summaryTableTj) summaryTableTj.style.display = 'none';
+  } else if (type === 'tj') {
+    if (summaryTableBs) summaryTableBs.style.display = 'none';
+    if (summaryTableTj) summaryTableTj.style.display = '';
+  } else {
+    if (summaryTableBs) summaryTableBs.style.display = '';
+    if (summaryTableTj) summaryTableTj.style.display = '';
+  }
+
+  // Update summary/détail buttons
+  const showDetailBtn = document.getElementById('show-detail');
+  if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
+  const showSummaryBtn = document.getElementById('show-summary');
+  if (showSummaryBtn) showSummaryBtn.style.display = 'none';
+
+  showOrHideDataForAiguillage(type);
+}
+function showOrHideDataForAiguillage(type) {
+  // Hide #data if in voie-aiguillage and type is 'bs', show otherwise
+  const voieAiguillage = document.getElementById('voie-aiguillage');
+  const dataSection = document.getElementById('data');
+  if (!voieAiguillage || !dataSection) return;
+
+  // Only check if voie-aiguillage is active
+  if (voieAiguillage.classList.contains('active')) {
+    if (type === 'bs') {
+      dataSection.style.display = 'none';
+    } else {
+      dataSection.style.display = 'flex';
+    }
+  } else {
+    dataSection.style.display = 'flex';
+  }
 }
 function showSummaryForCurrentType() {
   // Masquer toutes les voie-type sauf summary dans #voie-aiguillage
@@ -557,47 +625,47 @@ function showSummaryForCurrentType() {
   document.getElementById('show-detail').style.display = 'inline-block';
 }
 
-// function switchVoieTypeContent(type) {
-//   // Affiche toujours le résumé en premier
-//   document.querySelectorAll('.voie-type-container').forEach(container => {
-//     container.style.display = 'none';
-//     if (container.dataset.type === 'summary') {
-//       container.style.display = 'flex';
+function switchVoieTypeContent(type) {
+  // Affiche toujours le résumé en premier
+  document.querySelectorAll('.voie-type-container').forEach(container => {
+    container.style.display = 'none';
+    if (container.dataset.type === 'summary') {
+      container.style.display = 'flex';
 
-//       // Affiche le bon tableau résumé selon le type
-//       const summaryTableBs = container.querySelector('#summary-table_bs');
-//       const summaryTableTj = container.querySelector('#summary-table_tj');
-//       if (type === 'bs') {
-//         if (summaryTableBs) summaryTableBs.style.display = '';
-//         if (summaryTableTj) summaryTableTj.style.display = 'none';
-//       } else if (type === 'tj') {
-//         if (summaryTableBs) summaryTableBs.style.display = 'none';
-//         if (summaryTableTj) summaryTableTj.style.display = '';
-//       } else {
-//         // Par défaut, tout afficher
-//         if (summaryTableBs) summaryTableBs.style.display = '';
-//         if (summaryTableTj) summaryTableTj.style.display = '';
-//       }
-//       return;
-//     }else if (container.dataset.type === type) {
-//         document.querySelectorAll('.voie-type-container').forEach(container => {
-//         if (container.dataset.type === type) {
-//           container.style.display = 'flex';
-//         } else {
-//           container.style.display = 'none';
-//         }
-//       });
-//     } else {
-//       container.style.display = 'none';
-//     }
-//   });
+      // Affiche le bon tableau résumé selon le type
+      const summaryTableBs = container.querySelector('#summary-table_bs');
+      const summaryTableTj = container.querySelector('#summary-table_tj');
+      if (type === 'bs') {
+        if (summaryTableBs) summaryTableBs.style.display = '';
+        if (summaryTableTj) summaryTableTj.style.display = 'none';
+      } else if (type === 'tj') {
+        if (summaryTableBs) summaryTableBs.style.display = 'none';
+        if (summaryTableTj) summaryTableTj.style.display = '';
+      } else {
+        // Par défaut, tout afficher
+        if (summaryTableBs) summaryTableBs.style.display = '';
+        if (summaryTableTj) summaryTableTj.style.display = '';
+      }
+      return;
+    }else if (container.dataset.type === type) {
+        document.querySelectorAll('.voie-type-container').forEach(container => {
+        if (container.dataset.type === type) {
+          container.style.display = 'flex';
+        } else {
+          container.style.display = 'none';
+        }
+      });
+    } else {
+      container.style.display = 'none';
+    }
+  });
 
-//   // Optionnel : gérer les boutons résumé/détail
-//   const showDetailBtn = document.getElementById('show-detail');
-//   if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
-//   const showSummaryBtn = document.getElementById('show-summary');
-//   if (showSummaryBtn) showSummaryBtn.style.display = 'none';
-// } 
+  // Optionnel : gérer les boutons résumé/détail
+  const showDetailBtn = document.getElementById('show-detail');
+  if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
+  const showSummaryBtn = document.getElementById('show-summary');
+  if (showSummaryBtn) showSummaryBtn.style.display = 'none';
+} 
 
 
 function updateEcartements(adv, type) {
