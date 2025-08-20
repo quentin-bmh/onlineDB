@@ -1,5 +1,9 @@
 let map;
 let marker;
+let boisChartInstance = null;
+let jointsChartInstance = null;
+let currentType = '';
+let summaryData = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   initMap();
@@ -7,6 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupToggleMenu();
   initCharts();
 });
+
+
 
 function initMap() {
     map = L.map('map').setView([46.5, 2.5], 7);
@@ -50,13 +56,9 @@ function updateMap(adv) {
       map.invalidateSize();
     }, 200);
 }
-
-
 function createTable(data) {
-  console.log('appel de la fonction createTable');
   const tbody = document.querySelector("#advTable tbody");
-  tbody.innerHTML = ''; // nettoyage
-
+  tbody.innerHTML = '';
   data.forEach((adv, index) => {
     const name = adv["adv"];
     const type = adv["type"];
@@ -64,13 +66,11 @@ function createTable(data) {
     row.innerHTML = `<td>${name}</td>`;
 
     row.addEventListener("click", () => {
-      console.log('row sélectionnée:', name, type, adv);
-      // 1. UI
+      // console.log('row sélectionnée:', name, type, adv); 
       updateMap(adv);
       document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
       row.classList.add("active-adv");
       // resetVoieContent();
-      // 2. Charger les infos détaillées selon le type
       if (type && name) {
         const lowerType = type.toLowerCase(); // bs / to / tj
         fetch(`/api/${lowerType}/${encodeURIComponent(name)}`)
@@ -79,10 +79,9 @@ function createTable(data) {
             return res.json();
           })
           .then(data => {
-            // data = réponse détaillée selon le type
             const advData = Array.isArray(data) ? data[0] : data;
             // console.log(`Données ADV récupérées pour ${name}:`, advData);
-            getAdvData(advData); // tu peux adapter ici
+            getAdvData(advData);
           })
           .catch(err => {
             console.error("Erreur lors de la récupération des données ADV détaillées:", err);
@@ -96,21 +95,16 @@ function createTable(data) {
   });
 }
 
-let currentType = '';
-let summaryData = [];
-
 function loadTypeButtons() {
-  console.log('appel de la fonction loadTypeButtons');
   fetch('/api/adv_types')
     .then(res => res.json())
     .then(types => {
       const advSection = document.querySelector('.adv-section');
       if (!advSection || types.length === 0) return;
 
-      advSection.innerHTML = ''; // Clear previous buttons
+      advSection.innerHTML = '';
 
       let firstButton = null;
-      
       types.forEach(({ type }, index) => {
         const button = document.createElement('button');
         button.textContent = type;
@@ -121,7 +115,8 @@ function loadTypeButtons() {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
           currentType = type.toLowerCase();
-          console.log(`Type sélectionné: ${currentType}`);
+
+          // Gestion boutons aiguillage
           document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
             boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
           });
@@ -135,11 +130,8 @@ function loadTypeButtons() {
               if (data.length > 0) {
                 updateMap(data[0]);
                 getAdvDetails(data[0]);
-                // getAdvData(data[0]);
                 const firstRow = document.querySelector("#advTable tbody tr");
-                if (firstRow) {
-                  firstRow.click();
-                }
+                if (firstRow) firstRow.click();
               }
             })
             .catch(err => {
@@ -148,22 +140,16 @@ function loadTypeButtons() {
         });
 
         advSection.appendChild(button);
-        if (index === 0) {
-          firstButton = button;
-        }
+        if (index === 0) firstButton = button;
       });
-      if (firstButton) {
-        firstButton.click();
-      }
+
+      if (firstButton) firstButton.click();
     })
     .catch(err => {
       console.error('Erreur lors du chargement des types ADV :', err);
     });
 }
-
 function displayAdvDetails(adv) {
-  console.log('appel de la fonction displayAdvDetails');
-
   const container = document.getElementById('info-container');
   container.innerHTML = ''; 
   const fieldsMap = {
@@ -196,168 +182,7 @@ function displayAdvDetails(adv) {
     }
   }
 }
-
-function getAdvData(adv) {
-  // console.trace();
-  console.log('appel de la fonction getAdvData');
-  const name = (adv["adv"] || adv["ADV"] || '').trim();
-  const type = (adv["type"] || '').toLowerCase();
-
-  if (!name || !type) {
-    console.warn("ADV ou type manquant dans l'objet :", adv);
-    return;
-  }
-
-  // 1. Charger les données principales
-  fetch(`/api/${type}/${encodeURIComponent(name)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      const advData = Array.isArray(data) ? data[0] : data;
-      if (!advData) {
-        console.warn("Pas de données reçues pour :", name);
-        return;
-      }
-      // if (document.getElementById('voie-aiguillage')) {
-      //   showSummaryForCurrentType();
-      // } else {
-      //   switchVoieTypeContent(type);
-      // }
-      switchVoieTypeContent(type);
-      showOrHideDataForAiguillage(type);
-      updateEcartements(advData, type);
-      fillCoeur2cInputs(advData);
-      updateAttaches(adv, type);
-      updateBois(advData);
-      updateCharts(advData);
-    })
-    .catch(err => {
-      console.error("Erreur en chargeant les détails ADV:", err);
-    });
-
-  // 2. Charger les bavures (via la nouvelle route)
-  fetch(`/api/da?adv=${encodeURIComponent(name)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      if (!Array.isArray(data) || data.length === 0) {
-        console.warn("Pas de données de bavure reçues pour :", name);
-        return;
-      }
-
-      // Remplir le tableau #bavure-table
-      // console.log("Données de bavure reçues :", data);
-      if (document.getElementById('voie-aiguillage')) {
-        showSummaryForCurrentType();
-      } else {
-        switchVoieTypeContent(type);
-      }
-      updateBavuresTable(data);
-      updateEbrechureTable(data);
-      updateAppDM(data);
-      updateUsureLcaTable(data);
-      updateUsureLaTable(data);
-    })
-    .catch(err => {
-      console.error("Erreur en chargeant la bavure ADV:", err);
-    });
-}
-
-
-function getAdvDetails(adv) {
-  console.log('appel de la fonction getAdvDetails');
-  const advName = adv["ADV"] || adv["adv"];
-  if (!advName) {
-    console.warn("ADV manquant dans l'objet :", adv);
-    return;
-  }
-
-  fetch(`/api/general_data?adv=${encodeURIComponent(advName)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      displayAdvDetails(data);
-    })
-    .catch(err => {
-      console.error("Erreur en chargeant les détails depuis general_data:", err);
-    });
-}
-function resetVoieContent() {
-  console.log('appel de la fonction resetVoieContent');
-  const allVoies = document.querySelectorAll('.voie-content');
-  const hub = document.getElementById('hub');
-  const toggleMenu = document.querySelector('.voie-toggle');
-
-  // Masquer tous les .voie-content
-  allVoies.forEach(voie => {
-    voie.classList.remove('active');
-    voie.style.display = 'none';
-    voie.style.visibility = 'hidden';
-    voie.style.animationName = ''; // désactive toute animation précédente
-  });
-
-  // Activer #hub correctement
-  hub.classList.add('active');
-  hub.style.display = 'flex';
-  hub.style.visibility = 'visible';
-  hub.style.animationName = 'slideInUp';
-
-  if (toggleMenu) toggleMenu.style.display = 'none';
-}
-function updateBois(adv) {
-  console.log('appel de la fonction updateBois');
-  if (!adv || typeof adv !== 'object') return;
-
-  // === JOINTS ===
-  const jointsBon = Number(adv['joints_bon']) || 0;
-  const jointsRepr = Number(adv['joints_a_repr']) || 0;
-  const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
-  const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
-
-  const jointsCountEl = document.getElementById('jointsCount');
-  if (jointsCountEl) {
-    jointsCountEl.textContent = jointsBon + jointsRepr;
-  }
-
-  const jointsRow = document.querySelector('#plancher-joints .plancher-table tbody tr');
-  if (jointsRow) {
-    const cells = jointsRow.querySelectorAll('td');
-    if (cells.length >= 4) {
-      cells[0].textContent = jointsPct;       // % joints à remplacer
-      cells[1].textContent = jointsBon;       // joints bon état
-      cells[2].textContent = jointsRepr;      // joints à reprendre
-      cells[3].textContent = jointsGraisser;  // joints à graisser
-    }
-  }
-
-  // === BOIS ===
-  const boisBon = Number(adv['bois_bon']) || 0;
-  const boisRemp = Number(adv['bois_a_remp']) || 0;
-  const boisPct = adv['bois_pct_remp'] !== undefined ? adv['bois_pct_remp'] + '%' : '-';
-
-  const boisCountEl = document.getElementById('boisCount');
-  if (boisCountEl) {
-    boisCountEl.textContent = boisBon + boisRemp;
-  }
-
-  const boisRow = document.querySelector('#plancher-bois .plancher-table tbody tr');
-  if (boisRow) {
-    const cells = boisRow.querySelectorAll('td');
-    if (cells.length >= 3) {
-      cells[0].textContent = boisPct;      // % bois à remplacer
-      cells[1].textContent = boisRemp;     // bois à remplacer
-      cells[2].textContent = boisBon;      // bois bon état
-    }
-  }
-}
 function setupToggleMenu() {
-  console.log('appel de la fonction setupToggleMenu');
   const contentSections = document.querySelectorAll('.voie-content');
   const hub = document.getElementById('hub');
   const toggleMenu = document.querySelector('.voie-toggle');
@@ -384,15 +209,205 @@ function setupToggleMenu() {
     toggleMenu.style.display = 'block';
   }
 }
+function initCharts() {
+  const boisCtx = document.getElementById('boisChart')?.getContext('2d');
+  if (boisCtx) {
+    boisChartInstance = new Chart(boisCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bon état', 'À remplacer'],
+        datasets: [{
+          data: [0, 0], // données initiales vides
+          backgroundColor: ['#4caf50', '#f44336']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
+  if (jointsCtx) {
+    jointsChartInstance = new Chart(jointsCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bon état', 'À reprendre'],
+        datasets: [{
+          data: [0, 0],
+          backgroundColor: ['#4caf50', '#f44336']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
+function getAdvDetails(adv) {
+  const advName = adv["ADV"] || adv["adv"];
+  if (!advName) {
+    console.warn("ADV manquant dans l'objet :", adv);
+    return;
+  }
+
+  fetch(`/api/general_data?adv=${encodeURIComponent(advName)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      displayAdvDetails(data);
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant les détails depuis general_data:", err);
+    });
+}
+
+
+function getAdvData(adv) {
+  const name = (adv["adv"] || adv["ADV"] || '').trim();
+  const type = (adv["type"] || '').toLowerCase();
+  // console.log(type);
+  if (!name || !type) {
+    // console.warn("ADV ou type manquant dans l'objet :", adv);
+    return;
+  }
+
+  // 1. Charger les données principales
+  fetch(`/api/${type}/${encodeURIComponent(name)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      const advData = Array.isArray(data) ? data[0] : data;
+      // console.log('advData:',advData)
+      if (!advData) {
+        // console.warn("Pas de données reçues pour :", name);
+        return;
+      }
+      switchVoieTypeContent(type, 'voie-croisement');
+      switchVoieTypeContent(type, 'voie-ecartement');
+      updateCroisement(advData)
+      updateEcartementAttaches(advData, type)
+      updatePlancherBois(advData);
+      // checkIfAiguillageActive();
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant les détails ADV:", err);
+    });
+  fetch(`/api/da?adv=${encodeURIComponent(name)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data) || data.length === 0) {
+        // console.warn("Pas de données de bavure reçues pour :", name);
+        return;
+      }
+      switchVoieTypeContent(type, 'voie-aiguillage');
+      updateDA(data, type);
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant la bavure ADV:", err);
+    });
+}
+
+function updateCroisement(adv){
+  fillCoeur2cInputs(adv);
+}
+
+function updatePlancherBois(adv){
+  updateBois(adv);
+  updateCharts(adv);
+}
+function updateEcartementAttaches(adv, type){
+  updateEcartements(adv, type);
+  updateAttaches(adv, type);
+}
+
+function updateDA(data, type){
+  updateBavuresTable(data);
+  updateEbrechureTable(data);
+  updateAppDM(data);
+  updateUsureLcaTable(data);
+  updateUsureLaTable(data);
+}
+
+
+function switchVoieTypeContent(type, voieId) {
+  const parent = document.getElementById(voieId);
+  if (!parent) return;
+
+  // Cas particulier : voie-aiguillage
+  if (voieId === 'voie-aiguillage') {
+    // cacher tous les enfants sauf summary
+    parent.querySelectorAll('.voie-type-container').forEach(container => {
+      container.style.display = (container.dataset.type === 'summary') ? 'flex' : 'none';
+    });
+
+    // gérer les tables dans summary
+    const summaryTableBs = document.getElementById('summary-table_bs');
+    const summaryTableTj = document.getElementById('summary-table_tj');
+
+    if (type === 'bs') {
+      if (summaryTableBs) summaryTableBs.style.display = '';
+      if (summaryTableTj) summaryTableTj.style.display = 'none';
+    } else if (type === 'tj') {
+      if (summaryTableBs) summaryTableBs.style.display = 'none';
+      if (summaryTableTj) summaryTableTj.style.display = '';
+    } else {
+      if (summaryTableBs) summaryTableBs.style.display = '';
+      if (summaryTableTj) summaryTableTj.style.display = '';
+    }
+
+    const showDetailBtn = document.getElementById('show-detail');
+    if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
+    const showSummaryBtn = document.getElementById('show-summary');
+    if (showSummaryBtn) showSummaryBtn.style.display = 'none';
+
+    return; // on s'arrête ici pour aiguillage
+  }
+
+  // Cas générique (croisement / écartement / autres)
+  parent.querySelectorAll('.voie-type-container').forEach(container => {
+    container.style.display = (container.dataset.type === type) ? 'flex' : 'none';
+  });
+  showOrHideDataForAiguillage(type);
+}
+
+
+function showOrHideDataForAiguillage(type) {
+  // Hide #data if in voie-aiguillage and type is 'bs', show otherwise
+  const voieAiguillage = document.getElementById('voie-aiguillage');
+  const dataSection = document.getElementById('data');
+  if (!voieAiguillage || !dataSection) return;
+
+  // Only check if voie-aiguillage is active
+  if (voieAiguillage.classList.contains('active')) {
+    if (type === 'bs') {
+      dataSection.style.display = 'none';
+    } else {
+      dataSection.style.display = 'flex';
+    }
+  } else {
+    dataSection.style.display = 'flex';
+  }
+}
+
+
 function updateToButtonVisibility() {
-  console.log('appel de la fonction updateToButtonVisibility');
   const voieAiguillage = document.getElementById('voie-aiguillage');
   const toButton = document.querySelector('button[data-type="TO"]');
   if (!toButton) return;
-
-  // If voie-aiguillage is visible, hide TO button, else show it
   const isAiguillageVisible = voieAiguillage && voieAiguillage.style.display !== 'none' && voieAiguillage.classList.contains('active');
   toButton.style.display = isAiguillageVisible ? 'none' : 'inline-block';
+  // console.log("on est dans la voie-content Aiguillage!!!")
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
   button.addEventListener('click', () => {
@@ -459,7 +474,7 @@ if (current) {
           const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
             .find(c => c.style.display !== 'none');
           const type = visibleType ? visibleType.dataset.type : '';
-          showOrHideDataForAiguillage(type);
+          // showOrHideDataForAiguillage(type);
         } else {
           document.getElementById('data').style.display = 'flex';
         }
@@ -493,338 +508,165 @@ if (current) {
 });
 
 
-let boisChartInstance = null;
-let jointsChartInstance = null;
-function initCharts() {
-  console.log('appel de la fonction initCharts');
-  const boisCtx = document.getElementById('boisChart')?.getContext('2d');
-  if (boisCtx) {
-    boisChartInstance = new Chart(boisCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Bon état', 'À remplacer'],
-        datasets: [{
-          data: [0, 0], // données initiales vides
-          backgroundColor: ['#4caf50', '#f44336']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
-
-  const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
-  if (jointsCtx) {
-    jointsChartInstance = new Chart(jointsCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Bon état', 'À reprendre'],
-        datasets: [{
-          data: [0, 0],
-          backgroundColor: ['#4caf50', '#f44336']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
-}
-
-function updateCharts(data) {
-  console.log('appel de la fonction updateCharts');
-  if (boisChartInstance && data.bois_bon != null && data.bois_a_remp != null) {
-    boisChartInstance.data.datasets[0].data = [data.bois_bon, data.bois_a_remp];
-    boisChartInstance.update();
-  }
-
-  if (jointsChartInstance && data.joints_bon != null && data.joints_a_repr != null) {
-    jointsChartInstance.data.datasets[0].data = [data.joints_bon, data.joints_a_repr];
-    jointsChartInstance.update();
-  }
-}
 
 
 
-function switchVoieTypeContent(type) {
-  // Always show only the summary when loading voie-aiguillage
-  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(container => {
-    if (container.dataset.type === 'summary') {
-      container.style.display = 'flex';
-    } else {
-      container.style.display = 'none';
-    }
+
+
+
+function resetVoieContent() {
+  const allVoies = document.querySelectorAll('.voie-content');
+  const hub = document.getElementById('hub');
+  const toggleMenu = document.querySelector('.voie-toggle');
+
+  // Masquer tous les .voie-content
+  allVoies.forEach(voie => {
+    voie.classList.remove('active');
+    voie.style.display = 'none';
+    voie.style.visibility = 'hidden';
+    voie.style.animationName = '';
   });
 
-  // Show the correct summary table for the type
-  const summaryTableBs = document.getElementById('summary-table_bs');
-  const summaryTableTj = document.getElementById('summary-table_tj');
-  if (type === 'bs') {
-    if (summaryTableBs) summaryTableBs.style.display = '';
-    if (summaryTableTj) summaryTableTj.style.display = 'none';
-  } else if (type === 'tj') {
-    if (summaryTableBs) summaryTableBs.style.display = 'none';
-    if (summaryTableTj) summaryTableTj.style.display = '';
-  } else {
-    if (summaryTableBs) summaryTableBs.style.display = '';
-    if (summaryTableTj) summaryTableTj.style.display = '';
-  }
+  // Activer #hub correctement
+  hub.classList.add('active');
+  hub.style.display = 'flex';
+  hub.style.visibility = 'visible';
+  hub.style.animationName = 'slideInUp';
 
-  // Update summary/détail buttons
-  const showDetailBtn = document.getElementById('show-detail');
-  if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
-  const showSummaryBtn = document.getElementById('show-summary');
-  if (showSummaryBtn) showSummaryBtn.style.display = 'none';
-
-  showOrHideDataForAiguillage(type);
+  if (toggleMenu) toggleMenu.style.display = 'none';
 }
-function showOrHideDataForAiguillage(type) {
-  // Hide #data if in voie-aiguillage and type is 'bs', show otherwise
-  const voieAiguillage = document.getElementById('voie-aiguillage');
-  const dataSection = document.getElementById('data');
-  if (!voieAiguillage || !dataSection) return;
 
-  // Only check if voie-aiguillage is active
-  if (voieAiguillage.classList.contains('active')) {
-    if (type === 'bs') {
-      dataSection.style.display = 'none';
-    } else {
-      dataSection.style.display = 'flex';
-    }
-  } else {
-    dataSection.style.display = 'flex';
-  }
-}
-function showSummaryForCurrentType() {
-  // Masquer toutes les voie-type sauf summary dans #voie-aiguillage
+
+
+
+document.getElementById('show-detail').onclick = function () {
+  // Masquer le résumé, afficher le détail selon le type courant
+  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
   document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
-    c.style.display = (c.dataset.type === 'summary') ? 'flex' : 'none';
+    if (c.dataset.type === currentType) {
+      c.style.display = 'flex';
+    } else if (c.dataset.type !== 'summary') {
+      c.style.display = 'none';
+    }
   });
+  // Boutons
+  document.getElementById('show-summary').style.display = 'inline-block';
+  document.getElementById('show-detail').style.display = 'none';
+};
 
-  // Masquer toutes les tables du résumé
-  document.querySelectorAll('#voie-aiguillage #summary table').forEach(tbl => {
-    tbl.style.display = 'none';
+document.getElementById('show-summary').onclick = function () {
+  // Masquer le détail, afficher le résumé
+  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
+    if (c.dataset.type === 'summary') {
+      c.style.display = 'flex';
+    } else {
+      c.style.display = 'none';
+    }
   });
-
-  // Afficher uniquement la table correspondant au currentType
-  const summaryTable = document.querySelector(`#voie-aiguillage #summary-table_${currentType}`);
-  if (summaryTable) {
-    summaryTable.style.display = 'table';
-  }
-
-  // (Optionnel) si tu veux aussi mettre à jour les données
-  if (typeof renderSummaryTable === 'function' && summaryData) {
-    renderSummaryTable(currentType, summaryData);
-  }
-
-  // Mettre à jour les boutons
+  // Afficher le bon tableau résumé
+  renderSummaryTable(currentType, summaryData);
+  // Boutons
   document.getElementById('show-summary').style.display = 'none';
   document.getElementById('show-detail').style.display = 'inline-block';
-}
+};
 
-function switchVoieTypeContent(type) {
-  // Affiche toujours le résumé en premier
-  document.querySelectorAll('.voie-type-container').forEach(container => {
-    container.style.display = 'none';
-    if (container.dataset.type === 'summary') {
-      container.style.display = 'flex';
+function renderSummaryTable(type, data) {
+  // Hide both summary tables first
+  const bsTable = document.getElementById('summary-table_bs');
+  const tjTable = document.getElementById('summary-table_tj');
+  if (bsTable) bsTable.style.display = 'none';
+  if (tjTable) tjTable.style.display = 'none';
 
-      // Affiche le bon tableau résumé selon le type
-      const summaryTableBs = container.querySelector('#summary-table_bs');
-      const summaryTableTj = container.querySelector('#summary-table_tj');
-      if (type === 'bs') {
-        if (summaryTableBs) summaryTableBs.style.display = '';
-        if (summaryTableTj) summaryTableTj.style.display = 'none';
-      } else if (type === 'tj') {
-        if (summaryTableBs) summaryTableBs.style.display = 'none';
-        if (summaryTableTj) summaryTableTj.style.display = '';
-      } else {
-        // Par défaut, tout afficher
-        if (summaryTableBs) summaryTableBs.style.display = '';
-        if (summaryTableTj) summaryTableTj.style.display = '';
-      }
-      return;
-    }else if (container.dataset.type === type) {
-        document.querySelectorAll('.voie-type-container').forEach(container => {
-        if (container.dataset.type === type) {
-          container.style.display = 'flex';
-        } else {
-          container.style.display = 'none';
-        }
-      });
-    } else {
-      container.style.display = 'none';
-    }
-  });
-
-  // Optionnel : gérer les boutons résumé/détail
-  const showDetailBtn = document.getElementById('show-detail');
-  if (showDetailBtn) showDetailBtn.style.display = 'inline-block';
-  const showSummaryBtn = document.getElementById('show-summary');
-  if (showSummaryBtn) showSummaryBtn.style.display = 'none';
-} 
-
-
-function updateEcartements(adv, type) {
-  console.log('appel de la fonction updateEcartements');
-  if (!adv || typeof adv !== 'object') return;
-
-  const voieEcartement = document.getElementById('voie-ecartement');
-  if (!voieEcartement) return;
-
-  document.querySelectorAll('#voie-ecartement .voie-type-container').forEach(container => {
-    container.style.display = (container.dataset.type === type) ? 'block' : 'none';
-  });
-
-  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
-  if (!targetContainer) {
-    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
-    return;
+  // Show the correct summary table
+  let table = null;
+  if (type === 'bs') {
+    table = bsTable;
+    // console.log('Showing summary-table_bs');
+  } else if (type === 'tj') {
+    table = tjTable;
+    // console.log('Showing summary-table_tj');
+  } else {
+    // console.warn('Unknown type for summary:', type);
   }
-
-  // Remplit les cartes
-  const cards = targetContainer.querySelectorAll('.ecartement-card');
-  cards.forEach((card, index) => {
-    const key = `ecart_${index + 1}`;
-    const value = adv[key];
-    card.textContent = (value !== undefined && value !== null && value !== '') ? value : '-';
-  });
-}
-
-function updateAttaches(adv, type) {
-  console.log('appel de la fonction updateAttaches');
-  if (!adv || typeof adv !== 'object') return;
-
-  const voieEcartement = document.getElementById('voie-ecartement');
-  if (!voieEcartement) return;
-
-  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
-  if (!targetContainer) {
-    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
-    return;
-  }
-
-  const rows = targetContainer.querySelectorAll('table.attaches-table tbody tr');
-
-  rows.forEach(row => {
-    const zoneCell = row.cells[0];
-    const effCell = row.cells[1];
-    const ineffCell = row.cells[2];
-
-    if (!zoneCell || !effCell || !ineffCell) return;
-
-    const zone = zoneCell.textContent.trim(); // ex: "1", "2'", etc.
-
-    const keyEff = `att_e_pct_${zone}`;
-    const keyIneff = `att_i_pct_${zone}`;
-
-    const valEff = adv[keyEff];
-    const valIneff = adv[keyIneff];
-
-    effCell.textContent = valEff != null ? `${(parseFloat(valEff) * 100).toFixed(0)}%` : '-';
-    ineffCell.textContent = valIneff != null ? `${(parseFloat(valIneff) * 100).toFixed(0)}%` : '-';
-  });
-}
-function fillCoeur2cInputs(advData) {
-  console.log('appel de la fonction fillCoeur2cInputs');
-
-  const voieContainers = document.querySelectorAll(".voie-type-container");
-
-  voieContainers.forEach(container => {
-    const type = container.dataset.type;
-    if (type !== "tj" && type !== "to" && type !== "bs") return;
-
-    // Partie haute
-    const h = container.querySelector(".container_coeur2c_h");
-    if (h) {
-      h.querySelector(".ep_cr_g").value = advData["ep_cr_g_h"] ?? "no-data";
-      h.querySelector(".ep_cal_g").value = advData["ep_cal_g_h"] ?? "no-data";
-      h.querySelector(".nb_cal_g").value = advData["nb_cal_g_h"] ?? "no-data";
-
-      h.querySelector(".ep_cr_d").value = advData["ep_cr_d_h"] ?? "no-data";
-      h.querySelector(".ep_cal_d").value = advData["ep_cal_d_h"] ?? "no-data";
-      h.querySelector(".nb_cal_d").value = advData["nb_cal_d_h"] ?? "no-data";
-
-      h.querySelector(".coeur2c_num_h").value = advData["coeur2c_num_h"] ?? "no-data";
-    }
-
-    const ht = container.querySelector(".container_coeur2c_h_t");
-    if (ht) {
-      ht.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
-      ht.querySelector(".p2p_d_h").value = advData["p2p_d_h"] ?? "no-data";
-      ht.querySelector(".coeur2c_num_h_t").value = advData["coeur2c_num_h"] ?? "no-data";
-    }
-
-    // Partie basse
-    const b = container.querySelector(".container_coeur2c_b");
-    if (b) {
-      b.querySelector(".ep_cr_g").value = advData["ep_cr_g_b"] ?? "no-data";
-      b.querySelector(".ep_cal_g").value = advData["ep_cal_g_b"] ?? "no-data";
-      b.querySelector(".nb_cal_g").value = advData["nb_cal_g_b"] ?? "no-data";
-
-      b.querySelector(".ep_cr_d").value = advData["ep_cr_d_b"] ?? "no-data";
-      b.querySelector(".ep_cal_d").value = advData["ep_cal_d_b"] ?? "no-data";
-      b.querySelector(".nb_cal_d").value = advData["nb_cal_d_b"] ?? "no-data";
-
-      b.querySelector(".coeur2c_num_b").value = advData["coeur2c_num_b"] ?? "no-data";
-    }
-
-    const bt = container.querySelector(".container_coeur2c_b_t");
-    if (bt) {
-      bt.querySelector(".p2p_g_b").value = advData["p2p_g_b"] ?? "no-data";
-      bt.querySelector(".p2p_d_b").value = advData["p2p_d_b"] ?? "no-data";
-      bt.querySelector(".coeur2c_num_b_t").value = advData["coeur2c_num_b"] ?? "no-data";
-    }
-
-    const t = container.querySelector(".traverse-img");
-    if (t) {
-      t.querySelector(".p2p_g_h").value = advData["p2p_g_h"] ?? "no-data";
-      t.querySelector(".p2p_d_h").value = advData["p2p_d_h"] ?? "no-data";
-      t.querySelector(".libre_passage_g").value = advData["libre_passage_g"] ?? "no-data";
-      t.querySelector(".libre_passage_d").value = advData["libre_passage_d"] ?? "no-data";
-      t.querySelector(".p2p_g_b").value = advData["p2p_g_b"] ?? "no-data";
-      t.querySelector(".p2p_d_b").value = advData["p2p_d_b"] ?? "no-data";
-      t.querySelector(".coeur2t_num_g").value = advData["coeur2t_num_g"] ?? "no-data";
-      t.querySelector(".coeur2t_num_d").value = advData["coeur2t_num_d"] ?? "no-data";
-    }
-
-    const bs = container.querySelector(".croisement-img-bs");
-    if (bs) {
-      bs.querySelector(".p2p_g").value = advData["p2p_g"] ?? "no-data";
-      bs.querySelector(".p2p_d").value = advData["p2p_d"] ?? "no-data";
-    }
-  });
-
-  // Appeler UNE SEULE fois après la boucle
-  fillCroisementTable(document, advData);
-}
-
-function fillCroisementTable(container, advData) {
-  console.log('appel de la fonction fillCroisementTable');
-  const table = container.querySelector(".croisement-table");
   if (!table) return;
+  table.style.display = 'table';
 
-  const row = table.querySelector("tbody tr");
-  if (!row) return;
+  // Toggle buttons: show only #show-detail in summary mode
+  document.getElementById('show-summary').style.display = 'none';
+  document.getElementById('show-detail').style.display = 'inline-block';
 
-  const cells = row.querySelectorAll("td");
-  if (cells.length < 8) return;
+  // Clear all cells except the first column
+  // table.querySelectorAll('tbody tr').forEach(row => {
+  //   for (let i = 1; i < row.cells.length; i++) {
+  //     row.cells[i].textContent = "";
+  //   }
+  // });
 
-  cells[0].textContent = advData["coeur_num"] ?? "no-data";
-  cells[1].textContent = advData["ep_cr_g"] ?? "no-data";
-  cells[2].textContent = advData["ep_cal_g"] ?? "no-data";
-  cells[3].textContent = advData["nb_cales_g"] ?? "no-data";
-  cells[4].textContent = advData["ep_cr_d"] ?? "no-data";
-  cells[5].textContent = advData["ep_cal_d"] ?? "no-data";
-  cells[6].textContent = advData["nb_cales_d"] ?? "no-data";
-  cells[7].textContent = advData["coeur_etat"] ?? "no-data";
+  // Helper to get column index for bs/tj
+  function getColIndex(advType) {
+    if (type === 'bs') {
+      if (advType === 'G') return 1;
+      if (advType === 'D') return 2;
+    } else if (type === 'tj') {
+      const idx = parseInt(advType, 10);
+      if (!isNaN(idx) && idx >= 1 && idx <= 8) return idx;
+    }
+    return null;
+  }
+
+  data.forEach(item => {
+    const advType = (item.adv_type || '').toUpperCase();
+    const colIndex = getColIndex(advType);
+    if (colIndex === null) return;
+
+    // Bavure
+    if (item.bavure) {
+      const row = table.querySelector('tr[data-type="bavure"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
+    }
+    //  ^ibr  chure
+    if (item.ebrechure_a) {
+      const row = table.querySelector('tr[data-type="ebrechure"]');
+            if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
+    }
+    // Application demi-aiguillage
+    if (item.application_da_etat_bute || item.application_da_entrebaillement) {
+      const row = table.querySelector('tr[data-type="app-dm-ag"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
+    }
+    // Usure lat  rale contre-aiguille
+    if (item.usure_lca) {
+      const row = table.querySelector('tr[data-type="usure_lca"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
+    }
+    // Usure lat  rale aiguille
+    if (item.usure_la_contact || item.usure_la_pente || item.usure_la_classement) {
+      const row = table.querySelector('tr[data-type="usure_la"]');
+      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
+    }
+  });
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//page demi-Aiguillage
 
 function updateBavuresTable(data) {
-  console.log('appel de la fonction updateBavuresTable');
   const mappingBavure = {
     "aucune bavure": "aucune",
     "bavures éliminées par meulage": "meulage",
@@ -877,7 +719,6 @@ function updateBavuresTable(data) {
 }
 
 function updateEbrechureTable(data) {
-  console.log('appel de la fonction updateEbrechureTable');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -949,7 +790,6 @@ function updateEbrechureTable(data) {
 }
 
 function updateAppDM(data) {
-  console.log('appel de la fonction updateAppDM');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -992,7 +832,6 @@ function updateAppDM(data) {
 }
 
 function updateUsureLcaTable(data) {
-  console.log('appel de la fonction updateUsureLcaTable');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -1071,7 +910,6 @@ function updateUsureLcaTable(data) {
 }
 
 function updateUsureLaTable(data) {
-  console.log('appel de la fonction updateUsureLaTable');
   ['tj', 'bs'].forEach(type => {
     const container = document.querySelector(`#voie-aiguillage .voie-type-container[data-type="${type}"]`);
     if (!container) return;
@@ -1135,112 +973,221 @@ function updateUsureLaTable(data) {
   });
 }
 
-document.getElementById('show-detail').onclick = function () {
-  // Masquer le résumé, afficher le détail selon le type courant
-  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
-  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
-    if (c.dataset.type === currentType) {
-      c.style.display = 'flex';
-    } else if (c.dataset.type !== 'summary') {
-      c.style.display = 'none';
-    }
-  });
-  // Boutons
-  document.getElementById('show-summary').style.display = 'inline-block';
-  document.getElementById('show-detail').style.display = 'none';
-};
 
-document.getElementById('show-summary').onclick = function () {
-  // Masquer le détail, afficher le résumé
-  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
-    if (c.dataset.type === 'summary') {
-      c.style.display = 'flex';
-    } else {
-      c.style.display = 'none';
-    }
-  });
-  // Afficher le bon tableau résumé
-  renderSummaryTable(currentType, summaryData);
-  // Boutons
-  document.getElementById('show-summary').style.display = 'none';
-  document.getElementById('show-detail').style.display = 'inline-block';
-};
+//page Plancher/bois
 
-function renderSummaryTable(type, data) {
-  console.log('renderSummaryTable called with type:', type);
+function updateBois(adv) {
+  if (!adv || typeof adv !== 'object') return;
+  // console.log('adv',adv);
+  // === JOINTS ===
+  const jointsBon = Number(adv['joints_bon']) || 0;
+  const jointsRepr = Number(adv['joints_a_repr']) || 0;
+  const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
+  const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
 
-  // Hide both summary tables first
-  const bsTable = document.getElementById('summary-table_bs');
-  const tjTable = document.getElementById('summary-table_tj');
-  if (bsTable) bsTable.style.display = 'none';
-  if (tjTable) tjTable.style.display = 'none';
-
-  // Show the correct summary table
-  let table = null;
-  if (type === 'bs') {
-    table = bsTable;
-    console.log('Showing summary-table_bs');
-  } else if (type === 'tj') {
-    table = tjTable;
-    console.log('Showing summary-table_tj');
-  } else {
-    console.warn('Unknown type for summary:', type);
+  const jointsCountEl = document.getElementById('jointsCount');
+  if (jointsCountEl) {
+    jointsCountEl.textContent = jointsBon + jointsRepr;
   }
+
+  const jointsRow = document.querySelector('#plancher-joints .plancher-table tbody tr');
+  if (jointsRow) {
+    const cells = jointsRow.querySelectorAll('td');
+    if (cells.length >= 4) {
+      cells[0].textContent = jointsPct;       // % joints à remplacer
+      cells[1].textContent = jointsBon;       // joints bon état
+      cells[2].textContent = jointsRepr;      // joints à reprendre
+      cells[3].textContent = jointsGraisser;  // joints à graisser
+    }
+  }
+
+  // === BOIS ===
+  const boisBon = Number(adv['bois_bon']) || 0;
+  const boisRemp = Number(adv['bois_a_remp']) || 0;
+  const boisPct = adv['bois_pct_remp'] !== undefined ? adv['bois_pct_remp'] + '%' : '-';
+
+  const boisCountEl = document.getElementById('boisCount');
+  if (boisCountEl) {
+    boisCountEl.textContent = boisBon + boisRemp;
+  }
+
+  const boisRow = document.querySelector('#plancher-bois .plancher-table tbody tr');
+  if (boisRow) {
+    const cells = boisRow.querySelectorAll('td');
+    if (cells.length >= 3) {
+      cells[0].textContent = boisPct;      // % bois à remplacer
+      cells[1].textContent = boisRemp;     // bois à remplacer
+      cells[2].textContent = boisBon;      // bois bon état
+    }
+  }
+}
+function updateCharts(adv) {
+  // console.log('data:', adv);
+
+  if (boisChartInstance && adv.bois_bon != null && adv.bois_a_remp != null) {
+    boisChartInstance.data.datasets[0].data = [adv.bois_bon, adv.bois_a_remp];
+    boisChartInstance.update();
+  }
+
+  if (jointsChartInstance && adv.joints_bon != null && adv.joints_a_repr != null) {
+    jointsChartInstance.data.datasets[0].data = [adv.joints_bon, adv.joints_a_repr];
+    jointsChartInstance.update();
+  }
+}
+
+
+//page ecartement/attaches
+
+function updateEcartements(adv, type) {
+  // console.log('UpdateEcartement: adv: ', adv, 'type: ',type)
+  if (!adv || typeof adv !== 'object') return;
+
+  const voieEcartement = document.getElementById('voie-ecartement');
+  if (!voieEcartement) return;
+
+  document.querySelectorAll('#voie-ecartement .voie-type-container').forEach(container => {
+    container.style.display = (container.dataset.type === type) ? 'block' : 'none';
+  });
+
+  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
+  if (!targetContainer) {
+    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
+    return;
+  }
+
+  // Remplit les cartes
+  const cards = targetContainer.querySelectorAll('.ecartement-card');
+  cards.forEach((card, index) => {
+    const key = `ecart_${index + 1}`;
+    const value = adv[key];
+    card.textContent = (value !== undefined && value !== null && value !== '') ? value : '-';
+  });
+}
+
+function updateAttaches(adv, type) {
+  if (!adv || typeof adv !== 'object') return;
+
+  const voieEcartement = document.getElementById('voie-ecartement');
+  if (!voieEcartement) return;
+
+  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
+  if (!targetContainer) {
+    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
+    return;
+  }
+
+  const rows = targetContainer.querySelectorAll('table.attaches-table tbody tr');
+
+  rows.forEach(row => {
+    const zoneCell = row.cells[0];
+    const effCell = row.cells[1];
+    const ineffCell = row.cells[2];
+
+    if (!zoneCell || !effCell || !ineffCell) return;
+
+    const zone = zoneCell.textContent.trim(); // ex: "1", "2'", etc.
+
+    const keyEff = `att_e_pct_${zone}`;
+    const keyIneff = `att_i_pct_${zone}`;
+
+    const valEff = adv[keyEff];
+    const valIneff = adv[keyIneff];
+
+    effCell.textContent = valEff != null ? `${(parseFloat(valEff) * 100).toFixed(0)}%` : '-';
+    ineffCell.textContent = valIneff != null ? `${(parseFloat(valIneff) * 100).toFixed(0)}%` : '-';
+  });
+}
+
+//page Croisement
+function fillCoeur2cInputs(adv) {
+  // console.log('fillCoeur2cInputs advData: ', adv)
+  const voieContainers = document.querySelectorAll(".voie-type-container");
+
+  voieContainers.forEach(container => {
+    const type = container.dataset.type;
+    if (type !== "tj" && type !== "to" && type !== "bs") return;
+
+    // Partie haute
+    const h = container.querySelector(".container_coeur2c_h");
+    if (h) {
+      h.querySelector(".ep_cr_g").value = adv["ep_cr_g_h"] ?? "no-data";
+      h.querySelector(".ep_cal_g").value = adv["ep_cal_g_h"] ?? "no-data";
+      h.querySelector(".nb_cal_g").value = adv["nb_cal_g_h"] ?? "no-data";
+
+      h.querySelector(".ep_cr_d").value = adv["ep_cr_d_h"] ?? "no-data";
+      h.querySelector(".ep_cal_d").value = adv["ep_cal_d_h"] ?? "no-data";
+      h.querySelector(".nb_cal_d").value = adv["nb_cal_d_h"] ?? "no-data";
+
+      h.querySelector(".coeur2c_num_h").value = adv["coeur2c_num_h"] ?? "no-data";
+    }
+
+    const ht = container.querySelector(".container_coeur2c_h_t");
+    if (ht) {
+      ht.querySelector(".p2p_g_h").value = adv["p2p_g_h"] ?? "no-data";
+      ht.querySelector(".p2p_d_h").value = adv["p2p_d_h"] ?? "no-data";
+      ht.querySelector(".coeur2c_num_h_t").value = adv["coeur2c_num_h"] ?? "no-data";
+    }
+
+    // Partie basse
+    const b = container.querySelector(".container_coeur2c_b");
+    if (b) {
+      b.querySelector(".ep_cr_g").value = adv["ep_cr_g_b"] ?? "no-data";
+      b.querySelector(".ep_cal_g").value = adv["ep_cal_g_b"] ?? "no-data";
+      b.querySelector(".nb_cal_g").value = adv["nb_cal_g_b"] ?? "no-data";
+
+      b.querySelector(".ep_cr_d").value = adv["ep_cr_d_b"] ?? "no-data";
+      b.querySelector(".ep_cal_d").value = adv["ep_cal_d_b"] ?? "no-data";
+      b.querySelector(".nb_cal_d").value = adv["nb_cal_d_b"] ?? "no-data";
+
+      b.querySelector(".coeur2c_num_b").value = adv["coeur2c_num_b"] ?? "no-data";
+    }
+
+    const bt = container.querySelector(".container_coeur2c_b_t");
+    if (bt) {
+      bt.querySelector(".p2p_g_b").value = adv["p2p_g_b"] ?? "no-data";
+      bt.querySelector(".p2p_d_b").value = adv["p2p_d_b"] ?? "no-data";
+      bt.querySelector(".coeur2c_num_b_t").value = adv["coeur2c_num_b"] ?? "no-data";
+    }
+
+    const t = container.querySelector(".traverse-img");
+    if (t) {
+      t.querySelector(".p2p_g_h").value = adv["p2p_g_h"] ?? "no-data";
+      t.querySelector(".p2p_d_h").value = adv["p2p_d_h"] ?? "no-data";
+      t.querySelector(".libre_passage_g").value = adv["libre_passage_g"] ?? "no-data";
+      t.querySelector(".libre_passage_d").value = adv["libre_passage_d"] ?? "no-data";
+      t.querySelector(".p2p_g_b").value = adv["p2p_g_b"] ?? "no-data";
+      t.querySelector(".p2p_d_b").value = adv["p2p_d_b"] ?? "no-data";
+      t.querySelector(".coeur2t_num_g").value = adv["coeur2t_num_g"] ?? "no-data";
+      t.querySelector(".coeur2t_num_d").value = adv["coeur2t_num_d"] ?? "no-data";
+    }
+
+    const bs = container.querySelector(".croisement-img-bs");
+    if (bs) {
+      bs.querySelector(".p2p_g").value = adv["p2p_g"] ?? "no-data";
+      bs.querySelector(".p2p_d").value = adv["p2p_d"] ?? "no-data";
+    }
+  });
+
+  // Appeler UNE SEULE fois après la boucle
+  fillCroisementTable(document, adv);
+}
+
+function fillCroisementTable(container, adv) {
+  const table = container.querySelector(".croisement-table");
   if (!table) return;
-  table.style.display = 'table';
 
-  // Toggle buttons: show only #show-detail in summary mode
-  document.getElementById('show-summary').style.display = 'none';
-  document.getElementById('show-detail').style.display = 'inline-block';
+  const row = table.querySelector("tbody tr");
+  if (!row) return;
 
-  // Clear all cells except the first column
-  // table.querySelectorAll('tbody tr').forEach(row => {
-  //   for (let i = 1; i < row.cells.length; i++) {
-  //     row.cells[i].textContent = "";
-  //   }
-  // });
+  const cells = row.querySelectorAll("td");
+  if (cells.length < 8) return;
 
-  // Helper to get column index for bs/tj
-  function getColIndex(advType) {
-    if (type === 'bs') {
-      if (advType === 'G') return 1;
-      if (advType === 'D') return 2;
-    } else if (type === 'tj') {
-      const idx = parseInt(advType, 10);
-      if (!isNaN(idx) && idx >= 1 && idx <= 8) return idx;
-    }
-    return null;
-  }
-
-  data.forEach(item => {
-    const advType = (item.adv_type || '').toUpperCase();
-    const colIndex = getColIndex(advType);
-    if (colIndex === null) return;
-
-    // Bavure
-    if (item.bavure) {
-      const row = table.querySelector('tr[data-type="bavure"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
-    }
-    //  ^ibr  chure
-    if (item.ebrechure_a) {
-      const row = table.querySelector('tr[data-type="ebrechure"]');
-            if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
-    }
-    // Application demi-aiguillage
-    if (item.application_da_etat_bute || item.application_da_entrebaillement) {
-      const row = table.querySelector('tr[data-type="app-dm-ag"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
-    }
-    // Usure lat  rale contre-aiguille
-    if (item.usure_lca) {
-      const row = table.querySelector('tr[data-type="usure_lca"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
-    }
-    // Usure lat  rale aiguille
-    if (item.usure_la_contact || item.usure_la_pente || item.usure_la_classement) {
-      const row = table.querySelector('tr[data-type="usure_la"]');
-      if (row && row.cells[colIndex]) row.cells[colIndex].textContent = " ^|^w";
-    }
-  });
+  cells[0].textContent = adv["coeur_num"] ?? "no-data";
+  cells[1].textContent = adv["ep_cr_g"] ?? "no-data";
+  cells[2].textContent = adv["ep_cal_g"] ?? "no-data";
+  cells[3].textContent = adv["nb_cales_g"] ?? "no-data";
+  cells[4].textContent = adv["ep_cr_d"] ?? "no-data";
+  cells[5].textContent = adv["ep_cal_d"] ?? "no-data";
+  cells[6].textContent = adv["nb_cales_d"] ?? "no-data";
+  cells[7].textContent = adv["coeur_etat"] ?? "no-data";
 }
