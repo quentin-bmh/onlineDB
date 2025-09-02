@@ -1,8 +1,6 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
-
-// Connexion à la base PostgreSQL
 const pool = new Pool({
   host: process.env.HOST_BDD,
   database: process.env.DATABASE_NAME,
@@ -67,16 +65,21 @@ module.exports = {
         JWT_SECRET,
         { expiresIn: '1h' }
       );
-
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "Strict",
+        maxAge: 60 * 60 * 1000
+      });
       res.json({
         message: "Connexion réussie",
-        token,
         user: {
           id: user.id,
           email: user.email,
           username: user.username
         }
       });
+
     } catch (error) {
       console.error("Erreur login:", error);
       res.status(500).json({ message: "Erreur serveur" });

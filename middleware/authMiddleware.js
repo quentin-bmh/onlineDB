@@ -13,7 +13,7 @@ module.exports = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log("Token décodé :", decoded); // ✅ maintenant que decoded est défini
+    // console.log("Token décodé :", decoded);
     req.user = decoded;
     next();
   } catch (err) {

@@ -10,7 +10,117 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTypeButtons();
   setupToggleMenu();
   initCharts();
+
+  if (typeof setInputsDisabled !== 'function') {
+    window.setInputsDisabled = (disabled) => {
+      const container = document.querySelector('.dataVoie-Container');
+      if (!container) return console.warn('⚠️ .dataVoie-Container introuvable au chargement');
+      container.querySelectorAll('input, select, textarea, button').forEach(el => {
+        el.disabled = !!disabled;
+      });
+    };
+    console.warn('setInputsDisabled() n\'existait pas — fallback créé.');
+  }
+
+  // Appliquer l'état initial du toggle au chargement
+  const toggle = document.getElementById('toggleButton'); // adapte l'ID si besoin
+  if (!toggle) {
+    console.warn('⚠️ toggleButton introuvable au chargement');
+  } else {
+    const isAdmin = toggle.classList.contains('on');
+    // console.log('Initial toggle state:', isAdmin ? 'Admin' : 'Technicien');
+    setInputsDisabled(!isAdmin);
+  }
 });
+document.querySelectorAll("table[data-editable='true'] tbody td").forEach(td => {
+  td.contentEditable = true; // rend la cellule modifiable
+});
+// Rendre éditables tous les éléments marqués
+document.querySelectorAll("[data-editable='true']").forEach(el => {
+  el.contentEditable = true;
+});
+document.querySelectorAll("table[data-editable='true']").forEach(table => {
+  const lockAttr = (table.dataset.lock || "").toLowerCase();
+  const lockFirstRow = lockAttr.includes("first-row");
+  const lockFirstCol = lockAttr.includes("first-col");
+
+  // 1) Verrouiller uniquement l'en-tête si demandé
+  if (lockFirstRow) {
+    table.querySelectorAll("thead th").forEach(th => {
+      th.contentEditable = false;
+      th.classList.add("non-editable");  
+    });
+  }
+
+  // 2) Parcourir le tbody
+  table.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
+    row.querySelectorAll("td").forEach((cell, colIndex) => {
+      if (lockFirstCol && colIndex === 0) {
+        cell.contentEditable = false;
+        cell.classList.add("non-editable");
+      } else {
+        cell.contentEditable = true;
+        cell.classList.remove("non-editable");
+      }
+    });
+  });
+});
+
+
+  
+document.getElementById("new-measure-btn").addEventListener("click", () => {
+  const activeVoie = document.querySelector(".voie-content.active");
+  if (!activeVoie) {
+    console.warn("Aucune voie active trouvée !");
+    return;
+  }
+
+  const visibleContainers = Array.from(
+    activeVoie.querySelectorAll(".voie-type-container")
+  ).filter(c => c.style.display !== "none");
+
+  visibleContainers.forEach(container => {
+    const elements = container.querySelectorAll(
+      "input, textarea, select, table, [data-value], [data-editable], .ecartement-card"
+    );
+
+    elements.forEach(el => {
+      let identifier =
+        el.id ||
+        el.getAttribute("name") ||
+        (el.className ? "." + el.className.split(" ").join(".") : "(sans id/classe)");
+
+      // 1️⃣ Log pour vérifier que l'élément est bien trouvé
+      console.log("Élément trouvé :", identifier, el);
+
+      // 2️⃣ Activer édition
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+        el.disabled = false;
+        console.log("→ input/textarea/select activé");
+      } else if (el.tagName === "TABLE") {
+        // ici on pourrait appeler la fonction de verrouillage pour first-row/first-col
+        console.log("→ table détectée");
+      } else if (el.classList.contains("ecartement-card")) {
+        el.contentEditable = true;
+        el.style.cursor = "text"; // montre que c'est éditable
+        console.log("→ card activée pour édition");
+      }
+
+      // 3️⃣ Log valeur actuelle
+      let value = "";
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+        value = el.value;
+      } else if (el.tagName === "TABLE") {
+        value = el.innerText.trim();
+      } else {
+        value = el.getAttribute("data-value") || el.innerText.trim();
+      }
+      console.log(`Valeur actuelle: ${value}`);
+    });
+  });
+});
+
+
 
 
 
@@ -343,15 +453,12 @@ function updateDA(data, type){
 function switchVoieTypeContent(type, voieId) {
   const parent = document.getElementById(voieId);
   if (!parent) return;
-
-  // Cas particulier : voie-aiguillage
+  
   if (voieId === 'voie-aiguillage') {
-    // cacher tous les enfants sauf summary
     parent.querySelectorAll('.voie-type-container').forEach(container => {
       container.style.display = (container.dataset.type === 'summary') ? 'flex' : 'none';
     });
 
-    // gérer les tables dans summary
     const summaryTableBs = document.getElementById('summary-table_bs');
     const summaryTableTj = document.getElementById('summary-table_tj');
 
@@ -371,24 +478,21 @@ function switchVoieTypeContent(type, voieId) {
     const showSummaryBtn = document.getElementById('show-summary');
     if (showSummaryBtn) showSummaryBtn.style.display = 'none';
 
-    return; // on s'arrête ici pour aiguillage
+    return;
   }
 
-  // Cas générique (croisement / écartement / autres)
   parent.querySelectorAll('.voie-type-container').forEach(container => {
     container.style.display = (container.dataset.type === type) ? 'flex' : 'none';
   });
   showOrHideDataForAiguillage(type);
+  updateButtons();
 }
 
 
 function showOrHideDataForAiguillage(type) {
-  // Hide #data if in voie-aiguillage and type is 'bs', show otherwise
   const voieAiguillage = document.getElementById('voie-aiguillage');
   const dataSection = document.getElementById('data');
   if (!voieAiguillage || !dataSection) return;
-
-  // Only check if voie-aiguillage is active
   if (voieAiguillage.classList.contains('active')) {
     if (type === 'bs') {
       dataSection.style.display = 'none';
@@ -407,7 +511,8 @@ function updateToButtonVisibility() {
   if (!toButton) return;
   const isAiguillageVisible = voieAiguillage && voieAiguillage.style.display !== 'none' && voieAiguillage.classList.contains('active');
   toButton.style.display = isAiguillageVisible ? 'none' : 'inline-block';
-  // console.log("on est dans la voie-content Aiguillage!!!")
+  console.log("utilisation de updateToButtonVisibility")
+  updateButtons();
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
   button.addEventListener('click', () => {
@@ -538,37 +643,74 @@ function resetVoieContent() {
 
 
 
+function updateButtons() {
+  const voieAiguillage = document.querySelector('#voie-aiguillage.voie-content.active');
+  const toggleContainer = document.querySelector('.toggle-summary-detail');
+  const btnSummary = document.getElementById('show-summary');
+  const btnDetail = document.getElementById('show-detail');
 
+  // Par défaut on masque le container entier
+  toggleContainer.style.display = 'none';
+
+  // On n'affiche le container que si la voie aiguillage est active
+  if (!voieAiguillage) return;
+
+  // On cherche le container visible à l'intérieur
+  const visibleContainer = Array.from(voieAiguillage.querySelectorAll('.voie-type-container'))
+    .find(c => c.style.display !== 'none');
+
+  if (!visibleContainer) return;
+
+  // Si on est bien dans voie-aiguillage et qu'un contenu est visible,
+  // on affiche le container
+  toggleContainer.style.display = 'inline-flex';
+
+  // Puis on gère quel bouton montrer
+  if (visibleContainer.dataset.type === 'summary') {
+    btnSummary.style.display = 'none';
+    btnDetail.style.display = 'inline-block';
+  } else {
+    btnSummary.style.display = 'inline-block';
+    btnDetail.style.display = 'none';
+  }
+}
+
+
+// Appel initial
+updateButtons();
+
+// Clic sur show-detail
 document.getElementById('show-detail').onclick = function () {
-  // Masquer le résumé, afficher le détail selon le type courant
-  document.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
-  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
-    if (c.dataset.type === currentType) {
-      c.style.display = 'flex';
-    } else if (c.dataset.type !== 'summary') {
-      c.style.display = 'none';
-    }
+  const voieAiguillage = document.querySelector('#voie-aiguillage.voie-content.active');
+  if (!voieAiguillage) return;
+
+  voieAiguillage.querySelector('.voie-type-container[data-type="summary"]').style.display = 'none';
+  voieAiguillage.querySelectorAll('.voie-type-container').forEach(c => {
+    if (c.dataset.type === currentType) c.style.display = 'flex';
+    else if (c.dataset.type !== 'summary') c.style.display = 'none';
   });
-  // Boutons
-  document.getElementById('show-summary').style.display = 'inline-block';
-  document.getElementById('show-detail').style.display = 'none';
+
+  updateButtons(); // mettre à jour les boutons
 };
 
+// Clic sur show-summary
 document.getElementById('show-summary').onclick = function () {
-  // Masquer le détail, afficher le résumé
-  document.querySelectorAll('#voie-aiguillage .voie-type-container').forEach(c => {
-    if (c.dataset.type === 'summary') {
-      c.style.display = 'flex';
-    } else {
-      c.style.display = 'none';
-    }
+  const voieAiguillage = document.querySelector('#voie-aiguillage.voie-content.active');
+  if (!voieAiguillage) return;
+
+  voieAiguillage.querySelectorAll('.voie-type-container').forEach(c => {
+    if (c.dataset.type === 'summary') c.style.display = 'flex';
+    else c.style.display = 'none';
   });
-  // Afficher le bon tableau résumé
-  renderSummaryTable(currentType, summaryData);
-  // Boutons
-  document.getElementById('show-summary').style.display = 'none';
-  document.getElementById('show-detail').style.display = 'inline-block';
+
+  renderSummaryTable(currentType, summaryData); // mettre à jour le tableau résumé
+
+  updateButtons(); // mettre à jour les boutons
 };
+
+
+// Optionnel : si tu changes la voie active dynamiquement, tu peux rappeler updateButtonsVisibility()
+// après le changement de classe "active"
 
 function renderSummaryTable(type, data) {
   // Hide both summary tables first
@@ -648,9 +790,73 @@ function renderSummaryTable(type, data) {
 }
 
 
+function whereImI(){
+  const current = document.querySelector('.voie-content.active');
+  if(current){
+    return "Nouvelles mesures pour " + current.id;
+  }else{
+    return "Aucune voie-content active.";
+  }
+}
 
+const btn = document.getElementById("new-measure-btn");
+const tooltip = document.getElementById("tooltip");
 
+// Affichage au survol
+btn.addEventListener("mouseenter", () => {
+  tooltip.textContent = whereImI();
+  tooltip.classList.add("show");
+});
 
+// Masquage quand on sort
+btn.addEventListener("mouseleave", () => {
+  tooltip.classList.remove("show");
+});
+
+// === Gestion du toggle Admin / Technicien ===
+const toggle = document.getElementById("toggleButton");
+const dataVoieContainer = document.getElementById("dataVoie-container");
+
+function setInputsDisabled(disabled) {
+  if (!dataVoieContainer) {
+    console.warn("⚠️ .dataVoie-Container introuvable !");
+    return;
+  }
+
+  // Champs classiques
+  const elements = dataVoieContainer.querySelectorAll("input, select, textarea");
+  elements.forEach(el => {
+    el.disabled = disabled;
+  });
+
+  // Tables éditables
+  const tables = dataVoieContainer.querySelectorAll("table[data-editable='true']");
+  tables.forEach(table => {
+    table.querySelectorAll("tbody td").forEach(td => {
+      td.contentEditable = disabled ? "false" : "true";
+    });
+  });
+
+  // Cards éditables
+  const cards = dataVoieContainer.querySelectorAll(".ecartement-card[data-editable='true']");
+  cards.forEach(card => {
+    card.contentEditable = disabled ? "false" : "true";
+    card.style.cursor = disabled ? "default" : "text";
+  });
+}
+
+toggle.addEventListener("click", () => {
+  toggle.classList.toggle("on");
+
+  const isAdmin = toggle.classList.contains("on");
+  // console.log("🔄 Toggle cliqué → rôle =", isAdmin ? "Admin" : "Technicien");
+
+  if (isAdmin) {
+    setInputsDisabled(false);
+  } else {
+    setInputsDisabled(true);
+  }
+});
 
 
 
