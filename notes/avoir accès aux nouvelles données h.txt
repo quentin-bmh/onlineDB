@@ -1,0 +1,3 @@
+avoir accès aux nouvelles données historiques dans la section type ADV, et que ça change les valeurs dynamiquement (voir l'évolution)
+dans la partie nouvelle mesure ils présélectionnent tj/bs/to ils choisissent un des adv on a un menu déroulant
+créer le login avec deux types de personnes soit admin soit technicien et qu'en fonction de si admin dans nouvelle mesure on puisse créer un nouvel adv

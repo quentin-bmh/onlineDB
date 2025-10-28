@@ -2,21 +2,63 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-  connectionString: process.env.CONNECTIONSTRING,
-  ssl: false, // ou { rejectUnauthorized: false } si tu es sur Heroku ou avec certificat SSL
-});
+const PRIMARY_STRING = process.env.CONNECTIONSTRING;
+const SECONDARY_STRING = process.env.CONNECTIONSTRING2;
 
-// Connexion test + réglage fuseau horaire une fois
-pool.connect()
-  .then(async (client) => {
-    console.log('✅ Connecté à PostgreSQL via Pool !');
-    await client.query("SET TIME ZONE 'Europe/Paris'");
-    console.log('🕓 Fuseau horaire PostgreSQL défini sur Europe/Paris');
-    client.release();
-  })
-  .catch((err) => {
-    console.error('❌ Erreur lors de la connexion à PostgreSQL :', err);
-  });
+let activePoolPromise = null;
 
-module.exports = pool;
+/**
+  @param {string} connectionString
+  @param {string} name
+  @returns {Promise<Pool|null>}
+*/
+async function createAndConnectPool(connectionString, name) {
+    if (!connectionString) {
+        console.warn(`[DB] Chaîne de connexion pour ${name} manquante.`);
+        return null;
+    }
+
+    const pool = new Pool({
+        connectionString: connectionString,
+        ssl: false,
+        connectionTimeoutMillis: 5000,
+        max: 5,
+    });
+
+    try {
+        const client = await pool.connect();
+        await client.query("SET TIME ZONE 'Europe/Paris'");
+        client.release();
+        console.log(`✅ Connecté à PostgreSQL via Pool sur : ${name} !`);
+        console.log('🕓 Fuseau horaire PostgreSQL défini sur Europe/Paris');
+        return pool;
+    } catch (err) {
+        console.warn(`❌ Échec de la connexion à la BDD ${name}. Tentative de bascule...`);
+        pool.end();
+        return null;
+    }
+}
+
+/**
+  @returns {Promise<Pool>}
+*/
+async function initializePool() {
+    let pool = await createAndConnectPool(PRIMARY_STRING, 'Primaire (Limoges)');
+    
+    if (pool) {
+        return pool;
+    }
+    pool = await createAndConnectPool(SECONDARY_STRING, 'Secours (Bureau)');
+
+    if (pool) {
+        return pool;
+    }
+    console.error('❌ FATAL: Aucune base de données PostgreSQL disponible.');
+    throw new Error('Database service unavailable.');
+}
+activePoolPromise = initializePool();
+module.exports = {
+    getPool: async () => {
+        return await activePoolPromise;
+    }
+};

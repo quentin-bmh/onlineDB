@@ -33,9 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 document.querySelectorAll("table[data-editable='true'] tbody td").forEach(td => {
-  td.contentEditable = true; // rend la cellule modifiable
+  td.contentEditable = true;
 });
-// Rendre éditables tous les éléments marqués
 document.querySelectorAll("[data-editable='true']").forEach(el => {
   el.contentEditable = true;
 });
@@ -44,7 +43,6 @@ document.querySelectorAll("table[data-editable='true']").forEach(table => {
   const lockFirstRow = lockAttr.includes("first-row");
   const lockFirstCol = lockAttr.includes("first-col");
 
-  // 1) Verrouiller uniquement l'en-tête si demandé
   if (lockFirstRow) {
     table.querySelectorAll("thead th").forEach(th => {
       th.contentEditable = false;
@@ -52,7 +50,6 @@ document.querySelectorAll("table[data-editable='true']").forEach(table => {
     });
   }
 
-  // 2) Parcourir le tbody
   table.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
     row.querySelectorAll("td").forEach((cell, colIndex) => {
       if (lockFirstCol && colIndex === 0) {
@@ -89,24 +86,13 @@ document.getElementById("new-measure-btn").addEventListener("click", () => {
         el.id ||
         el.getAttribute("name") ||
         (el.className ? "." + el.className.split(" ").join(".") : "(sans id/classe)");
-
-      // 1️⃣ Log pour vérifier que l'élément est bien trouvé
-      console.log("Élément trouvé :", identifier, el);
-
-      // 2️⃣ Activer édition
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
         el.disabled = false;
-        console.log("→ input/textarea/select activé");
       } else if (el.tagName === "TABLE") {
-        // ici on pourrait appeler la fonction de verrouillage pour first-row/first-col
-        console.log("→ table détectée");
       } else if (el.classList.contains("ecartement-card")) {
         el.contentEditable = true;
-        el.style.cursor = "text"; // montre que c'est éditable
-        console.log("→ card activée pour édition");
+        el.style.cursor = "text";
       }
-
-      // 3️⃣ Log valeur actuelle
       let value = "";
       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
         value = el.value;
@@ -115,7 +101,7 @@ document.getElementById("new-measure-btn").addEventListener("click", () => {
       } else {
         value = el.getAttribute("data-value") || el.innerText.trim();
       }
-      console.log(`Valeur actuelle: ${value}`);
+      console.log(identifier,`Valeur ${value}`);
     });
   });
 });
@@ -160,8 +146,6 @@ function updateMap(adv) {
       .openPopup();
 
     map.setView([lat, lng], 20);
-
-    // Très utile si la carte est dans un container dynamique (onglet, menu déroulant, etc.)
     setTimeout(() => {
       map.invalidateSize();
     }, 200);
@@ -176,13 +160,11 @@ function createTable(data) {
     row.innerHTML = `<td>${name}</td>`;
 
     row.addEventListener("click", () => {
-      // console.log('row sélectionnée:', name, type, adv); 
       updateMap(adv);
       document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
       row.classList.add("active-adv");
-      // resetVoieContent();
       if (type && name) {
-        const lowerType = type.toLowerCase(); // bs / to / tj
+        const lowerType = type.toLowerCase();
         fetch(`/api/${lowerType}/${encodeURIComponent(name)}`)
           .then(res => {
             if (!res.ok) throw new Error(`Erreur ${res.status}`);
@@ -190,7 +172,6 @@ function createTable(data) {
           })
           .then(data => {
             const advData = Array.isArray(data) ? data[0] : data;
-            // console.log(`Données ADV récupérées pour ${name}:`, advData);
             getAdvData(advData);
           })
           .catch(err => {
@@ -225,8 +206,6 @@ function loadTypeButtons() {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
           currentType = type.toLowerCase();
-
-          // Gestion boutons aiguillage
           document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
             boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
           });
@@ -381,13 +360,9 @@ function getAdvDetails(adv) {
 function getAdvData(adv) {
   const name = (adv["adv"] || adv["ADV"] || '').trim();
   const type = (adv["type"] || '').toLowerCase();
-  // console.log(type);
   if (!name || !type) {
-    // console.warn("ADV ou type manquant dans l'objet :", adv);
     return;
   }
-
-  // 1. Charger les données principales
   fetch(`/api/${type}/${encodeURIComponent(name)}`)
     .then(res => {
       if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
@@ -395,9 +370,7 @@ function getAdvData(adv) {
     })
     .then(data => {
       const advData = Array.isArray(data) ? data[0] : data;
-      // console.log('advData:',advData)
       if (!advData) {
-        // console.warn("Pas de données reçues pour :", name);
         return;
       }
       switchVoieTypeContent(type, 'voie-croisement');
@@ -417,7 +390,6 @@ function getAdvData(adv) {
     })
     .then(data => {
       if (!Array.isArray(data) || data.length === 0) {
-        // console.warn("Pas de données de bavure reçues pour :", name);
         return;
       }
       switchVoieTypeContent(type, 'voie-aiguillage');
@@ -648,24 +620,12 @@ function updateButtons() {
   const toggleContainer = document.querySelector('.toggle-summary-detail');
   const btnSummary = document.getElementById('show-summary');
   const btnDetail = document.getElementById('show-detail');
-
-  // Par défaut on masque le container entier
   toggleContainer.style.display = 'none';
-
-  // On n'affiche le container que si la voie aiguillage est active
   if (!voieAiguillage) return;
-
-  // On cherche le container visible à l'intérieur
-  const visibleContainer = Array.from(voieAiguillage.querySelectorAll('.voie-type-container'))
+   const visibleContainer = Array.from(voieAiguillage.querySelectorAll('.voie-type-container'))
     .find(c => c.style.display !== 'none');
-
   if (!visibleContainer) return;
-
-  // Si on est bien dans voie-aiguillage et qu'un contenu est visible,
-  // on affiche le container
   toggleContainer.style.display = 'inline-flex';
-
-  // Puis on gère quel bouton montrer
   if (visibleContainer.dataset.type === 'summary') {
     btnSummary.style.display = 'none';
     btnDetail.style.display = 'inline-block';
@@ -674,13 +634,8 @@ function updateButtons() {
     btnDetail.style.display = 'none';
   }
 }
-
-
-// Appel initial
 updateButtons();
-
-// Clic sur show-detail
-document.getElementById('show-detail').onclick = function () {
+ document.getElementById('show-detail').onclick = function () {
   const voieAiguillage = document.querySelector('#voie-aiguillage.voie-content.active');
   if (!voieAiguillage) return;
 
@@ -703,14 +658,10 @@ document.getElementById('show-summary').onclick = function () {
     else c.style.display = 'none';
   });
 
-  renderSummaryTable(currentType, summaryData); // mettre à jour le tableau résumé
+  renderSummaryTable(currentType, summaryData);
 
-  updateButtons(); // mettre à jour les boutons
+  updateButtons();
 };
-
-
-// Optionnel : si tu changes la voie active dynamiquement, tu peux rappeler updateButtonsVisibility()
-// après le changement de classe "active"
 
 function renderSummaryTable(type, data) {
   // Hide both summary tables first
@@ -789,7 +740,6 @@ function renderSummaryTable(type, data) {
   });
 }
 
-
 function whereImI(){
   const current = document.querySelector('.voie-content.active');
   if(current){
@@ -798,7 +748,6 @@ function whereImI(){
     return "Aucune voie-content active.";
   }
 }
-
 const btn = document.getElementById("new-measure-btn");
 const tooltip = document.getElementById("tooltip");
 

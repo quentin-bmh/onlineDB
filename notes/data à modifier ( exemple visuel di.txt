@@ -1,0 +1,8 @@
+data à modifier ( exemple visuel différent)
+TJD 4ac/1bd 1/2 aig 2 bavures éliminées par meulage PAR: aucune bavure
+BS 1a:
+Présence d'ébréchure	✗	
+Contact au dessous de la fente repère	✗	
+Contact au dessus de la fente repère		✗
+Longueur ébréchure sous fente repère	20	21
+Longueur totale de la zone ébréchée	41	41

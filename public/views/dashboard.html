@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+        .sortable-header .sort-icon {
+            margin-left: 8px;
+            font-size: 10px;
+            opacity: 0.5;
+        }
+        .sortable-header.sorted-asc .sort-icon::after {
+            content: '▲';
+            opacity: 1;
+        }
+        .sortable-header.sorted-desc .sort-icon::after {
+            content: '▼';
+            opacity: 1;
+        }
+        .permissions-toggle {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8 font-sans">
+
+    <header class="mb-8 flex justify-between items-center border-b border-gray-700 pb-4">
+        <h1 class="text-3xl font-bold text-orange-500">Tableau de Bord Administrateur</h1>
+        <div class="flex items-center space-x-4">
+            <span id="welcomeUser" class="text-gray-300 text-lg font-medium"></span>
+            
+            <button id="goToAppButton" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm transition duration-150 shadow-md">Aller à l'Application ( / )</button>
+            
+            <button id="logoutButton" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm transition duration-150 shadow-md">Déconnexion</button>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-xl font-semibold mt-8 mb-4 text-gray-300">Statut et Gestion des Utilisateurs</h2>
+        
+        <div class="mb-6">
+            <input type="text" id="searchBar" placeholder="Rechercher par nom d'utilisateur ou email..." 
+                   class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 focus:border-orange-500 focus:ring focus:ring-orange-500 focus:ring-opacity-50 transition duration-150" />
+        </div>
+
+        <div id="loadingIndicator" class="text-center py-10">
+            <svg class="animate-spin h-5 w-5 mr-3 text-orange-500 inline-block" viewBox="0 0 24 24"></svg>
+            Chargement des données...
+        </div>
+
+        <div id="usersContainer" class="hidden overflow-x-auto bg-gray-800 rounded-lg shadow-xl">
+            <table class="min-w-full divide-y divide-gray-700">
+                <thead class="bg-gray-700">
+                    <tr>
+                        <th class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" data-sort-key="id">ID <span class="sort-icon"></span></th>
+                        <th class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" data-sort-key="username">Username <span class="sort-icon"></span></th>
+                        <th class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" data-sort-key="email">Email <span class="sort-icon"></span></th>
+                        <th class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" data-sort-key="is_admin">Admin <span class="sort-icon"></span></th>
+                        
+                        <th class="px-6 py-3 text-center text-xs font-medium text-orange-500 uppercase tracking-wider">Gérer Libertés (Mock)</th>
+
+                        <th class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" data-sort-key="last_login">Dernière Connexion <span class="sort-icon"></span></th>
+                        <th class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider" data-sort-key="created_at">Créé le <span class="sort-icon"></span></th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody" class="divide-y divide-gray-700">
+                </tbody>
+            </table>
+        </div>
+
+        <p id="errorMessage" class="text-red-500 text-center py-10 hidden"></p>
+    </div>
+    <script src="/js/admin_dashboard.js" defer></script>
+</body>
+</html>

@@ -1,19 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accueil</title>
+    <title>Boulogne-Landing Page</title>
     <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <nav class="navbar">
-        <div class="navbar-title">Mon Application</div>
-        <ul class="navbar-links">
-            <li><a href="/">Accueil</a></li>
-            <li><a href="/advBoulogne">ADV</a></li>
-            <li><a href="/voiesBoulogne">Voies</a></li>
-        </ul>
-    </nav>
+    <div class="background-filter-overlay"></div> 
+    
+    <header class="minimal-header">
+        <div class="header-title">Boulogne</div>
+        <div class="header-profile">
+            <a href="/login"><i class="fas fa-sign-out-alt"></i> Déconnexion</a> 
+            <i class="fas fa-user-circle"></i> 
+        </div>
+    </header>
+
+    <div class="modal-overlay">
+        <div class="modal-container" id="choiceModal">
+            <h2>Bienvenue "Nom d'entreprise" X <br><br>Nos visualisations</h2>
+            <div class="btn_container">
+                <a href="/advBoulogne" class="choice-button adv-button">
+                    <img src="../assets/adv_icon.png" alt="icone ADV">
+                    ADV
+                </a>
+                
+                <a href="/voiesBoulogne" class="choice-button voies-button">
+                    <img src="../assets/voies_icon.png" alt="icone Voies">
+                    Voies
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('choiceModal');
+            const backgroundOverlay = document.querySelector('.background-filter-overlay');
+            const header = document.querySelector('.minimal-header');
+            const initialDelayMs = 200;
+            const headerOffsetMs = 450;
+            setTimeout(() => {
+                backgroundOverlay.style.opacity = '1';
+                modal.style.opacity = '1';
+                modal.style.transform = 'translateY(0)';
+            }, initialDelayMs); 
+            setTimeout(() => {
+                header.classList.add('is-visible'); 
+            }, initialDelayMs + headerOffsetMs); 
+        });
+    </script>
 </body>
 </html>

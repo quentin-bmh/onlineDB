@@ -17,7 +17,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
       document.getElementById('signupError').textContent = data.message || "Erreur lors de l'inscription";
       document.getElementById('signupError').classList.remove('hidden');
     } else {
-      window.location.href = '/login.html';
+      window.location.href = '/login';
     }
   } catch (err) {
     document.getElementById('signupError').textContent = "Erreur réseau";
