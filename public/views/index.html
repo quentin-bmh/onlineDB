@@ -8,7 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="background-filter-overlay"></div>     
+    <div class="background-filter-overlay"></div> 
+    
     <header class="minimal-header">
         <div class="header-title">Boulogne</div>
         <div class="header-profile">
@@ -21,7 +22,12 @@
 
     <div class="modal-overlay">
         <div class="modal-container" id="choiceModal">
-            <h2>Bienvenue "Nom d'entreprise" X <br><br>Nos visualisations</h2>
+            
+            <h2 id="welcome-title" class="text-2xl font-bold mb-2">Chargement...</h2>
+            <p id="user-role-display" class="text-gray-400 mb-6 font-medium"></p>
+            
+            <h3 class="text-xl mt-6 mb-3 border-b border-gray-600 pb-2">Nos visualisations</h3>
+            
             <div class="btn_container">
                 <a href="/advBoulogne" class="choice-button adv-button">
                     <img src="../assets/adv_icon.png" alt="icone ADV">
@@ -34,107 +40,17 @@
                 </a>
             </div>
             
-            <div class="documents-list-container">
-                <h2>Documents Techniques Sécurisés</h2>
+            <div class="documents-list-container mt-8">
+                <h3 class="text-xl mb-3 border-b border-gray-600 pb-2">Documents Techniques Sécurisés</h3>
                 <div id="document-buttons">
                     Chargement des documents...
                 </div>
             </div>
             
-            <p>Le backend vérifie les droits et relaie le fichier.</p>
+            <p class="text-gray-500 mt-6 text-sm">Le backend vérifie les droits et relaie le fichier.</p>
         </div>
     </div>
 
-    <script>
-        // --- Fonctions d'animation et de chargement dynamique ---
-        
-        async function loadDocuments() {
-            const container = document.getElementById('document-buttons');
-            container.innerHTML = 'Chargement des documents...';
-            
-            // NOTE : Le rôle est déterminé par le serveur dans /api/webdav/list (via req.user.role)
-            try {
-                const response = await fetch('/api/webdav/list'); 
-                
-                if (!response.ok) {
-                    container.innerHTML = `Erreur: Impossible de charger la liste (${response.status})`;
-                    return;
-                }
-                
-                const documents = await response.json();
-                
-                if (documents.length === 0) {
-                    container.innerHTML = `<p>Aucun document disponible.</p>`;
-                    return;
-                }
-
-                container.innerHTML = ''; 
-                
-                // Génération des liens pour tous les documents autorisés (simples pour l'exemple)
-                documents.forEach(doc => {
-                    const link = document.createElement('a');
-                    link.href = `/api/webdav/download/${doc.id}`; 
-                    link.className = 'document-link'; 
-                    link.target = '_blank'; // Ouverture dans un nouvel onglet
-                    link.textContent = doc.nom_visible; 
-                    
-                    container.appendChild(link);
-                    container.appendChild(document.createElement('br'));
-                });
-
-            } catch (error) {
-                console.error('Erreur lors du chargement des documents:', error);
-                container.innerHTML = 'Erreur lors de la récupération des données.';
-            }
-        }
-
-        async function handleLogout(event) {
-            event.preventDefault(); // Empêche la navigation immédiate
-            
-            try {
-                const response = await fetch('/auth/logout', {
-                    method: 'POST', // L'action de déconnexion doit être POST (comme défini dans authRoutes.js)
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    // Le serveur a envoyé res.clearCookie() et a répondu 200.
-                    console.log("✅ Déconnexion API réussie. Le cookie devrait être effacé.");
-                    // Rediriger l'utilisateur vers la page de login ou d'accueil
-                    window.location.href = '/login'; 
-                } else {
-                    console.error("❌ Échec de la déconnexion API:", response.status);
-                    alert("Erreur lors de la déconnexion.");
-                }
-            } catch (error) {
-                console.error("Erreur réseau/inattendue lors de la déconnexion:", error);
-                alert("Erreur de communication avec le serveur.");
-            }
-        }
-        document.addEventListener('DOMContentLoaded', () => {
-            // Lancer le chargement des documents
-            loadDocuments(); 
-            const logoutLink = document.getElementById('logout-link');
-            if (logoutLink) {
-                logoutLink.addEventListener('click', handleLogout);
-            }
-            // Logique d'animation existante
-            const modal = document.getElementById('choiceModal');
-            const backgroundOverlay = document.querySelector('.background-filter-overlay');
-            const header = document.querySelector('.minimal-header');
-            const initialDelayMs = 200;
-            const headerOffsetMs = 450;
-            setTimeout(() => {
-                backgroundOverlay.style.opacity = '1';
-                modal.style.opacity = '1';
-                modal.style.transform = 'translateY(0)';
-            }, initialDelayMs); 
-            setTimeout(() => {
-                header.classList.add('is-visible'); 
-            }, initialDelayMs + headerOffsetMs); 
-        });
-    </script>
+    <script src="/js/index.js" defer></script>
 </body>
 </html>

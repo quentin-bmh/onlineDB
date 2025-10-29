@@ -106,7 +106,6 @@ module.exports = {
         }
     },
     logout: (req, res) => {
-        // Le cookie est effacé côté client
         res.clearCookie('token', {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -114,20 +113,23 @@ module.exports = {
         });
         res.status(200).json({ message: "Déconnexion réussie. Cookie effacé." });
     },
-
     getProfile: async (req, res) => {
         try {
-            if (!db || !db.query) return res.status(503).json({ message: "Service de base de données indisponible" });
+            if (!req.user || !req.user.id) { 
+                return res.status(401).json({ message: "Non authentifié ou données utilisateur non chargées." });
+            }
+            res.status(200).json({ 
+                success: true, 
+                user: {
+                    id: req.user.id,
+                    username: req.user.username,
+                    is_admin: req.user.is_admin 
+                }
+            });
 
-            const userId = req.user.userId;
-            const result = await db.query(
-            "SELECT id, email, username, created_at FROM users WHERE id = $1",
-            [userId]
-            );
-            res.status(200).json({ success: true, user: result.rows[0] });
         } catch (err) {
-            console.error("Erreur lors de la récupération du profil :", err.stack);
-            res.status(500).json({ success: false, message: "Erreur serveur" });
+            console.error("Erreur lors de la récupération du profil:", err.stack);
+            res.status(500).json({ success: false, message: "Erreur serveur inattendue." });
         }
     }
 };

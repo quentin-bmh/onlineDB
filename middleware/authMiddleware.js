@@ -11,9 +11,7 @@ exports.authenticate = async (req, res, next) => {
     const token = req.cookies.token; 
 
     if (!token) {
-        console.warn("[Auth] Tentative d'accès sans token (401)");
-        // L'utilisateur n'est pas authentifié. Ne pas renvoyer 401 si la route est publique.
-        // On passe à la suite, en laissant req.user à null pour le moment.
+        //console.warn("[Auth] Tentative d'accès sans token (401)");
         return next(); 
     }
 
@@ -22,7 +20,7 @@ exports.authenticate = async (req, res, next) => {
         
         // Récupération des données utilisateur complètes (is_admin)
         const result = await db.query(
-            `SELECT id, is_admin FROM users WHERE id = $1`,
+            `SELECT id, username, is_admin FROM users WHERE id = $1`,
             [decoded.userId] // Utilisation de userId pour la recherche BDD
         );
 
@@ -34,7 +32,7 @@ exports.authenticate = async (req, res, next) => {
         
         // Stockage des données utilisateur
         req.user = result.rows[0]; 
-        
+        console.log(`[Auth] Utilisateur authentifié: ${req.user.username} (ID: ${req.user.id}, Admin: ${req.user.is_admin})`);
         next();
 
     } catch (err) {
