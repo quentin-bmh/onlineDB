@@ -32,7 +32,7 @@ exports.authenticate = async (req, res, next) => {
         
         // Stockage des données utilisateur
         req.user = result.rows[0]; 
-        console.log(`[Auth] Utilisateur authentifié: ${req.user.username} (ID: ${req.user.id}, Admin: ${req.user.is_admin})`);
+        //console.log(`[Auth] Utilisateur authentifié: ${req.user.username} (ID: ${req.user.id}, Admin: ${req.user.is_admin})`);
         next();
 
     } catch (err) {

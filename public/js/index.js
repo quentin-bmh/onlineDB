@@ -63,7 +63,6 @@ async function fetchUserProfile() {
 }
 
 
-/*
 async function loadDocuments() {
     const container = document.getElementById('document-buttons');
     container.innerHTML = 'Chargement des documents...';
@@ -102,7 +101,6 @@ async function loadDocuments() {
         container.innerHTML = 'Erreur lors de la récupération des données.';
     }
 }
-*/
 
 // ----------------------------------------------------------------------
 // 4. INITIALISATION AU CHARGEMENT DU DOM
@@ -111,7 +109,7 @@ async function loadDocuments() {
 document.addEventListener('DOMContentLoaded', () => {
     // Lancer la récupération du profil et des documents
     fetchUserProfile();
-    //loadDocuments(); 
+    loadDocuments(); 
     
     // Lier la déconnexion
     const logoutLink = document.getElementById('logout-link');
