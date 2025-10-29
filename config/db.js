@@ -8,10 +8,11 @@ const SECONDARY_STRING = process.env.CONNECTIONSTRING2;
 let activePoolPromise = null;
 
 /**
-  @param {string} connectionString
-  @param {string} name
-  @returns {Promise<Pool|null>}
-*/
+ * Crée et connecte un pool de connexion.
+ * @param {string} connectionString
+ * @param {string} name
+ * @returns {Promise<Pool|null>}
+ */
 async function createAndConnectPool(connectionString, name) {
     if (!connectionString) {
         console.warn(`[DB] Chaîne de connexion pour ${name} manquante.`);
@@ -40,24 +41,53 @@ async function createAndConnectPool(connectionString, name) {
 }
 
 /**
-  @returns {Promise<Pool>}
-*/
+ * Initialise le Pool (Primaire puis Secours).
+ * @returns {Promise<Pool>}
+ */
 async function initializePool() {
     let pool = await createAndConnectPool(PRIMARY_STRING, 'Primaire (Limoges)');
     
     if (pool) {
+        // Ajout de la gestion d'erreur au Pool principal
+        pool.on('error', (err) => {
+            console.error('❌ FATAL: Erreur inattendue sur le Pool BDD.', err);
+        });
         return pool;
     }
+    
     pool = await createAndConnectPool(SECONDARY_STRING, 'Secours (Bureau)');
 
     if (pool) {
+        // Ajout de la gestion d'erreur au Pool de secours
+        pool.on('error', (err) => {
+            console.error('❌ FATAL: Erreur inattendue sur le Pool BDD.', err);
+        });
         return pool;
     }
     console.error('❌ FATAL: Aucune base de données PostgreSQL disponible.');
     throw new Error('Database service unavailable.');
 }
-activePoolPromise = initializePool();
+
+// Lancement de l'initialisation après la définition des fonctions.
+// Ceci assigne une Promesse à activePoolPromise.
+activePoolPromise = initializePool(); 
+
 module.exports = {
+    /**
+     * Point d'entrée pour toutes les requêtes BDD (méthode préférée).
+     */
+    query: async (text, params) => {
+        const pool = await activePoolPromise; 
+
+        if (!pool) {
+            throw new Error("Base de données non initialisée ou indisponible.");
+        }
+        return pool.query(text, params);
+    },
+    
+    /**
+     * Export de getPool pour la compatibilité avec les contrôleurs existants (ex: adminController).
+     */
     getPool: async () => {
         return await activePoolPromise;
     }

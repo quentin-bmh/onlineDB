@@ -1,13 +1,13 @@
 // controllers/adminController.js
-const { getPool } = require('../config/db'); 
+const db = require('../config/db'); // Utiliser l'interface db.query
 
 module.exports = {
     getUsersData: async (req, res) => {
         try {
-            const pool = await getPool();
-            if (!pool) return res.status(503).json({ message: "Service de base de données indisponible" });
+            if (!db || !db.query) return res.status(503).json({ message: "Service de base de données indisponible" });
 
-            const result = await pool.query(
+            // On utilise db.query
+            const result = await db.query(
                 `SELECT 
                     id, 
                     username, 
@@ -25,6 +25,7 @@ module.exports = {
             });
 
         } catch (error) {
+            console.error("❌ ERREUR getUsersData:", error.stack);
             res.status(500).json({ message: "Erreur serveur" });
         }
     }

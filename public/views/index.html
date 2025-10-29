@@ -8,12 +8,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div class="background-filter-overlay"></div> 
-    
+    <div class="background-filter-overlay"></div>     
     <header class="minimal-header">
         <div class="header-title">Boulogne</div>
         <div class="header-profile">
-            <a href="/login"><i class="fas fa-sign-out-alt"></i> Déconnexion</a> 
+            <a href="#" id="logout-link">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </a> 
             <i class="fas fa-user-circle"></i> 
         </div>
     </header>
@@ -32,11 +33,94 @@
                     Voies
                 </a>
             </div>
+            
+            <div class="documents-list-container">
+                <h2>Documents Techniques Sécurisés</h2>
+                <div id="document-buttons">
+                    Chargement des documents...
+                </div>
+            </div>
+            
+            <p>Le backend vérifie les droits et relaie le fichier.</p>
         </div>
     </div>
 
     <script>
+        // --- Fonctions d'animation et de chargement dynamique ---
+        
+        async function loadDocuments() {
+            const container = document.getElementById('document-buttons');
+            container.innerHTML = 'Chargement des documents...';
+            
+            // NOTE : Le rôle est déterminé par le serveur dans /api/webdav/list (via req.user.role)
+            try {
+                const response = await fetch('/api/webdav/list'); 
+                
+                if (!response.ok) {
+                    container.innerHTML = `Erreur: Impossible de charger la liste (${response.status})`;
+                    return;
+                }
+                
+                const documents = await response.json();
+                
+                if (documents.length === 0) {
+                    container.innerHTML = `<p>Aucun document disponible.</p>`;
+                    return;
+                }
+
+                container.innerHTML = ''; 
+                
+                // Génération des liens pour tous les documents autorisés (simples pour l'exemple)
+                documents.forEach(doc => {
+                    const link = document.createElement('a');
+                    link.href = `/api/webdav/download/${doc.id}`; 
+                    link.className = 'document-link'; 
+                    link.target = '_blank'; // Ouverture dans un nouvel onglet
+                    link.textContent = doc.nom_visible; 
+                    
+                    container.appendChild(link);
+                    container.appendChild(document.createElement('br'));
+                });
+
+            } catch (error) {
+                console.error('Erreur lors du chargement des documents:', error);
+                container.innerHTML = 'Erreur lors de la récupération des données.';
+            }
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault(); // Empêche la navigation immédiate
+            
+            try {
+                const response = await fetch('/auth/logout', {
+                    method: 'POST', // L'action de déconnexion doit être POST (comme défini dans authRoutes.js)
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    // Le serveur a envoyé res.clearCookie() et a répondu 200.
+                    console.log("✅ Déconnexion API réussie. Le cookie devrait être effacé.");
+                    // Rediriger l'utilisateur vers la page de login ou d'accueil
+                    window.location.href = '/login'; 
+                } else {
+                    console.error("❌ Échec de la déconnexion API:", response.status);
+                    alert("Erreur lors de la déconnexion.");
+                }
+            } catch (error) {
+                console.error("Erreur réseau/inattendue lors de la déconnexion:", error);
+                alert("Erreur de communication avec le serveur.");
+            }
+        }
         document.addEventListener('DOMContentLoaded', () => {
+            // Lancer le chargement des documents
+            loadDocuments(); 
+            const logoutLink = document.getElementById('logout-link');
+            if (logoutLink) {
+                logoutLink.addEventListener('click', handleLogout);
+            }
+            // Logique d'animation existante
             const modal = document.getElementById('choiceModal');
             const backgroundOverlay = document.querySelector('.background-filter-overlay');
             const header = document.querySelector('.minimal-header');

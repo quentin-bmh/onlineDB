@@ -1,20 +1,17 @@
-//middleware/adminMiddleware.js
-const { getPool } = require('../config/db'); 
+// middleware/adminMiddleware.js
+const db = require('../config/db');
 
 exports.getUsersData = async (req, res) => {
         try {
-            const pool = await getPool();
-            if (!pool) {
-                console.error("[AdminController] Échec d'obtention du pool.");
+            if (!db || !db.query) {
                 return res.status(503).json({ message: "Service de base de données indisponible" });
             }
-            const result = await pool.query(
+            const result = await db.query(
                 `SELECT 
                     id, 
                     username, 
                     email, 
                     is_admin, 
-                    -- Formater la date pour une meilleure lisibilité côté client
                     TO_CHAR(last_login, 'YYYY-MM-DD HH24:MI:SS') AS last_login, 
                     TO_CHAR(created_at, 'YYYY-MM-DD HH24:MI:SS') AS created_at 
                 FROM "users" 
@@ -28,15 +25,13 @@ exports.getUsersData = async (req, res) => {
 
         } catch (error) {
             console.error("❌ ERREUR getUsersData:", error.message);
-            if (error.code === '42P01') {
-                 return res.status(500).json({ message: "Erreur BDD : La table users n'a pas été trouvée (42P01). Assurez-vous d'avoir exécuté les scripts CREATE TABLE et ALTER TABLE." });
-            }
             res.status(500).json({ message: "Erreur serveur lors de la récupération des données" });
         }
 };
+
 exports.authorizeAdmin = (req, res, next) => {
-    if (!req.user || req.user.isAdmin !== true) { 
-        console.warn(`[Auth] Accès Administrateur refusé pour l'utilisateur ID: ${req.user ? req.user.userId : 'N/A'}`);
+    if (!req.user || req.user.is_admin !== true) { 
+        console.warn(`[Auth] Accès Administrateur refusé pour l'utilisateur ID: ${req.user ? req.user.id : 'N/A'}`);
         return res.status(403).json({ message: "Accès refusé. Rôle Administrateur requis." });
     }
     next();

@@ -6,14 +6,41 @@ const usersContainer = document.getElementById('usersContainer');
 const errorMessage = document.getElementById('errorMessage');
 const searchBar = document.getElementById('searchBar');
 const welcomeUser = document.getElementById('welcomeUser');
-const goToAppButton = document.getElementById('goToAppButton'); // Récupération du bouton d'application
+const goToAppButton = document.getElementById('goToAppButton');
+const logoutButton = document.getElementById('logoutButton'); // Récupération du bouton déconnexion
+
 const API_ENDPOINT = '/admin/users';
+const API_URL_LOGOUT = '/auth/logout';
 
 let allUsersData = [];
 let sortState = { key: 'last_login', direction: 'desc' }; 
 let currentSearchTerm = '';
 
+// ----------------------------------------------------------------------
+// 1. LOGIQUE DE DÉCONNEXION (SOLUTION DU PROBLÈME HTTPONLY)
+// ----------------------------------------------------------------------
+
+async function handleLogout() {
+    try {
+        const response = await fetch(API_URL_LOGOUT, {
+            method: 'POST', // L'instruction de suppression doit être envoyée au serveur
+        });
+
+        // Même si l'API échoue (ex: token déjà expiré), on force la redirection
+        window.location.href = '/login'; 
+        
+    } catch (error) {
+        console.error("Erreur réseau/inattendue lors de la déconnexion:", error);
+        window.location.href = '/login'; 
+    }
+}
+
+// ----------------------------------------------------------------------
+// 2. FONCTIONS DE RENDU ET DE FILTRAGE
+// ----------------------------------------------------------------------
+
 function displayConnectedUser() {
+    // Récupérer le nom de l'utilisateur stocké lors du login
     const username = localStorage.getItem('username');
     if (username) {
         welcomeUser.textContent = `Bienvenue, ${username}`;
@@ -22,12 +49,14 @@ function displayConnectedUser() {
     }
 }
 function mockToggleAdmin(userId, currentStatus) {
+    // Logique de simulation de modification de rôle (côté client uniquement)
     const newStatus = !currentStatus;
     const userIndex = allUsersData.findIndex(u => parseInt(u.id) === userId);
     if (userIndex !== -1) {
         allUsersData[userIndex].is_admin = newStatus; 
         applyFiltersAndSort(); 
         console.log(`[MOCK SUCCESS] Utilisateur ID ${userId} basculé à Admin:${newStatus}.`);
+        // ⚠️ En production, un appel API POST/PUT serait fait ici pour mettre à jour la BDD
     } else {
         console.error(`[MOCK ERROR] Utilisateur ID ${userId} non trouvé pour la bascule.`);
     }
@@ -41,6 +70,7 @@ function applyFiltersAndSort() {
             user.email.toLowerCase().includes(term)
         );
     }
+    // Logique de tri (omise pour la concision, mais fonctionnelle)
     data.sort((a, b) => {
         const key = sortState.key;
         let aVal = a[key];
@@ -49,11 +79,11 @@ function applyFiltersAndSort() {
             aVal = aVal ? new Date(aVal) : new Date(0); 
             bVal = bVal ? new Date(bVal) : new Date(0);
         } else if (key === 'id') {
-             aVal = parseInt(aVal, 10);
-             bVal = parseInt(bVal, 10);
+              aVal = parseInt(aVal, 10);
+              bVal = parseInt(bVal, 10);
         } else if (key === 'is_admin') {
-             aVal = aVal ? 1 : 0;
-             bVal = bVal ? 1 : 0;
+              aVal = aVal ? 1 : 0;
+              bVal = bVal ? 1 : 0;
         }
 
         if (aVal < bVal) return sortState.direction === 'asc' ? -1 : 1;
@@ -94,7 +124,7 @@ async function fetchUsersData() {
             errorMessage.textContent = `Accès refusé. Code ${response.status}: ${error.message}`;
             errorMessage.classList.remove('hidden');
             if (response.status === 401 || response.status === 403) {
-                setTimeout(() => window.location.href = '/login', 3000);
+                setTimeout(() => window.location.href = '/login', 3000); // Redirection après échec d'authentification
             }
             return;
         }
@@ -106,7 +136,7 @@ async function fetchUsersData() {
         usersContainer.classList.remove('hidden');
 
     } catch (error) {
-        console.error("Erreur de récupération des données admin:", error);
+        console.error("Erreur de récupération des données administrateur:", error);
         loadingIndicator.classList.add('hidden');
         errorMessage.textContent = `Erreur de connexion serveur: ${error.message}`;
         errorMessage.classList.remove('hidden');
@@ -153,6 +183,7 @@ function renderTable(users) {
         });
     });
 }
+
 document.addEventListener('DOMContentLoaded', () => {
     displayConnectedUser();
     fetchUsersData();
@@ -168,8 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
     goToAppButton.addEventListener('click', () => {
         window.location.href = '/'; 
     });
-    document.getElementById('logoutButton').addEventListener('click', () => {
-        document.cookie = 'token=; Max-Age=0; path=/; secure; HttpOnly=true'; 
-        window.location.href = '/login';
-    });
+    
+    // CORRECTION : Lier le bouton Déconnexion à la fonction API
+    if (logoutButton) {
+        logoutButton.addEventListener('click', handleLogout);
+    }
 });

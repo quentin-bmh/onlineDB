@@ -1,29 +1,38 @@
 //server.js
+//process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 require('./config/db'); 
 
-const app = express();
-const port = process.env.PORT || 3000;
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-app.use(express.static('public'));
+const AuthMiddleware = require('./middleware/authMiddleware');
 
 const voiesRoutes = require('./routes/voies');
 const advRoutes = require('./routes/adv');
 const b2vRoutes = require('./routes/b2v');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+// const downloadRoutes = require('./routes/downloadRoutes');
 
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.use(AuthMiddleware.authenticate); 
+app.use(AuthMiddleware.checkTokenAndRedirect); 
+
+app.use(express.static('public')); 
 
 app.use('/api', voiesRoutes);
 app.use('/api', advRoutes);
 app.use('/api', b2vRoutes);
 app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
+// app.use('/api/webdav', downloadRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/views/index.html'));
