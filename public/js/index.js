@@ -1,11 +1,9 @@
 // public/js/index.js
 
-// --- Configuration API ---
 const API_URL_PROFILE = '/auth/profile'; 
 const API_URL_LOGOUT = '/auth/logout';
 const API_URL_DOC_LIST = '/api/webdav/list';
 
-// --- Fonctions d'Utilitaires ---
 
 /**
  * Détermine le rôle lisible à partir du statut is_admin.
@@ -15,9 +13,6 @@ function getDisplayRole(isAdmin) {
     return isAdmin ? 'Administrateur' : 'Technicien';
 }
 
-// ----------------------------------------------------------------------
-// 1. GESTION DE LA DÉCONNEXION
-// ----------------------------------------------------------------------
 
 async function handleLogout(event) {
     event.preventDefault();
@@ -28,10 +23,6 @@ async function handleLogout(event) {
         window.location.href = '/login'; 
     }
 }
-
-// ----------------------------------------------------------------------
-// 2. RÉCUPÉRATION ET AFFICHAGE DU PROFIL UTILISATEUR
-// ----------------------------------------------------------------------
 
 async function fetchUserProfile() {
     const titleElement = document.getElementById('welcome-title');
@@ -62,7 +53,6 @@ async function fetchUserProfile() {
     }
 }
 
-
 async function loadFiles() {
       const res = await fetch("/api/webdav/list");
       if (!res.ok) { document.getElementById("document-buttons").textContent = "Erreur serveur"; return; }
@@ -81,8 +71,6 @@ async function loadFiles() {
                 }
                 const url = `/api/webdav/open/${encodeURIComponent(file.path)}`;
                 
-
-                // Crée un lien temporaire et force l'ouverture dans un nouvel onglet
                 const a = document.createElement("a");
                 a.href = url;
                 a.target = "_blank";
@@ -97,22 +85,13 @@ async function loadFiles() {
 
 
     }
-// ----------------------------------------------------------------------
-// 4. INITIALISATION AU CHARGEMENT DU DOM
-// ----------------------------------------------------------------------
-
 document.addEventListener('DOMContentLoaded', () => {
-    // Lancer la récupération du profil et des documents
     fetchUserProfile();
     loadFiles(); 
-    
-    // Lier la déconnexion
     const logoutLink = document.getElementById('logout-link');
     if (logoutLink) {
         logoutLink.addEventListener('click', handleLogout);
     }
-    
-    // Logique d'animation (conservée)
     const modal = document.getElementById('choiceModal');
     const backgroundOverlay = document.querySelector('.background-filter-overlay');
     const header = document.querySelector('.minimal-header');

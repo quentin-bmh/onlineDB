@@ -1,11 +1,16 @@
 // config/webdav.js
-const { createClient } = require("webdav");
+require("dotenv").config();
+const path = require("path");
 
-const client = createClient(process.env.API_NEXT_URL, {
-  username: process.env.API_NEXT_USER,
-  password: process.env.API_NEXT_KEY,
-});
-
+let client;
 const targetDir = "/User-Uploads/uploads-public";
 
-module.exports = { client, targetDir };
+(async () => {
+  const { createClient } = await import("webdav");
+  client = createClient(process.env.API_NEXT_URL, {
+    username: process.env.API_NEXT_USER,
+    password: process.env.API_NEXT_KEY,
+  });
+})();
+
+module.exports = { getClient: () => client, targetDir };

@@ -1,27 +1,25 @@
-const { client, targetDir } = require("../config/webdav");
+// controllers/documentController.js
+const { getClient, targetDir } = require("../config/webdav");
 const path = require("path");
 const mime = require("mime-types");
 
 // Liste les fichiers dans le dossier Nextcloud
 exports.listDocuments = async (req, res) => {
   try {
+    const client = getClient();
+    if (!client) {
+      console.error("❌ WebDAV client non initialisé");
+      return res.status(500).json({ error: "WebDAV client non initialisé" });
+    }
+
     const contents = await client.getDirectoryContents(targetDir);
-
-    // console.log("DEBUG: raw contents de WebDAV", contents);
-
     const files = contents
       .filter((item) => item.type === "file")
       .map((item) => {
-        // console log pour chaque fichier
-        // console.log("DEBUG: fichier trouvé", item);
-
-        // renvoyer un nom de fichier sûr
         const name = item.basename || path.basename(item.filename) || "unknown";
         const filePath = item.filename || path.posix.join(targetDir, name);
         return { name, path: filePath };
       });
-
-    // console.log("DEBUG: fichiers filtrés", files);
 
     res.json(files);
   } catch (err) {
@@ -30,7 +28,6 @@ exports.listDocuments = async (req, res) => {
   }
 };
 
-// Ouvre un fichier dans le navigateur (inline)
 exports.openDocument = async (req, res) => {
   const filePath = req.params.filename;
   if (!filePath) {
@@ -38,9 +35,13 @@ exports.openDocument = async (req, res) => {
     return res.status(400).send("Fichier manquant");
   }
 
-//   console.log("DEBUG: ouverture fichier", filePath);
-
   try {
+    const client = getClient();
+    if (!client) {
+      console.error("❌ WebDAV client non initialisé");
+      return res.status(500).send("WebDAV client non initialisé");
+    }
+
     const fileContent = await client.getFileContents(filePath, { format: "binary" });
     const filename = path.basename(filePath);
     const encodedFilename = encodeURIComponent(filename);
@@ -48,12 +49,12 @@ exports.openDocument = async (req, res) => {
 
     res.setHeader("Content-Type", contentType);
     res.setHeader("Content-Length", fileContent.length);
-    res.setHeader("Content-Disposition",`inline; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
-);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
+    );
+
     res.send(fileContent);
-
-    // console.log("DEBUG: fichier envoyé correctement", filename);
-
   } catch (err) {
     console.error(`❌ Erreur WebDAV pour ${filePath}:`, err.message);
     if (err.message.includes("401")) return res.status(500).send("Erreur d'authentification WebDAV");
