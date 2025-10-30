@@ -63,45 +63,40 @@ async function fetchUserProfile() {
 }
 
 
-async function loadDocuments() {
-    const container = document.getElementById('document-buttons');
-    container.innerHTML = 'Chargement des documents...';
-    
-    try {
-        const response = await fetch(API_URL_DOC_LIST); 
-        
-        if (!response.ok) {
-            // Afficher le statut d'erreur si la connexion échoue (ex: 403 Forbidden)
-            container.innerHTML = `Erreur: Impossible de charger la liste (${response.status} - Vérifiez les permissions).`;
-            return;
-        }
-        
-        const documents = await response.json();
-        
-        if (documents.length === 0) {
-            container.innerHTML = `<p class="text-gray-500">Aucun document technique disponible pour votre rôle.</p>`;
-            return;
-        }
+async function loadFiles() {
+      const res = await fetch("/api/webdav/list");
+      if (!res.ok) { document.getElementById("document-buttons").textContent = "Erreur serveur"; return; }
+      const files = await res.json();
+      const container = document.getElementById("document-buttons");
+      container.innerHTML = "";
 
-        container.innerHTML = ''; 
-        
-        // Génération des liens de téléchargement sécurisés
-        documents.forEach(doc => {
-            const link = document.createElement('a');
-            link.href = `/api/webdav/download/${doc.id}`; 
-            link.className = 'document-link block mb-1 text-gray-300 hover:text-orange-500'; 
-            link.target = '_blank'; 
-            link.textContent = `📄 ${doc.nom_visible}`; 
-            
-            container.appendChild(link);
+        files.forEach(file => {
+            const btn = document.createElement("button");
+            btn.textContent = file.name;
+
+            btn.onclick = () => {
+                if (!file.path) {
+                console.warn("⚠️ fichier sans path détecté", file);
+                return;
+                }
+                const url = `/api/webdav/open/${encodeURIComponent(file.path)}`;
+                
+
+                // Crée un lien temporaire et force l'ouverture dans un nouvel onglet
+                const a = document.createElement("a");
+                a.href = url;
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            container.appendChild(btn);
         });
 
-    } catch (error) {
-        console.error('Erreur lors du chargement des documents:', error);
-        container.innerHTML = 'Erreur lors de la récupération des données.';
-    }
-}
 
+    }
 // ----------------------------------------------------------------------
 // 4. INITIALISATION AU CHARGEMENT DU DOM
 // ----------------------------------------------------------------------
@@ -109,7 +104,7 @@ async function loadDocuments() {
 document.addEventListener('DOMContentLoaded', () => {
     // Lancer la récupération du profil et des documents
     fetchUserProfile();
-    loadDocuments(); 
+    loadFiles(); 
     
     // Lier la déconnexion
     const logoutLink = document.getElementById('logout-link');

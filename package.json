@@ -15,7 +15,6 @@
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "node-webdav": "^1.5.3",
     "pg": "^8.14.1",
     "webdav": "^5.8.0"
   },
