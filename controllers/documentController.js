@@ -1,17 +1,13 @@
 // controllers/documentController.js
+
+
 const { getClient, targetDir } = require("../config/webdav");
 const path = require("path");
 const mime = require("mime-types");
 
-// Liste les fichiers dans le dossier Nextcloud
 exports.listDocuments = async (req, res) => {
   try {
-    const client = getClient();
-    if (!client) {
-      console.error("❌ WebDAV client non initialisé");
-      return res.status(500).json({ error: "WebDAV client non initialisé" });
-    }
-
+    const client = await getClient(); // <-- toujours await ici
     const contents = await client.getDirectoryContents(targetDir);
     const files = contents
       .filter((item) => item.type === "file")
@@ -20,28 +16,19 @@ exports.listDocuments = async (req, res) => {
         const filePath = item.filename || path.posix.join(targetDir, name);
         return { name, path: filePath };
       });
-
     res.json(files);
   } catch (err) {
-    console.error("❌ Erreur lors de la récupération des fichiers:", err.message, err.stack);
+    console.error("❌ Erreur lors de la récupération des fichiers:", err);
     res.status(500).json({ error: "Erreur serveur WebDAV" });
   }
 };
 
 exports.openDocument = async (req, res) => {
+  const client = await getClient(); // <-- await ici aussi
   const filePath = req.params.filename;
-  if (!filePath) {
-    console.error("❌ openDocument: paramètre filename manquant");
-    return res.status(400).send("Fichier manquant");
-  }
+  if (!filePath) return res.status(400).send("Fichier manquant");
 
   try {
-    const client = getClient();
-    if (!client) {
-      console.error("❌ WebDAV client non initialisé");
-      return res.status(500).send("WebDAV client non initialisé");
-    }
-
     const fileContent = await client.getFileContents(filePath, { format: "binary" });
     const filename = path.basename(filePath);
     const encodedFilename = encodeURIComponent(filename);
@@ -53,7 +40,6 @@ exports.openDocument = async (req, res) => {
       "Content-Disposition",
       `inline; filename="${filename}"; filename*=UTF-8''${encodedFilename}`
     );
-
     res.send(fileContent);
   } catch (err) {
     console.error(`❌ Erreur WebDAV pour ${filePath}:`, err.message);
