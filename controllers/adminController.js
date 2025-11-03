@@ -1,6 +1,6 @@
 // controllers/adminController.js
-const db = require('../config/db'); // Utiliser l'interface db.query
-
+const db = require('../config/db'); 
+const bcrypt = require('bcrypt');
 module.exports = {
     getUsersData: async (req, res) => {
         try {
@@ -90,5 +90,81 @@ module.exports = {
             console.error("Erreur d'approbation:", error.stack);
             res.status(500).json({ message: "Échec de l'approbation serveur" });
         }
+    },
+    createUser: async (req, res) => {
+        try {
+            const { username, email, password, is_admin } = req.body;
+
+            if (!username || !email || !password) {
+                return res.status(400).json({ message: "Les champs nom d'utilisateur, email et mot de passe sont requis." });
+            }
+
+            // 1. Vérification de l'existence (actif ou en attente)
+            const checkExisting = await db.query(
+                'SELECT id FROM "users" WHERE email = $1 UNION ALL SELECT id FROM "pending_registrations" WHERE email = $1', 
+                [email]
+            );
+            if (checkExisting.rows.length > 0) {
+                return res.status(409).json({ message: "Un utilisateur ou une demande d'inscription existe déjà avec cet email." });
+            }
+
+            // 2. Hachage du mot de passe
+            const hashedPassword = await bcrypt.hash(password, 10);
+            
+            // 3. Insertion dans la table des utilisateurs actifs
+            const is_admin_bool = is_admin === true; // S'assurer que c'est bien un booléen
+            
+            const result = await db.query(
+                `INSERT INTO "users" (username, email, password_hash, is_admin, created_at) 
+                VALUES ($1, $2, $3, $4, NOW()) 
+                RETURNING id, username, email, is_admin`,
+                [username, email, hashedPassword, is_admin_bool]
+            );
+
+            res.status(201).json({ 
+                message: "Utilisateur créé avec succès", 
+                user: result.rows[0] 
+            });
+
+        } catch (error) {
+            console.error("❌ ERREUR Création utilisateur par Admin:", error.stack);
+            res.status(500).json({ message: "Erreur serveur lors de la création de l'utilisateur." });
+        }
+    },
+    deleteUser: async (req, res) => {
+        try {
+            // ID de l'utilisateur à supprimer reçu dans le corps de la requête DELETE
+            const { userId } = req.body; 
+            
+            if (!userId) {
+                return res.status(400).json({ message: "L'ID utilisateur est requis pour la suppression." });
+            }
+            
+            // Sécurité: Empêcher l'administrateur connecté de se supprimer lui-même
+            if (parseInt(userId, 10) === req.user.id) {
+                return res.status(403).json({ message: "Interdit: Vous ne pouvez pas supprimer votre propre compte administrateur." });
+            }
+
+            // Exécution de la requête DELETE
+            const result = await db.query(
+                'DELETE FROM "users" WHERE id = $1 RETURNING id, username',
+                [userId]
+            );
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: "Utilisateur non trouvé ou déjà supprimé." });
+            }
+
+            res.status(200).json({ 
+                message: `Utilisateur '${result.rows[0].username}' (ID: ${result.rows[0].id}) supprimé avec succès.`,
+                deletedUserId: result.rows[0].id 
+            });
+
+        } catch (error) {
+            console.error("❌ ERREUR Suppression utilisateur par Admin:", error.stack);
+            res.status(500).json({ message: "Erreur serveur lors de la suppression de l'utilisateur." });
+        }
     }
+        
+
 };

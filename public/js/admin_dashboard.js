@@ -21,20 +21,72 @@ const pendingCount = document.getElementById('pendingCount');
 const usersSection = document.getElementById('users-section'); 
 const requestsSection = document.getElementById('requests-section'); 
 
+const tabCreate = document.getElementById('tabCreate');
+const createSection = document.getElementById('create-section');
+const createUserForm = document.getElementById('createUserForm');
+const createStatusMessage = document.getElementById('createStatusMessage');
+
+// NOUVEAUX ÉLÉMENTS POUR LA GESTION DES LIBERTÉS
+const tabPermissions = document.getElementById('tabPermissions');
+const permissionsSection = document.getElementById('permissions-section');
+const permissionUserSelect = document.getElementById('permissionUserSelect');
+const permissionsList = document.getElementById('permissionsList');
+const selectedUserInfo = document.getElementById('selectedUserInfo');
+const savePermissionsButton = document.getElementById('savePermissionsButton');
+const permissionsStatusMessage = document.getElementById('permissionsStatusMessage');
+const permissionsPlaceholder = document.getElementById('permissionsPlaceholder');
+
 
 const API_ENDPOINT = '/admin/users';
 const API_PENDING_REQUESTS = '/admin/pending-requests'; 
 const API_APPROVE_REQUEST = '/admin/approve-request'; 
 const API_URL_LOGOUT = '/auth/logout';
+const API_CREATE_USER = '/admin/create-user';
+const API_DELETE_USER = '/admin/user';
 
 let allUsersData = [];
 let allPendingRequests = []; 
 let sortState = { key: 'last_login', direction: 'desc' }; 
 let currentSearchTerm = '';
-let currentView = 'users'; // 'users' ou 'requests'
+let currentView = 'users'; // 'users', 'requests', 'create', 'permissions'
+
 
 // ----------------------------------------------------------------------
-// FONCTIONS UTILITAIRES (AJOUTÉES pour complétude)
+// DÉFINITION ET MOCK DES LIBERTÉS
+// ----------------------------------------------------------------------
+
+const MOCK_PERMISSIONS_LIST = [
+    { id: 'create_data', label: "1/ Créer de nouvelles données" },
+    { id: 'read_all_data', label: "2/ Lire toutes les données" },
+    { id: 'modify_data', label: "3/ Modifier des données" },
+    { id: 'delete_data', label: "4/ Supprimer des données" },
+    { id: 'admin_dashboard_access', label: "5/ Accès au dashbord admin" },
+    { id: 'manage_roles', label: "6/ Gérer les rôles/libertés" },
+    { id: 'restart_app', label: "7/ Redémarrer l'application" },
+];
+
+function getMockPermissions(userId) {
+    // Logique simulée : les admins ont tout, les autres ont seulement lecture/création
+    const user = allUsersData.find(u => parseInt(u.id) === userId);
+    if (!user) return MOCK_PERMISSIONS_LIST.map(p => ({ ...p, granted: false }));
+
+    const isAdmin = user.is_admin;
+    return MOCK_PERMISSIONS_LIST.map(p => {
+        let granted = false;
+        
+        if (isAdmin) {
+            granted = true; // L'admin a tout
+        } else if (p.id === 'read_all_data' || p.id === 'create_data') {
+            granted = true; // Les utilisateurs standards ont ces deux
+        }
+        
+        return { ...p, granted: granted };
+    });
+}
+
+
+// ----------------------------------------------------------------------
+// FONCTIONS UTILITAIRES (INCHANGÉES)
 // ----------------------------------------------------------------------
 
 function displayConnectedUser() {
@@ -65,13 +117,9 @@ function handleSort(event) {
 
 function mockToggleAdmin(userId, currentStatus) {
     console.log(`[MOCK] Bascule de statut Admin pour l'utilisateur ID: ${userId} de ${currentStatus} à ${!currentStatus}`);
-    // En environnement réel, ceci serait un appel API.
-    fetchUsersData(); // Recharge les données pour mettre à jour l'affichage
+    // Cette fonction n'est plus liée au bouton "Gérer Libertés" mais est maintenue pour la logique interne.
+    fetchUsersData(); 
 }
-
-// ----------------------------------------------------------------------
-// LOGIQUE DE DÉCONNEXION (INCHANGÉE)
-// ----------------------------------------------------------------------
 
 async function handleLogout() {
     try {
@@ -84,10 +132,6 @@ async function handleLogout() {
         window.location.href = '/login'; 
     }
 }
-
-// ----------------------------------------------------------------------
-// FONCTIONS D'AFFICHAGE ET DE GESTION DES UTILISATEURS (INCHANGÉES)
-// ----------------------------------------------------------------------
 
 function applyFiltersAndSort() {
     let data = [...allUsersData]; 
@@ -157,13 +201,44 @@ async function fetchUsersData() {
     }
 }
 
-function renderTable(users) {
-    usersTableBody.innerHTML = ''; 
-    // ... (Logique de rendu de la table des utilisateurs inchangée) ...
-    if (users.length === 0) {
-        usersTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Aucun utilisateur trouvé.</td></tr>`;
+async function handleDeleteUser(userId, buttonElement) {
+    if (!confirm(`ATTENTION: Êtes-vous sûr de vouloir SUPPRIMER l'utilisateur ID ${userId}? Cette action est irréversible.`)) {
         return;
     }
+
+    // Désactiver le bouton pendant le traitement
+    buttonElement.disabled = true;
+    buttonElement.textContent = 'Suppression...';
+    buttonElement.classList.remove('bg-red-600', 'hover:bg-red-700');
+    buttonElement.classList.add('bg-gray-500');
+
+    try {
+        const response = await fetch(API_DELETE_USER, {
+            method: 'DELETE', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: userId })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Succès
+            alert(data.message);
+            // Recharger la liste pour actualiser la table
+            fetchUsersData(); 
+        } else {
+             // Échec (ex: 403 auto-suppression, 404 non trouvé, etc.)
+            alert(`Échec de la suppression (ID: ${userId}): ${data.message || 'Erreur inconnue'}`);
+        }
+
+    } catch (error) {
+        console.error("Erreur réseau lors de la suppression:", error);
+        alert(`Erreur de connexion serveur lors de la suppression de l'utilisateur ID ${userId}.`);
+    } 
+}
+function renderTable(users) {
+    usersTableBody.innerHTML = ''; 
+    // ... (Logique de gestion des cas sans utilisateur inchangée) ...
 
     users.forEach(user => {
         const row = usersTableBody.insertRow();
@@ -173,9 +248,21 @@ function renderTable(users) {
         const statusText = isAdmin ? 
             `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-500 text-white">ADMIN</span>` : 
             `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-600 text-gray-300">User</span>`;
-        const managementButton = isAdmin 
-            ? `<button class="permissions-toggle bg-yellow-500 hover:bg-yellow-600 px-3 py-1 text-sm rounded transition duration-150" data-user-id="${user.id}" data-is-admin="${isAdmin}">Rétrograder</button>`
-            : `<button class="permissions-toggle bg-blue-500 hover:bg-blue-600 px-3 py-1 text-sm rounded transition duration-150" data-user-id="${user.id}" data-is-admin="${isAdmin}">Promouvoir Admin</button>`;
+        
+        // Bouton Gérer Libertés (Existant)
+        const managementButton = `
+            <button class="manage-permissions-btn bg-purple-600 hover:bg-purple-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
+                    data-user-id="${user.id}" 
+                    data-username="${user.username}">
+                Libertés
+            </button>`;
+
+        // NOUVEAU BOUTON SUPPRIMER
+        const deleteButton = `
+            <button class="delete-user-btn bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
+                    data-user-id="${user.id}">
+                Supprimer
+            </button>`;
 
 
         row.innerHTML = `
@@ -186,25 +273,31 @@ function renderTable(users) {
             <td class="px-6 py-4 whitespace-nowrap text-center">${managementButton}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${user.last_login || 'N/A'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${user.created_at}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">${deleteButton}</td> 
         `;
     });
     
-    document.querySelectorAll('.permissions-toggle').forEach(button => {
+    // ÉCOUTEUR : Gérer le clic sur le bouton Libertés (Inchangé)
+    document.querySelectorAll('.manage-permissions-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const userId = parseInt(e.target.dataset.userId, 10);
-            const currentStatus = e.target.dataset.isAdmin === 'true'; 
-            mockToggleAdmin(userId, currentStatus); 
+            loadPermissionsSection(userId); 
+        });
+    });
+    
+    // NOUVEL ÉCOUTEUR : Gérer le clic sur le bouton Supprimer
+    document.querySelectorAll('.delete-user-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const userId = parseInt(e.target.dataset.userId, 10);
+            handleDeleteUser(userId, e.target); // Appel de la nouvelle fonction
         });
     });
 }
 
-// ----------------------------------------------------------------------
-// FONCTIONS DE GESTION DES DEMANDES EN ATTENTE (INCHANGÉES)
-// ----------------------------------------------------------------------
 
 async function fetchPendingRequests() {
     errorMessage.classList.add('hidden');
-    
+    // ... (Logique fetchPendingRequests inchangée) ...
     try {
         requestsLoadingIndicator.classList.remove('hidden');
         requestsContainer.classList.add('hidden');
@@ -240,7 +333,7 @@ async function fetchPendingRequests() {
 
 function renderRequestsTable(requests) {
     requestsTableBody.innerHTML = ''; 
-
+    // ... (Logique renderRequestsTable inchangée) ...
     if (requests.length === 0) {
         requestsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucune demande en attente.</td></tr>`;
         return;
@@ -277,7 +370,7 @@ async function handleApproveRequest(requestId, buttonElement) {
     if (!confirm(`Confirmer l'approbation de la demande ID ${requestId} ?`)) {
         return;
     }
-
+    // ... (Logique handleApproveRequest inchangée) ...
     buttonElement.disabled = true;
     buttonElement.textContent = 'Traitement...';
     buttonElement.classList.remove('bg-green-500');
@@ -299,7 +392,7 @@ async function handleApproveRequest(requestId, buttonElement) {
         }
 
         fetchPendingRequests(); 
-        fetchUsersData(); // Recharger les utilisateurs pour inclure le nouvel utilisateur
+        fetchUsersData();
 
     } catch (error) {
         console.error("Erreur réseau lors de l'approbation:", error);
@@ -309,55 +402,202 @@ async function handleApproveRequest(requestId, buttonElement) {
 
 
 // ----------------------------------------------------------------------
-// LOGIQUE DE BASCULE D'ONGLET (INCHANGÉE)
+// LOGIQUE DE CRÉATION D'UTILISATEUR (INCHANGÉE)
 // ----------------------------------------------------------------------
 
-function switchTab(targetSection) {
-    currentView = targetSection === 'users-section' ? 'users' : 'requests';
-    
-    // Gérer l'affichage des sections (cache tout sauf la cible)
-    usersSection.classList.add('hidden');
-    requestsSection.classList.add('hidden');
-    document.getElementById(targetSection).classList.remove('hidden');
+createUserForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-    // Gérer l'état actif des boutons
-    tabUsers.classList.remove('active');
-    tabRequests.classList.remove('active');
+    const username = document.getElementById('newUsername').value;
+    const email = document.getElementById('newEmail').value;
+    const password = document.getElementById('newPassword').value;
+    const isAdmin = document.getElementById('isAdmin').checked;
     
-    if (targetSection === 'users-section') {
-        tabUsers.classList.add('active');
-        searchBar.classList.remove('hidden');
-        // Rechargement des utilisateurs
-        fetchUsersData(); 
+    const submitButton = document.getElementById('createUserButton');
+    submitButton.disabled = true;
+    submitButton.textContent = 'Création en cours...';
+    createStatusMessage.classList.add('hidden');
+
+    try {
+        const res = await fetch(API_CREATE_USER, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, email, password, is_admin: isAdmin })
+        });
+
+        const data = await res.json();
+        createStatusMessage.classList.remove('hidden');
+        
+        if (res.ok) {
+            // Succès
+            createStatusMessage.textContent = `Utilisateur ${data.user.username} (ID: ${data.user.id}) créé avec succès.`;
+            createStatusMessage.style.color = 'lightgreen';
+            createUserForm.reset(); 
+            
+            if (currentView === 'users') { 
+                fetchUsersData(); 
+            }
+
+        } else {
+            // Échec
+            createStatusMessage.textContent = `Échec de la création: ${data.message || 'Erreur inconnue.'}`;
+            createStatusMessage.style.color = 'red';
+        }
+
+    } catch (err) {
+        console.error("Erreur réseau lors de la création d'utilisateur:", err);
+        createStatusMessage.textContent = "Erreur réseau ou serveur.";
+        createStatusMessage.style.color = 'red';
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Créer l\'Utilisateur';
+    }
+});
+
+
+// ----------------------------------------------------------------------
+// LOGIQUE DE LA SECTION LIBERTÉS (NOUVEAU)
+// ----------------------------------------------------------------------
+
+function populateUserSelect() {
+    permissionUserSelect.innerHTML = '<option value="">-- Sélectionner un utilisateur --</option>';
+    allUsersData.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.username}`;
+        permissionUserSelect.appendChild(option);
+    });
+}
+
+function renderPermissions(userId) {
+    permissionsList.innerHTML = '';
+    permissionsPlaceholder.classList.add('hidden');
+    savePermissionsButton.disabled = false;
+    permissionsStatusMessage.classList.add('hidden');
+
+    const userPermissions = getMockPermissions(userId); 
+
+    userPermissions.forEach(p => {
+        const isChecked = p.granted ? 'checked' : '';
+        const html = `
+            <div class="flex justify-between items-center py-2 px-3 bg-gray-700 rounded-lg">
+                <label for="perm-${p.id}" class="text-gray-300 font-medium">${p.label}</label>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="perm-${p.id}" id="perm-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer ${isChecked ? 'right-0 border-green-400 bg-green-400' : 'border-gray-500 bg-gray-500'}" ${isChecked} />
+                    <label for="perm-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
+                </div>
+            </div>
+        `;
+        permissionsList.innerHTML += html;
+    });
+    
+    document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            e.target.classList.remove('right-0', 'border-green-400', 'bg-green-400', 'border-gray-500', 'bg-gray-500');
+            if (isChecked) {
+                e.target.classList.add('right-0', 'border-green-400', 'bg-green-400');
+            } else {
+                e.target.classList.add('border-gray-500', 'bg-gray-500');
+            }
+            savePermissionsButton.disabled = false; 
+        });
+    });
+}
+
+function loadPermissionsSection(userId = null) {
+    switchTab('permissions-section'); 
+    if (allUsersData.length === 0) {
+        fetchUsersData().then(() => {
+            populateUserSelect();
+            handleSelection(userId);
+        });
     } else {
-        tabRequests.classList.add('active');
-        searchBar.classList.add('hidden'); 
-        // Rechargement des demandes
-        fetchPendingRequests(); 
+        populateUserSelect();
+        handleSelection(userId);
+    }
+
+    function handleSelection(id) {
+        if (id) {
+            permissionUserSelect.value = id;
+            const user = allUsersData.find(u => parseInt(u.id) === id);
+            if (user) {
+                selectedUserInfo.textContent = `Gestion des libertés pour : ${user.username} (${user.email})`;
+                renderPermissions(id);
+            }
+        } else {
+            selectedUserInfo.textContent = "";
+            permissionsList.innerHTML = '';
+            permissionsPlaceholder.classList.remove('hidden');
+            savePermissionsButton.disabled = true;
+        }
     }
 }
 
+function switchTab(targetSection) {
+    currentView = targetSection === 'users-section' ? 'users' : 
+                  targetSection === 'requests-section' ? 'requests' : 
+                  targetSection === 'create-section' ? 'create' :
+                  'permissions';
+    usersSection.classList.add('hidden');
+    requestsSection.classList.add('hidden');
+    createSection.classList.add('hidden'); 
+    permissionsSection.classList.add('hidden');
+    document.getElementById(targetSection).classList.remove('hidden');
 
-// ----------------------------------------------------------------------
-// ÉCOUTEURS D'ÉVÉNEMENTS (CORRECTION DE L'INITIALISATION)
-// ----------------------------------------------------------------------
+    tabUsers.classList.remove('active');
+    tabRequests.classList.remove('active');
+    tabCreate.classList.remove('active');
+    tabPermissions.classList.remove('active');
+    if (targetSection === 'users-section') {
+        tabUsers.classList.add('active'); 
+        searchBar.classList.remove('hidden');
+        fetchUsersData(); 
+    } else if (targetSection === 'requests-section') {
+        tabRequests.classList.add('active'); 
+        searchBar.classList.add('hidden'); 
+        fetchPendingRequests(); 
+    } else if (targetSection === 'create-section') { 
+        tabCreate.classList.add('active'); 
+        searchBar.classList.add('hidden'); 
+    } else if (targetSection === 'permissions-section') { 
+        tabPermissions.classList.add('active');
+        searchBar.classList.add('hidden'); 
+        if (currentView !== 'permissions') { 
+             loadPermissionsSection();
+        }
+    }
+    errorMessage.classList.add('hidden');
+    requestsErrorMessage.classList.add('hidden');
+    createStatusMessage.classList.add('hidden');
+    permissionsStatusMessage.classList.add('hidden');
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     displayConnectedUser();
-    
-    // CORRECTION : Initialiser la vue en appelant switchTab pour l'onglet par défaut.
-    // Cela affiche la section 'users-section' et déclenche fetchUsersData().
     switchTab('users-section'); 
-    
-    // Récupérer les demandes séparément pour s'assurer que le compteur (pendingCount) 
-    // est mis à jour même si la section est initialement cachée.
-    fetchPendingRequests();
-
-    // Événements de bascule d'onglet
+    fetchPendingRequests(); 
     tabUsers.addEventListener('click', () => switchTab('users-section'));
     tabRequests.addEventListener('click', () => switchTab('requests-section'));
-    
-    // Événements existants
+    tabCreate.addEventListener('click', () => switchTab('create-section'));
+    tabPermissions.addEventListener('click', () => loadPermissionsSection());
+    permissionUserSelect.addEventListener('change', (e) => {
+        const userId = parseInt(e.target.value, 10);
+        if (userId) {
+            loadPermissionsSection(userId);
+        } else {
+            selectedUserInfo.textContent = "";
+            permissionsList.innerHTML = '';
+            permissionsPlaceholder.classList.remove('hidden');
+            savePermissionsButton.disabled = true;
+        }
+    });
+    savePermissionsButton.addEventListener('click', () => {
+        permissionsStatusMessage.textContent = 'Permissions (MOCK) enregistrées avec succès!';
+        permissionsStatusMessage.style.color = 'lightgreen';
+        permissionsStatusMessage.classList.remove('hidden');
+        savePermissionsButton.disabled = true;
+    });
     searchBar.addEventListener('input', (e) => {
         currentSearchTerm = e.target.value;
         applyFiltersAndSort();
