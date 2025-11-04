@@ -1,8 +1,7 @@
 // controllers/authController.js
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-const db = require('../config/db'); // Utiliser l'interface db.query
+const db = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET; 
 const JWT_LIFETIME = process.env.JWT_LIFETIME || '1d';
@@ -71,48 +70,33 @@ module.exports = {
                 user = activeResult.rows[0];
                 passwordHash = user.password_hash;
             } else {
-                // 2. Si non trouvé, recherche dans la table des demandes en attente ("pending_registrations")
                 const pendingResult = await db.query(
                     'SELECT id, username, email, password_hash FROM "pending_registrations" WHERE email = $1',
                     [email]
                 );
                 
-                if (pendingResult.rows.length > 0) {
-                    // Utilisateur trouvé, mais sa demande est en attente
+                if (pendingResult.rows.length > 0) {     
                     user = pendingResult.rows[0];
                     passwordHash = user.password_hash;
                     isPending = true;
                 } else {
-                    // Utilisateur non trouvé nulle part
                     return res.status(401).json({ message: "Email ou mot de passe incorrect" });
                 }
             }
-
-            // 3. Vérification du mot de passe (commun aux deux cas)
             const isPasswordValid = await bcrypt.compare(password, passwordHash);
             if (!isPasswordValid) { 
                 return res.status(401).json({ message: "Email ou mot de passe incorrect" });
             }
-            
-            // NOUVEAU : Si la demande est en attente, renvoyer un statut spécifique pour le client.
             if (isPending) {
-                // Utiliser un code 403 (Forbidden) ou 401 (Unauthorized) avec un message clair.
-                // Ici, nous utilisons 403 et un code d'erreur personnalisé dans le body.
                 return res.status(403).json({ 
                     message: "Demande en attente d'approbation",
-                    code: "PENDING_APPROVAL" // Code pour le traitement côté client
+                    code: "PENDING_APPROVAL"
                 });
             }
-
-            // 4. Traitement de la connexion réussie (Utilisateur actif)
-            
-            // Mettre à jour la date de dernière connexion
             await db.query(
                 'UPDATE "users" SET last_login = NOW() WHERE id = $1',
                 [user.id]
             );
-
-            // Création du Token JWT
             const token = jwt.sign(
             { 
                 userId: user.id, 
@@ -122,8 +106,6 @@ module.exports = {
             JWT_SECRET, 
             { expiresIn: JWT_LIFETIME }
             );
-
-            // Définition du cookie
             res.cookie('token', token, {
                 httpOnly: true,
                 secure: process.env.NODE_ENV === 'production',

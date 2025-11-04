@@ -1,4 +1,4 @@
-// controllers/adminController.js
+// controllers/adminController.js (Fichier complet corrigé)
 const db = require('../config/db'); 
 const bcrypt = require('bcrypt');
 module.exports = {
@@ -42,16 +42,16 @@ module.exports = {
             res.status(500).json({ message: "Erreur serveur" });
         }
     },
-
-    // 2. Valider une demande (POST/PUT)
     approveRegistration: async (req, res) => {
         const { requestId } = req.body;
         
+        // Utilisation d'un client du Pool pour la transaction
+        const client = await db.getClient(); 
+        
         try {
-            await db.query('BEGIN'); // Début de transaction pour assurer l'atomicité
-
-            // A. Récupérer les données (y compris le password_hash)
-            const requestResult = await db.query(
+            await client.query('BEGIN'); // Début de la transaction
+            
+            const requestResult = await client.query(
                 `SELECT id, username, email, password_hash 
                  FROM pending_registrations 
                  WHERE id = $1 FOR UPDATE`, // Verrouillage de la ligne
@@ -60,51 +60,80 @@ module.exports = {
             const requestData = requestResult.rows[0];
 
             if (!requestData) {
-                await db.query('ROLLBACK');
+                await client.query('ROLLBACK');
                 return res.status(404).json({ message: "Demande d'inscription non trouvée" });
             }
 
             // B. Créer l'utilisateur dans la table "users"
-            const userInsert = await db.query(
+            const userInsert = await client.query(
                 `INSERT INTO "users" (email, password_hash, username, is_admin) 
                  VALUES ($1, $2, $3, FALSE) 
                  RETURNING id, username`,
                 [requestData.email, requestData.password_hash, requestData.username]
             );
+            const newUser = userInsert.rows[0];
+            
+            // Logique d'attribution des permissions par défaut (Non-Admin: read, modify)
+            const permissionCodes = ['read', 'modify'];
+            const permIdsResult = await client.query(
+                'SELECT id FROM permissions WHERE code = ANY($1::text[])',
+                [permissionCodes]
+            );
+            
+            const grantedPermsValues = permIdsResult.rows.map(row => 
+                `(${newUser.id}, ${row.id}, TRUE)`
+            ).join(', ');
+
+            if (grantedPermsValues.length > 0) {
+                await client.query(
+                    `INSERT INTO user_permissions (user_id, permission_id, granted)
+                     VALUES ${grantedPermsValues}
+                     ON CONFLICT (user_id, permission_id) DO NOTHING`
+                );
+            }
             
             // C. Supprimer la demande de la table "pending_registrations"
-            await db.query(
+            await client.query(
                 `DELETE FROM pending_registrations WHERE id = $1`,
                 [requestId]
             );
 
-            await db.query('COMMIT'); // Validation de la transaction
+            await client.query('COMMIT'); // Validation de la transaction
 
             res.status(200).json({ 
                 message: "Utilisateur créé et demande approuvée", 
-                user: userInsert.rows[0] 
+                user: newUser 
             });
 
         } catch (error) {
-            await db.query('ROLLBACK'); // Annulation si une erreur survient
+            await client.query('ROLLBACK'); // Annulation si une erreur survient
             console.error("Erreur d'approbation:", error.stack);
             res.status(500).json({ message: "Échec de l'approbation serveur" });
+        } finally {
+            client.release(); // Libération du client
         }
     },
     createUser: async (req, res) => {
+        // Utilisation d'un client du Pool pour la transaction
+        const client = await db.getClient(); 
+
         try {
             const { username, email, password, is_admin } = req.body;
 
             if (!username || !email || !password) {
+                await client.query('ROLLBACK');
                 return res.status(400).json({ message: "Les champs nom d'utilisateur, email et mot de passe sont requis." });
             }
 
+            await client.query('BEGIN'); // Début de la Transaction
+
             // 1. Vérification de l'existence (actif ou en attente)
-            const checkExisting = await db.query(
+            const checkExisting = await client.query(
                 'SELECT id FROM "users" WHERE email = $1 UNION ALL SELECT id FROM "pending_registrations" WHERE email = $1', 
                 [email]
             );
             if (checkExisting.rows.length > 0) {
+                await client.query('ROLLBACK'); // Annuler la transaction
                 return res.status(409).json({ message: "Un utilisateur ou une demande d'inscription existe déjà avec cet email." });
             }
 
@@ -112,54 +141,87 @@ module.exports = {
             const hashedPassword = await bcrypt.hash(password, 10);
             
             // 3. Insertion dans la table des utilisateurs actifs
-            const is_admin_bool = is_admin === true; // S'assurer que c'est bien un booléen
+            const is_admin_bool = is_admin === true;
             
-            const result = await db.query(
+            const userResult = await client.query(
                 `INSERT INTO "users" (username, email, password_hash, is_admin, created_at) 
-                VALUES ($1, $2, $3, $4, NOW()) 
-                RETURNING id, username, email, is_admin`,
+                 VALUES ($1, $2, $3, $4, NOW()) 
+                 RETURNING id, username, email, is_admin`,
                 [username, email, hashedPassword, is_admin_bool]
             );
+            const newUser = userResult.rows[0];
+
+            // --- 4. LOGIQUE D'ASSIGNATION DES PERMISSIONS ---
+            
+            let permissionCodes;
+            if (is_admin_bool) {
+                // Admin: Assigner toutes les permissions disponibles
+                permissionCodes = ['create', 'read', 'modify', 'delete'];
+            } else {
+                // Non-Admin: Assigner 'read' et 'modify'
+                permissionCodes = ['read', 'modify'];
+            }
+
+            // Récupérer les IDs des permissions requises
+            const permIdsResult = await client.query(
+                'SELECT id FROM permissions WHERE code = ANY($1::text[])',
+                [permissionCodes]
+            );
+            
+            const grantedPermsValues = permIdsResult.rows.map(row => 
+                `(${newUser.id}, ${row.id}, TRUE)`
+            ).join(', ');
+
+            if (grantedPermsValues.length > 0) {
+                // Insertion en masse dans user_permissions
+                await client.query(
+                    `INSERT INTO user_permissions (user_id, permission_id, granted)
+                     VALUES ${grantedPermsValues}
+                     ON CONFLICT (user_id, permission_id) DO NOTHING`
+                );
+            }
+
+            // --- FIN LOGIQUE D'ASSIGNATION ---
+
+            // 5. Validation de la Transaction
+            await client.query('COMMIT'); 
 
             res.status(201).json({ 
-                message: "Utilisateur créé avec succès", 
-                user: result.rows[0] 
+                message: `Utilisateur créé avec succès. Permissions (${permissionCodes.join(', ')}) attribuées.`, 
+                user: newUser 
             });
 
         } catch (error) {
+            // Annulation de la Transaction en cas d'erreur
+            await client.query('ROLLBACK'); 
+
             console.error("❌ ERREUR Création utilisateur par Admin:", error.stack);
-            res.status(500).json({ message: "Erreur serveur lors de la création de l'utilisateur." });
+            res.status(500).json({ message: "Erreur serveur lors de la création et l'attribution des permissions." });
+        } finally {
+            client.release(); // Relâcher le client de la base de données
         }
     },
     deleteUser: async (req, res) => {
         try {
-            // ID de l'utilisateur à supprimer reçu dans le corps de la requête DELETE
             const { userId } = req.body; 
             
             if (!userId) {
                 return res.status(400).json({ message: "L'ID utilisateur est requis pour la suppression." });
             }
-            
-            // Sécurité: Empêcher l'administrateur connecté de se supprimer lui-même
             if (parseInt(userId, 10) === req.user.id) {
                 return res.status(403).json({ message: "Interdit: Vous ne pouvez pas supprimer votre propre compte administrateur." });
             }
-
-            // Exécution de la requête DELETE
             const result = await db.query(
                 'DELETE FROM "users" WHERE id = $1 RETURNING id, username',
                 [userId]
             );
-
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: "Utilisateur non trouvé ou déjà supprimé." });
             }
-
             res.status(200).json({ 
                 message: `Utilisateur '${result.rows[0].username}' (ID: ${result.rows[0].id}) supprimé avec succès.`,
                 deletedUserId: result.rows[0].id 
             });
-
         } catch (error) {
             console.error("❌ ERREUR Suppression utilisateur par Admin:", error.stack);
             res.status(500).json({ message: "Erreur serveur lors de la suppression de l'utilisateur." });

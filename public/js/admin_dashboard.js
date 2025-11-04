@@ -1,8 +1,6 @@
 // public/js/admin_dashboard.js
 
-// ----------------------------------------------------------------------
-// ÉLÉMENTS DU DOM 
-// ----------------------------------------------------------------------
+
 const usersTableBody = document.getElementById('usersTableBody');
 const requestsTableBody = document.getElementById('requestsTableBody'); 
 const loadingIndicator = document.getElementById('loadingIndicator');
@@ -26,7 +24,7 @@ const createSection = document.getElementById('create-section');
 const createUserForm = document.getElementById('createUserForm');
 const createStatusMessage = document.getElementById('createStatusMessage');
 
-// NOUVEAUX ÉLÉMENTS POUR LA GESTION DES LIBERTÉS
+
 const tabPermissions = document.getElementById('tabPermissions');
 const permissionsSection = document.getElementById('permissions-section');
 const permissionUserSelect = document.getElementById('permissionUserSelect');
@@ -43,51 +41,18 @@ const API_APPROVE_REQUEST = '/admin/approve-request';
 const API_URL_LOGOUT = '/auth/logout';
 const API_CREATE_USER = '/admin/create-user';
 const API_DELETE_USER = '/admin/user';
+// NOUVEAUX ENDPOINTS POUR LA GESTION DES PERMISSIONS
+const API_PERMISSIONS_BASE = '/api/permissions';
 
 let allUsersData = [];
 let allPendingRequests = []; 
 let sortState = { key: 'last_login', direction: 'desc' }; 
 let currentSearchTerm = '';
-let currentView = 'users'; // 'users', 'requests', 'create', 'permissions'
+let currentView = 'users';
+let currentSelectedUserPermissions = []; // Stocke l'état actuel des permissions de l'utilisateur sélectionné
+let currentSelectedUserId = null; // Stocke l'ID de l'utilisateur actuellement sélectionné
+let isCurrentUserAdmin = false; // Indicateur pour savoir si l'utilisateur sélectionné est admin
 
-
-// ----------------------------------------------------------------------
-// DÉFINITION ET MOCK DES LIBERTÉS
-// ----------------------------------------------------------------------
-
-const MOCK_PERMISSIONS_LIST = [
-    { id: 'create_data', label: "1/ Créer de nouvelles données" },
-    { id: 'read_all_data', label: "2/ Lire toutes les données" },
-    { id: 'modify_data', label: "3/ Modifier des données" },
-    { id: 'delete_data', label: "4/ Supprimer des données" },
-    { id: 'admin_dashboard_access', label: "5/ Accès au dashbord admin" },
-    { id: 'manage_roles', label: "6/ Gérer les rôles/libertés" },
-    { id: 'restart_app', label: "7/ Redémarrer l'application" },
-];
-
-function getMockPermissions(userId) {
-    // Logique simulée : les admins ont tout, les autres ont seulement lecture/création
-    const user = allUsersData.find(u => parseInt(u.id) === userId);
-    if (!user) return MOCK_PERMISSIONS_LIST.map(p => ({ ...p, granted: false }));
-
-    const isAdmin = user.is_admin;
-    return MOCK_PERMISSIONS_LIST.map(p => {
-        let granted = false;
-        
-        if (isAdmin) {
-            granted = true; // L'admin a tout
-        } else if (p.id === 'read_all_data' || p.id === 'create_data') {
-            granted = true; // Les utilisateurs standards ont ces deux
-        }
-        
-        return { ...p, granted: granted };
-    });
-}
-
-
-// ----------------------------------------------------------------------
-// FONCTIONS UTILITAIRES (INCHANGÉES)
-// ----------------------------------------------------------------------
 
 function displayConnectedUser() {
     const username = localStorage.getItem('username');
@@ -117,7 +82,6 @@ function handleSort(event) {
 
 function mockToggleAdmin(userId, currentStatus) {
     console.log(`[MOCK] Bascule de statut Admin pour l'utilisateur ID: ${userId} de ${currentStatus} à ${!currentStatus}`);
-    // Cette fonction n'est plus liée au bouton "Gérer Libertés" mais est maintenue pour la logique interne.
     fetchUsersData(); 
 }
 
@@ -205,8 +169,6 @@ async function handleDeleteUser(userId, buttonElement) {
     if (!confirm(`ATTENTION: Êtes-vous sûr de vouloir SUPPRIMER l'utilisateur ID ${userId}? Cette action est irréversible.`)) {
         return;
     }
-
-    // Désactiver le bouton pendant le traitement
     buttonElement.disabled = true;
     buttonElement.textContent = 'Suppression...';
     buttonElement.classList.remove('bg-red-600', 'hover:bg-red-700');
@@ -222,12 +184,9 @@ async function handleDeleteUser(userId, buttonElement) {
         const data = await response.json();
         
         if (response.ok) {
-            // Succès
             alert(data.message);
-            // Recharger la liste pour actualiser la table
             fetchUsersData(); 
         } else {
-             // Échec (ex: 403 auto-suppression, 404 non trouvé, etc.)
             alert(`Échec de la suppression (ID: ${userId}): ${data.message || 'Erreur inconnue'}`);
         }
 
@@ -237,9 +196,7 @@ async function handleDeleteUser(userId, buttonElement) {
     } 
 }
 function renderTable(users) {
-    usersTableBody.innerHTML = ''; 
-    // ... (Logique de gestion des cas sans utilisateur inchangée) ...
-
+    usersTableBody.innerHTML = '';
     users.forEach(user => {
         const row = usersTableBody.insertRow();
         row.className = 'hover:bg-gray-700 transition duration-150';
@@ -248,16 +205,12 @@ function renderTable(users) {
         const statusText = isAdmin ? 
             `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-500 text-white">ADMIN</span>` : 
             `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-600 text-gray-300">User</span>`;
-        
-        // Bouton Gérer Libertés (Existant)
         const managementButton = `
             <button class="manage-permissions-btn bg-purple-600 hover:bg-purple-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
                     data-user-id="${user.id}" 
                     data-username="${user.username}">
                 Libertés
             </button>`;
-
-        // NOUVEAU BOUTON SUPPRIMER
         const deleteButton = `
             <button class="delete-user-btn bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
                     data-user-id="${user.id}">
@@ -276,20 +229,16 @@ function renderTable(users) {
             <td class="px-6 py-4 whitespace-nowrap text-center">${deleteButton}</td> 
         `;
     });
-    
-    // ÉCOUTEUR : Gérer le clic sur le bouton Libertés (Inchangé)
     document.querySelectorAll('.manage-permissions-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const userId = parseInt(e.target.dataset.userId, 10);
             loadPermissionsSection(userId); 
         });
     });
-    
-    // NOUVEL ÉCOUTEUR : Gérer le clic sur le bouton Supprimer
     document.querySelectorAll('.delete-user-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const userId = parseInt(e.target.dataset.userId, 10);
-            handleDeleteUser(userId, e.target); // Appel de la nouvelle fonction
+            handleDeleteUser(userId, e.target);
         });
     });
 }
@@ -297,7 +246,6 @@ function renderTable(users) {
 
 async function fetchPendingRequests() {
     errorMessage.classList.add('hidden');
-    // ... (Logique fetchPendingRequests inchangée) ...
     try {
         requestsLoadingIndicator.classList.remove('hidden');
         requestsContainer.classList.add('hidden');
@@ -332,8 +280,7 @@ async function fetchPendingRequests() {
 }
 
 function renderRequestsTable(requests) {
-    requestsTableBody.innerHTML = ''; 
-    // ... (Logique renderRequestsTable inchangée) ...
+    requestsTableBody.innerHTML = '';
     if (requests.length === 0) {
         requestsTableBody.innerHTML = `<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">Aucune demande en attente.</td></tr>`;
         return;
@@ -370,7 +317,6 @@ async function handleApproveRequest(requestId, buttonElement) {
     if (!confirm(`Confirmer l'approbation de la demande ID ${requestId} ?`)) {
         return;
     }
-    // ... (Logique handleApproveRequest inchangée) ...
     buttonElement.disabled = true;
     buttonElement.textContent = 'Traitement...';
     buttonElement.classList.remove('bg-green-500');
@@ -401,10 +347,6 @@ async function handleApproveRequest(requestId, buttonElement) {
 }
 
 
-// ----------------------------------------------------------------------
-// LOGIQUE DE CRÉATION D'UTILISATEUR (INCHANGÉE)
-// ----------------------------------------------------------------------
-
 createUserForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -429,7 +371,6 @@ createUserForm.addEventListener('submit', async (e) => {
         createStatusMessage.classList.remove('hidden');
         
         if (res.ok) {
-            // Succès
             createStatusMessage.textContent = `Utilisateur ${data.user.username} (ID: ${data.user.id}) créé avec succès.`;
             createStatusMessage.style.color = 'lightgreen';
             createUserForm.reset(); 
@@ -439,7 +380,6 @@ createUserForm.addEventListener('submit', async (e) => {
             }
 
         } else {
-            // Échec
             createStatusMessage.textContent = `Échec de la création: ${data.message || 'Erreur inconnue.'}`;
             createStatusMessage.style.color = 'red';
         }
@@ -455,10 +395,6 @@ createUserForm.addEventListener('submit', async (e) => {
 });
 
 
-// ----------------------------------------------------------------------
-// LOGIQUE DE LA SECTION LIBERTÉS (NOUVEAU)
-// ----------------------------------------------------------------------
-
 function populateUserSelect() {
     permissionUserSelect.innerHTML = '<option value="">-- Sélectionner un utilisateur --</option>';
     allUsersData.forEach(user => {
@@ -469,21 +405,69 @@ function populateUserSelect() {
     });
 }
 
-function renderPermissions(userId) {
+/**
+ * Récupère les permissions actuelles de l'utilisateur via l'API.
+ * @param {number} userId 
+ * @returns {Promise<Object>} L'objet des permissions ou null en cas d'erreur.
+ */
+async function fetchUserPermissions(userId) {
     permissionsList.innerHTML = '';
-    permissionsPlaceholder.classList.add('hidden');
-    savePermissionsButton.disabled = false;
+    permissionsPlaceholder.classList.remove('hidden');
+    selectedUserInfo.textContent = "Chargement des libertés...";
+    savePermissionsButton.disabled = true;
     permissionsStatusMessage.classList.add('hidden');
 
-    const userPermissions = getMockPermissions(userId); 
+    try {
+        const response = await fetch(`${API_PERMISSIONS_BASE}/${userId}`, { method: 'GET' });
+        const data = await response.json();
+        
+        if (!response.ok) {
+            selectedUserInfo.textContent = `Erreur: ${data.message || 'Échec de la récupération des libertés.'}`;
+            return null;
+        }
 
-    userPermissions.forEach(p => {
+        const user = allUsersData.find(u => parseInt(u.id) === userId) || data.user;
+        
+        // Mettre à jour l'état global
+        currentSelectedUserId = userId;
+        currentSelectedUserPermissions = data.permissions;
+        isCurrentUserAdmin = data.user.is_admin;
+
+        selectedUserInfo.textContent = `Gestion des libertés pour : ${user.username} (${user.email})`;
+        
+        return data.permissions;
+
+    } catch (error) {
+        console.error("Erreur réseau lors de la récupération des permissions:", error);
+        selectedUserInfo.textContent = "Erreur réseau ou serveur.";
+        return null;
+    }
+}
+
+/**
+ * Affiche la liste des permissions avec les états des checkbox.
+ * @param {Array<Object>} permissions La liste des permissions et leur état `granted`.
+ */
+function renderPermissions(permissions) {
+    permissionsList.innerHTML = '';
+    permissionsPlaceholder.classList.add('hidden');
+
+    // Si l'utilisateur est admin, on désactive les modifications
+    if (isCurrentUserAdmin) {
+        permissionsList.innerHTML = `<p class="text-red-400 text-center py-4 font-semibold">
+            Impossible de modifier les libertés d'un administrateur (toutes sont accordées).
+        </p>`;
+        savePermissionsButton.disabled = true;
+        return;
+    }
+
+    permissions.forEach(p => {
         const isChecked = p.granted ? 'checked' : '';
         const html = `
             <div class="flex justify-between items-center py-2 px-3 bg-gray-700 rounded-lg">
                 <label for="perm-${p.id}" class="text-gray-300 font-medium">${p.label}</label>
                 <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                    <input type="checkbox" name="perm-${p.id}" id="perm-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer ${isChecked ? 'right-0 border-green-400 bg-green-400' : 'border-gray-500 bg-gray-500'}" ${isChecked} />
+                    <input type="checkbox" name="perm-${p.id}" data-perm-code="${p.id}" id="perm-${p.id}" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer ${isChecked ? 'right-0 border-green-400 bg-green-400' : 'border-gray-500 bg-gray-500'}" ${isChecked} />
                     <label for="perm-${p.id}" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-600 cursor-pointer"></label>
                 </div>
             </div>
@@ -500,14 +484,73 @@ function renderPermissions(userId) {
             } else {
                 e.target.classList.add('border-gray-500', 'bg-gray-500');
             }
-            savePermissionsButton.disabled = false; 
+            savePermissionsButton.disabled = false; // Réactiver le bouton d'enregistrement
         });
     });
+
+    savePermissionsButton.disabled = true; // Désactiver par défaut, il sera réactivé lors d'un changement
 }
 
-function loadPermissionsSection(userId = null) {
+
+/**
+ * Gère l'enregistrement des permissions mises à jour.
+ */
+async function handleSavePermissions() {
+    if (!currentSelectedUserId || isCurrentUserAdmin) return;
+
+    // 1. Collecter l'état actuel des permissions dans l'interface
+    const newPermissionsState = [];
+    document.querySelectorAll('.toggle-checkbox').forEach(checkbox => {
+        const permCode = checkbox.getAttribute('data-perm-code');
+        const granted = checkbox.checked;
+        newPermissionsState.push({ code: permCode, granted: granted });
+    });
+
+    savePermissionsButton.disabled = true;
+    savePermissionsButton.textContent = 'Enregistrement...';
+    permissionsStatusMessage.classList.add('hidden');
+
+    try {
+        const response = await fetch(`${API_PERMISSIONS_BASE}/${currentSelectedUserId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permissions: newPermissionsState })
+        });
+
+        const data = await response.json();
+        permissionsStatusMessage.classList.remove('hidden');
+
+        if (response.ok) {
+            permissionsStatusMessage.textContent = data.message;
+            permissionsStatusMessage.style.color = 'lightgreen';
+            // Recharger pour s'assurer que l'état local correspond à la BDD après un succès
+            loadPermissionsSection(currentSelectedUserId, false); 
+        } else {
+            permissionsStatusMessage.textContent = `Échec de l'enregistrement: ${data.message || 'Erreur inconnue.'}`;
+            permissionsStatusMessage.style.color = 'red';
+            savePermissionsButton.disabled = false; // Réactiver si échec
+        }
+
+    } catch (error) {
+        console.error("Erreur réseau lors de la sauvegarde des permissions:", error);
+        permissionsStatusMessage.textContent = "Erreur réseau ou serveur lors de l'enregistrement.";
+        permissionsStatusMessage.style.color = 'red';
+        savePermissionsButton.disabled = false; // Réactiver si échec
+    } finally {
+        savePermissionsButton.textContent = 'Enregistrer les Modifications';
+    }
+}
+
+
+/**
+ * Charge la section de gestion des permissions.
+ * @param {number|null} userId L'ID utilisateur à présélectionner.
+ * @param {boolean} fetchData Vrai si la liste des utilisateurs doit être rechargée.
+ */
+function loadPermissionsSection(userId = null, fetchData = true) {
     switchTab('permissions-section'); 
-    if (allUsersData.length === 0) {
+    
+    if (allUsersData.length === 0 || fetchData) {
         fetchUsersData().then(() => {
             populateUserSelect();
             handleSelection(userId);
@@ -516,23 +559,41 @@ function loadPermissionsSection(userId = null) {
         populateUserSelect();
         handleSelection(userId);
     }
+}
 
-    function handleSelection(id) {
-        if (id) {
-            permissionUserSelect.value = id;
-            const user = allUsersData.find(u => parseInt(u.id) === id);
-            if (user) {
-                selectedUserInfo.textContent = `Gestion des libertés pour : ${user.username} (${user.email})`;
-                renderPermissions(id);
-            }
+
+/**
+ * Gère la sélection d'un utilisateur et charge ses permissions.
+ * @param {number|null} id L'ID utilisateur sélectionné.
+ */
+async function handleSelection(id) {
+    // Réinitialiser les états
+    currentSelectedUserId = null;
+    isCurrentUserAdmin = false;
+    currentSelectedUserPermissions = [];
+
+    if (id) {
+        permissionUserSelect.value = id;
+        const permissions = await fetchUserPermissions(id);
+        if (permissions) {
+            renderPermissions(permissions);
         } else {
-            selectedUserInfo.textContent = "";
-            permissionsList.innerHTML = '';
+             // Afficher le placeholder et désactiver le bouton en cas d'échec
             permissionsPlaceholder.classList.remove('hidden');
+            permissionsList.innerHTML = '';
             savePermissionsButton.disabled = true;
         }
+
+    } else {
+        selectedUserInfo.textContent = "";
+        permissionsList.innerHTML = '';
+        permissionsPlaceholder.classList.remove('hidden');
+        savePermissionsButton.disabled = true;
     }
 }
+
+
+// admin_dashboard.js (Extraction de la partie corrigée)
 
 function switchTab(targetSection) {
     currentView = targetSection === 'users-section' ? 'users' : 
@@ -563,8 +624,15 @@ function switchTab(targetSection) {
     } else if (targetSection === 'permissions-section') { 
         tabPermissions.classList.add('active');
         searchBar.classList.add('hidden'); 
-        if (currentView !== 'permissions') { 
-             loadPermissionsSection();
+        
+        // CORRECTION 1 : Retirer l'appel récursif à loadPermissionsSection.
+        // On assure uniquement que la liste des utilisateurs pour le SELECT est chargée.
+        if (allUsersData.length === 0) {
+            fetchUsersData().then(() => {
+                populateUserSelect();
+            });
+        } else {
+             populateUserSelect();
         }
     }
     errorMessage.classList.add('hidden');
@@ -580,24 +648,19 @@ document.addEventListener('DOMContentLoaded', () => {
     tabUsers.addEventListener('click', () => switchTab('users-section'));
     tabRequests.addEventListener('click', () => switchTab('requests-section'));
     tabCreate.addEventListener('click', () => switchTab('create-section'));
-    tabPermissions.addEventListener('click', () => loadPermissionsSection());
+    
+    // CORRECTION 2 : Lors du clic sur l'onglet, on appelle loadPermissionsSection() 
+    // qui va d'abord appeler switchTab, puis charger les données (une seule boucle).
+    tabPermissions.addEventListener('click', () => loadPermissionsSection()); 
+    
     permissionUserSelect.addEventListener('change', (e) => {
         const userId = parseInt(e.target.value, 10);
-        if (userId) {
-            loadPermissionsSection(userId);
-        } else {
-            selectedUserInfo.textContent = "";
-            permissionsList.innerHTML = '';
-            permissionsPlaceholder.classList.remove('hidden');
-            savePermissionsButton.disabled = true;
-        }
+        handleSelection(userId);
     });
-    savePermissionsButton.addEventListener('click', () => {
-        permissionsStatusMessage.textContent = 'Permissions (MOCK) enregistrées avec succès!';
-        permissionsStatusMessage.style.color = 'lightgreen';
-        permissionsStatusMessage.classList.remove('hidden');
-        savePermissionsButton.disabled = true;
-    });
+    
+    // NOUVEAU: Écouteur pour la sauvegarde
+    savePermissionsButton.addEventListener('click', handleSavePermissions);
+
     searchBar.addEventListener('input', (e) => {
         currentSearchTerm = e.target.value;
         applyFiltersAndSort();
@@ -614,4 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutButton) {
         logoutButton.addEventListener('click', handleLogout);
     }
+    
+    // Initialiser les icônes de tri
+    document.querySelector(`th[data-sort-key="${sortState.key}"]`).classList.add(`sorted-${sortState.direction}`);
 });

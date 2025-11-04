@@ -73,9 +73,6 @@ async function initializePool() {
 activePoolPromise = initializePool(); 
 
 module.exports = {
-    /**
-     * Point d'entrée pour toutes les requêtes BDD (méthode préférée).
-     */
     query: async (text, params) => {
         const pool = await activePoolPromise; 
 
@@ -83,11 +80,15 @@ module.exports = {
             throw new Error("Base de données non initialisée ou indisponible.");
         }
         return pool.query(text, params);
-    },
-    
-    /**
-     * Export de getPool pour la compatibilité avec les contrôleurs existants (ex: adminController).
-     */
+    },getClient: async () => {
+        const pool = await activePoolPromise; 
+
+        if (!pool) {
+            throw new Error("Base de données non initialisée ou indisponible.");
+        }
+        // Le Pool a une méthode connect qui agit comme getClient
+        return pool.connect(); 
+    },    
     getPool: async () => {
         return await activePoolPromise;
     }

@@ -14,6 +14,7 @@ const b2vRoutes = require('./routes/b2v');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const downloadRoutes = require('./routes/downloadRoutes');
+const permissionsRoutes = require('./routes/permissionsRoutes');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.use('/api', b2vRoutes);
 app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/webdav', downloadRoutes);
+app.use("/api/permissions", permissionsRoutes);
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/views/index.html'));
