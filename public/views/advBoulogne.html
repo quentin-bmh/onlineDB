@@ -78,6 +78,8 @@
               <input class="ep_cr_g" />
               <input class="ep_cal_g" />
               <input class="nb_cal_g" />
+              <input class="p2p_g_h">
+              <input class="p2p_d_h">
               <input class="ep_cr_d" />
               <input class="ep_cal_d" />
               <input class="nb_cal_d" />
@@ -89,6 +91,8 @@
               <input class="ep_cr_g" />
               <input class="ep_cal_g" />
               <input class="nb_cal_g" />
+              <input class="p2p_g_b">
+              <input class="p2p_d_b">
               <input class="ep_cr_d" />
               <input class="ep_cal_d" />
               <input class="nb_cal_d" />
@@ -98,12 +102,12 @@
           </div>
           <div class="traverse-img">
             <img src="../assets/coeur2t.png" alt="coeur de traversée" class="croisement-image" />
-            <input class="p2p_g_h" />
-            <input class="p2p_d_h" />
+            <input class="p2pt_g_h" />
+            <input class="p2pt_d_h" />
             <input class="libre_passage_g" />
             <input class="libre_passage_d" />
-            <input class="p2p_g_b" />
-            <input class="p2p_d_b" />
+            <input class="p2pt_g_b" />
+            <input class="p2pt_d_b" />
             <input class="coeur2t_num_g">
             <input class="coeur2t_num_d">
           </div>
@@ -128,12 +132,12 @@
           </div>
           <div class="traverse-img">
             <img src="../assets/coeur2t.png" alt="coeur de traversée" class="croisement-image" />
-              <input class="p2p_g_h" />
-              <input class="p2p_d_h" />
+              <input class="p2pt_g_h" />
+              <input class="p2pt_d_h" />
               <input class="libre_passage_g" />
               <input class="libre_passage_d" />
-              <input class="p2p_g_b" />
-              <input class="p2p_d_b" />
+              <input class="p2pt_g_b" />
+              <input class="p2pt_d_b" />
               <input class="coeur2t_num_g">
               <input class="coeur2t_num_d">
           </div>
@@ -799,15 +803,23 @@
         </div>
       </div>
     </div>
-    <button class="exit"><a href="/">Accueil</a></button>
+    <!-- <button class="exit"><a href="/">Accueil</a></button> -->
+    <a href="/" class="exit choice-button voies-button">
+                    <img src="../assets/accueil.png" alt="Accueil">
+                    Accueil
+    </a>
+    <a href="/new_adv" class=" new_adv choice-button voies-button">
+                    <img src="../assets/add.png" alt="Accueil">
+                    ADV
+    </a>
     <!-- <button class="edit-data"><a href="/b2v">Nouvelles mesures</a></button> -->
-     <div class="section-role">
+     <!-- <div class="section-role">
        <div class="toggle-container" id="toggleButton">
          <div class="text-left">Admin</div>
          <div class="text-right">Tech</div>
          <div class="circle"></div>
        </div>
-     </div>
+     </div> -->
   </div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

@@ -11,57 +11,57 @@ document.addEventListener('DOMContentLoaded', () => {
   setupToggleMenu();
   initCharts();
 
-  if (typeof setInputsDisabled !== 'function') {
-    window.setInputsDisabled = (disabled) => {
-      const container = document.querySelector('.dataVoie-Container');
-      if (!container) return console.warn('⚠️ .dataVoie-Container introuvable au chargement');
-      container.querySelectorAll('input, select, textarea, button').forEach(el => {
-        el.disabled = !!disabled;
-      });
-    };
-    console.warn('setInputsDisabled() n\'existait pas — fallback créé.');
-  }
+  // if (typeof setInputsDisabled !== 'function') {
+  //   window.setInputsDisabled = (disabled) => {
+  //     const container = document.querySelector('.dataVoie-Container');
+  //     if (!container) return console.warn('⚠️ .dataVoie-Container introuvable au chargement');
+  //     container.querySelectorAll('input, select, textarea, button').forEach(el => {
+  //       el.disabled = !!disabled;
+  //     });
+  //   };
+  //   console.warn('setInputsDisabled() n\'existait pas — fallback créé.');
+  // }
 
-  // Appliquer l'état initial du toggle au chargement
-  const toggle = document.getElementById('toggleButton'); // adapte l'ID si besoin
-  if (!toggle) {
-    console.warn('⚠️ toggleButton introuvable au chargement');
-  } else {
-    const isAdmin = toggle.classList.contains('on');
-    // console.log('Initial toggle state:', isAdmin ? 'Admin' : 'Technicien');
-    setInputsDisabled(!isAdmin);
-  }
+  // // Appliquer l'état initial du toggle au chargement
+  // const toggle = document.getElementById('toggleButton'); // adapte l'ID si besoin
+  // if (!toggle) {
+  //   console.warn('⚠️ toggleButton introuvable au chargement');
+  // } else {
+  //   const isAdmin = toggle.classList.contains('on');
+  //   // console.log('Initial toggle state:', isAdmin ? 'Admin' : 'Technicien');
+  //   setInputsDisabled(!isAdmin);
+  // }
 });
-document.querySelectorAll("table[data-editable='true'] tbody td").forEach(td => {
-  td.contentEditable = true;
-});
-document.querySelectorAll("[data-editable='true']").forEach(el => {
-  el.contentEditable = true;
-});
-document.querySelectorAll("table[data-editable='true']").forEach(table => {
-  const lockAttr = (table.dataset.lock || "").toLowerCase();
-  const lockFirstRow = lockAttr.includes("first-row");
-  const lockFirstCol = lockAttr.includes("first-col");
+// document.querySelectorAll("table[data-editable='true'] tbody td").forEach(td => {
+//   td.contentEditable = true;
+// });
+// document.querySelectorAll("[data-editable='true']").forEach(el => {
+//   el.contentEditable = true;
+// });
+// document.querySelectorAll("table[data-editable='true']").forEach(table => {
+//   const lockAttr = (table.dataset.lock || "").toLowerCase();
+//   const lockFirstRow = lockAttr.includes("first-row");
+//   const lockFirstCol = lockAttr.includes("first-col");
 
-  if (lockFirstRow) {
-    table.querySelectorAll("thead th").forEach(th => {
-      th.contentEditable = false;
-      th.classList.add("non-editable");  
-    });
-  }
+//   if (lockFirstRow) {
+//     table.querySelectorAll("thead th").forEach(th => {
+//       th.contentEditable = false;
+//       th.classList.add("non-editable");  
+//     });
+//   }
 
-  table.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
-    row.querySelectorAll("td").forEach((cell, colIndex) => {
-      if (lockFirstCol && colIndex === 0) {
-        cell.contentEditable = false;
-        cell.classList.add("non-editable");
-      } else {
-        cell.contentEditable = true;
-        cell.classList.remove("non-editable");
-      }
-    });
-  });
-});
+//   table.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
+//     row.querySelectorAll("td").forEach((cell, colIndex) => {
+//       if (lockFirstCol && colIndex === 0) {
+//         cell.contentEditable = false;
+//         cell.classList.add("non-editable");
+//       } else {
+//         cell.contentEditable = true;
+//         cell.classList.remove("non-editable");
+//       }
+//     });
+//   });
+// });
 
 
   
@@ -105,11 +105,6 @@ document.getElementById("new-measure-btn").addEventListener("click", () => {
     });
   });
 });
-
-
-
-
-
 function initMap() {
     map = L.map('map').setView([46.5, 2.5], 7);
 
@@ -150,41 +145,59 @@ function updateMap(adv) {
       map.invalidateSize();
     }, 200);
 }
-function createTable(data) {
-  const tbody = document.querySelector("#advTable tbody");
-  tbody.innerHTML = '';
-  data.forEach((adv, index) => {
-    const name = adv["adv"];
-    const type = adv["type"];
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${name}</td>`;
+const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public";
 
-    row.addEventListener("click", () => {
-      updateMap(adv);
-      document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
-      row.classList.add("active-adv");
-      if (type && name) {
-        const lowerType = type.toLowerCase();
-        fetch(`/api/${lowerType}/${encodeURIComponent(name)}`)
-          .then(res => {
-            if (!res.ok) throw new Error(`Erreur ${res.status}`);
-            return res.json();
-          })
-          .then(data => {
-            const advData = Array.isArray(data) ? data[0] : data;
-            getAdvData(advData);
-          })
-          .catch(err => {
-            console.error("Erreur lors de la récupération des données ADV détaillées:", err);
-          });
-      } else {
-        console.warn("Type ou nom ADV manquant:", { type, name });
-      }
-    });
+function createDocumentButton(advName) {
+    const hub = document.getElementById('hub');
+    if (!hub) return;
 
-    tbody.appendChild(row);
-  });
+    // Suppression de l'ancien bouton
+    const oldButton = document.getElementById('document-btn');
+    if (oldButton) oldButton.remove();
+
+    if (!advName || advName === '') return;
+
+    const button = document.createElement('button');
+    button.id = 'document-btn';
+    button.textContent = `Plan de l'appareil`;
+    button.classList.add('data-btn-document'); 
+    const fullFilename = advName + '.pdf';
+    const webdavFullPath = `${WEBDAV_TARGET_DIR}/${fullFilename}`; 
+    // console.log("Chemin WebDAV complet pour le document :", webdavFullPath);
+    const encodedPath = encodeURIComponent(webdavFullPath);
+    // console.log("Chemin WebDAV encodé pour le document :", encodedPath);
+    const documentUrl = `/api/webdav/open/${encodedPath}`; 
+
+    button.onclick = () => {
+        window.open(documentUrl, '_blank'); 
+    };
+    
+    // Insérer le bouton dans le hub
+    hub.appendChild(button);
 }
+
+
+function getAdvDetails(adv) {
+  const advName = adv["ADV"] || adv["adv"];
+  if (!advName) {
+    console.warn("ADV manquant dans l'objet :", adv);
+    return;
+  }
+  createDocumentButton(advName);
+  fetch(`/api/general_data?adv=${encodeURIComponent(advName)}`)
+    .then(res => {
+      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
+      return res.json();
+    })
+    .then(data => {
+      displayAdvDetails(data);
+    })
+    .catch(err => {
+      console.error("Erreur en chargeant les détails depuis general_data:", err);
+      document.getElementById('document-btn')?.remove();
+    });
+}
+
 
 function loadTypeButtons() {
   fetch('/api/adv_types')
@@ -206,10 +219,12 @@ function loadTypeButtons() {
           document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
           button.classList.add('active-type');
           currentType = type.toLowerCase();
+
+          // Gestion boutons aiguillage
           document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
             boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
           });
-
+          console.log("appel de fetch pour le type :", type);
           fetch(`/api/adv_from/${encodeURIComponent(type)}`)
             .then(res => res.json())
             .then(data => {
@@ -238,6 +253,66 @@ function loadTypeButtons() {
       console.error('Erreur lors du chargement des types ADV :', err);
     });
 }
+
+
+function createTable(data) {
+  const tbody = document.querySelector("#advTable tbody");
+  tbody.innerHTML = '';
+  data.forEach((adv, index) => {
+    const name = adv["adv"];
+    const type = adv["type"];
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${name}</td>`;
+
+    row.addEventListener("click", () => {
+      // console.log('row sélectionnée:', name, type, adv); 
+      updateMap(adv);
+      document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
+      row.classList.add("active-adv");
+      getAdvDetails(adv);
+      // resetVoieContent();
+      if (type && name) {
+        const lowerType = type.toLowerCase();
+        fetch(`/api/${lowerType}/${encodeURIComponent(name)}`)
+          .then(res => {
+            if (!res.ok) throw new Error(`Erreur ${res.status}`);
+            return res.json();
+          })
+          .then(data => {
+            const advData = Array.isArray(data) ? data[0] : data;
+            console.log(`Données ADV récupérées pour ${name}:`, advData);
+            getAdvData(advData);
+          })
+          .catch(err => {
+            console.error("Erreur lors de la récupération des données ADV détaillées:", err);
+          });
+      } else {
+        console.warn("Type ou nom ADV manquant:", { type, name });
+      }
+    });
+
+    tbody.appendChild(row);
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function displayAdvDetails(adv) {
   const container = document.getElementById('info-container');
   container.innerHTML = ''; 
@@ -336,25 +411,6 @@ function initCharts() {
   }
 }
 
-function getAdvDetails(adv) {
-  const advName = adv["ADV"] || adv["adv"];
-  if (!advName) {
-    console.warn("ADV manquant dans l'objet :", adv);
-    return;
-  }
-
-  fetch(`/api/general_data?adv=${encodeURIComponent(advName)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      displayAdvDetails(data);
-    })
-    .catch(err => {
-      console.error("Erreur en chargeant les détails depuis general_data:", err);
-    });
-}
 
 
 function getAdvData(adv) {
@@ -363,6 +419,7 @@ function getAdvData(adv) {
   if (!name || !type) {
     return;
   }
+  // console.log(`/api/${type}/${encodeURIComponent(name)}`);
   fetch(`/api/${type}/${encodeURIComponent(name)}`)
     .then(res => {
       if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
@@ -383,6 +440,7 @@ function getAdvData(adv) {
     .catch(err => {
       console.error("Erreur en chargeant les détails ADV:", err);
     });
+    // console.log(`/api/da?adv=${encodeURIComponent(name)}`);
   fetch(`/api/da?adv=${encodeURIComponent(name)}`)
     .then(res => {
       if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
@@ -394,6 +452,7 @@ function getAdvData(adv) {
       }
       switchVoieTypeContent(type, 'voie-aiguillage');
       updateDA(data, type);
+      // console.log("data: " , data);
     })
     .catch(err => {
       console.error("Erreur en chargeant la bavure ADV:", err);
@@ -483,7 +542,7 @@ function updateToButtonVisibility() {
   if (!toButton) return;
   const isAiguillageVisible = voieAiguillage && voieAiguillage.style.display !== 'none' && voieAiguillage.classList.contains('active');
   toButton.style.display = isAiguillageVisible ? 'none' : 'inline-block';
-  console.log("utilisation de updateToButtonVisibility")
+  // console.log("utilisation de updateToButtonVisibility")
   updateButtons();
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
@@ -498,8 +557,10 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
     const data_section = document.querySelector('.data-actions');
     const dataADV = document.getElementById('data');
     const data_voie_container = document.getElementById('dataVoie-container');
-    const map = document.getElementById('map');
+    const mapEl = document.getElementById('map');
     if (!next || current === next) return;
+    
+    // Logique de mise en page CSS/Grid
     if (targetId === 'voie-aiguillage') {
       data.style.display = 'none';
       img_ag_tj.style.display = 'flex';
@@ -509,8 +570,8 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       dataADV.style.gridColumn = '1 / 3';
       dataADV.style.gridRow = '6 / 9';
       data_voie_container.style.gridRow = '1 / 11';
-      map.style.display = 'none';
-    }else{
+      mapEl.style.display = 'none';
+    } else {
       data.style.display = 'flex';
       img_ag_tj.style.display = 'none';
       left_sidebar.style.gridRow = '1 / 9';
@@ -519,9 +580,11 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       dataADV.style.gridColumn = '5 / 7';
       dataADV.style.gridRow = '1 / 4';
       data_voie_container.style.gridRow = '4 / 11';
-      map.style.display = 'block';
+      mapEl.style.display = 'block';
     }
-if (current) {
+    
+    // Logique d'animation et de transition
+    if (current) {
       current.classList.remove('active');
       current.style.animationName = 'slideOutDown';
 
@@ -534,7 +597,6 @@ if (current) {
         next.style.visibility = 'visible';
         next.style.animationName = 'slideInUp';
 
-        // ➕ Mise à jour de .voie-toggle ici
         const toggleMenu = document.querySelector('.voie-toggle');
         if (next.id === 'hub') {
           toggleMenu.style.display = 'none';
@@ -542,20 +604,18 @@ if (current) {
           toggleMenu.style.display = 'block';
         }
 
-        // ➕ Update TO button visibility
         updateToButtonVisibility();
 
-        // ➕ Show/hide #data for voie-aiguillage
         if (next.id === 'voie-aiguillage') {
-          // Find which voie-type-container is visible
           const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
             .find(c => c.style.display !== 'none');
           const type = visibleType ? visibleType.dataset.type : '';
           // showOrHideDataForAiguillage(type);
         } else {
           document.getElementById('data').style.display = 'flex';
+          // Invalider la taille de la carte après son réaffichage
+          if (map) map.invalidateSize(); // ⬅️ AJOUT ICI
         }
-
       }, 500);
     } else {
       next.classList.add('active');
@@ -571,7 +631,6 @@ if (current) {
       }
       updateToButtonVisibility();
 
-      // ➕ Show/hide #data for voie-aiguillage
       if (next.id === 'voie-aiguillage') {
         const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
           .find(c => c.style.display !== 'none');
@@ -579,6 +638,8 @@ if (current) {
         showOrHideDataForAiguillage(type);
       } else {
         document.getElementById('data').style.display = 'flex';
+        // Invalider la taille de la carte
+        if (map) map.invalidateSize(); // ⬅️ AJOUT ICI
       }
     }
   });
@@ -762,50 +823,50 @@ btn.addEventListener("mouseleave", () => {
   tooltip.classList.remove("show");
 });
 
-// === Gestion du toggle Admin / Technicien ===
-const toggle = document.getElementById("toggleButton");
-const dataVoieContainer = document.getElementById("dataVoie-container");
+// // === Gestion du toggle Admin / Technicien ===
+// const toggle = document.getElementById("toggleButton");
+// const dataVoieContainer = document.getElementById("dataVoie-container");
 
-function setInputsDisabled(disabled) {
-  if (!dataVoieContainer) {
-    console.warn("⚠️ .dataVoie-Container introuvable !");
-    return;
-  }
+// function setInputsDisabled(disabled) {
+//   if (!dataVoieContainer) {
+//     console.warn("⚠️ .dataVoie-Container introuvable !");
+//     return;
+//   }
 
-  // Champs classiques
-  const elements = dataVoieContainer.querySelectorAll("input, select, textarea");
-  elements.forEach(el => {
-    el.disabled = disabled;
-  });
+//   // Champs classiques
+//   const elements = dataVoieContainer.querySelectorAll("input, select, textarea");
+//   elements.forEach(el => {
+//     el.disabled = disabled;
+//   });
 
-  // Tables éditables
-  const tables = dataVoieContainer.querySelectorAll("table[data-editable='true']");
-  tables.forEach(table => {
-    table.querySelectorAll("tbody td").forEach(td => {
-      td.contentEditable = disabled ? "false" : "true";
-    });
-  });
+//   // Tables éditables
+//   const tables = dataVoieContainer.querySelectorAll("table[data-editable='true']");
+//   tables.forEach(table => {
+//     table.querySelectorAll("tbody td").forEach(td => {
+//       td.contentEditable = disabled ? "false" : "true";
+//     });
+//   });
 
-  // Cards éditables
-  const cards = dataVoieContainer.querySelectorAll(".ecartement-card[data-editable='true']");
-  cards.forEach(card => {
-    card.contentEditable = disabled ? "false" : "true";
-    card.style.cursor = disabled ? "default" : "text";
-  });
-}
+//   // Cards éditables
+//   const cards = dataVoieContainer.querySelectorAll(".ecartement-card[data-editable='true']");
+//   cards.forEach(card => {
+//     card.contentEditable = disabled ? "false" : "true";
+//     card.style.cursor = disabled ? "default" : "text";
+//   });
+// }
 
-toggle.addEventListener("click", () => {
-  toggle.classList.toggle("on");
+// toggle.addEventListener("click", () => {
+//   toggle.classList.toggle("on");
 
-  const isAdmin = toggle.classList.contains("on");
-  // console.log("🔄 Toggle cliqué → rôle =", isAdmin ? "Admin" : "Technicien");
+//   const isAdmin = toggle.classList.contains("on");
+//   // console.log("🔄 Toggle cliqué → rôle =", isAdmin ? "Admin" : "Technicien");
 
-  if (isAdmin) {
-    setInputsDisabled(false);
-  } else {
-    setInputsDisabled(true);
-  }
-});
+//   if (isAdmin) {
+//     setInputsDisabled(false);
+//   } else {
+//     setInputsDisabled(true);
+//   }
+// });
 
 
 
@@ -1269,6 +1330,10 @@ function fillCoeur2cInputs(adv) {
       h.querySelector(".ep_cal_g").value = adv["ep_cal_g_h"] ?? "no-data";
       h.querySelector(".nb_cal_g").value = adv["nb_cal_g_h"] ?? "no-data";
 
+      h.querySelector(".p2p_g_h").value = adv["p2p_g_h"] ?? "no-data";
+      h.querySelector(".p2p_d_h").value = adv["p2p_d_h"] ?? "no-data";
+
+
       h.querySelector(".ep_cr_d").value = adv["ep_cr_d_h"] ?? "no-data";
       h.querySelector(".ep_cal_d").value = adv["ep_cal_d_h"] ?? "no-data";
       h.querySelector(".nb_cal_d").value = adv["nb_cal_d_h"] ?? "no-data";
@@ -1290,6 +1355,9 @@ function fillCoeur2cInputs(adv) {
       b.querySelector(".ep_cal_g").value = adv["ep_cal_g_b"] ?? "no-data";
       b.querySelector(".nb_cal_g").value = adv["nb_cal_g_b"] ?? "no-data";
 
+      b.querySelector(".p2p_g_b").value = adv["p2p_g_b"] ?? "no-data";
+      b.querySelector(".p2p_d_b").value = adv["p2p_d_b"] ?? "no-data";
+
       b.querySelector(".ep_cr_d").value = adv["ep_cr_d_b"] ?? "no-data";
       b.querySelector(".ep_cal_d").value = adv["ep_cal_d_b"] ?? "no-data";
       b.querySelector(".nb_cal_d").value = adv["nb_cal_d_b"] ?? "no-data";
@@ -1306,12 +1374,12 @@ function fillCoeur2cInputs(adv) {
 
     const t = container.querySelector(".traverse-img");
     if (t) {
-      t.querySelector(".p2p_g_h").value = adv["p2p_g_h"] ?? "no-data";
-      t.querySelector(".p2p_d_h").value = adv["p2p_d_h"] ?? "no-data";
+      t.querySelector(".p2pt_g_h").value = adv["p2pt_h_g"] ?? "no-data";
+      t.querySelector(".p2pt_d_h").value = adv["p2pt_h_d"] ?? "no-data";
       t.querySelector(".libre_passage_g").value = adv["libre_passage_g"] ?? "no-data";
       t.querySelector(".libre_passage_d").value = adv["libre_passage_d"] ?? "no-data";
-      t.querySelector(".p2p_g_b").value = adv["p2p_g_b"] ?? "no-data";
-      t.querySelector(".p2p_d_b").value = adv["p2p_d_b"] ?? "no-data";
+      t.querySelector(".p2pt_g_b").value = adv["p2pt_b_g"] ?? "no-data";
+      t.querySelector(".p2pt_d_b").value = adv["p2pt_b_d"] ?? "no-data";
       t.querySelector(".coeur2t_num_g").value = adv["coeur2t_num_g"] ?? "no-data";
       t.querySelector(".coeur2t_num_d").value = adv["coeur2t_num_d"] ?? "no-data";
     }

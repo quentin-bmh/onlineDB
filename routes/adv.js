@@ -1,4 +1,3 @@
-// routes/adv.js
 const express = require('express');
 const pool = require('../config/db');
 
@@ -129,14 +128,4 @@ router.get('/da', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
-
-
-
-
-
-
-
-
-
 module.exports = router;

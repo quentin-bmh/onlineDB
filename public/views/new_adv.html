@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Création d'Appareil de Voie (ADV)</title>
+    <link rel="stylesheet" href="/css/new_adv.css">
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1>Ajout d'ADV</h1>
+
+        <section id="adv-selection">
+            <label for="advType">Type d'ADV :</label>
+            <select id="advType" onchange="updateForm()">
+                <option value="">-- Choisir un type --</option>
+                <option value="BS">BS</option>
+                <option value="TJD">TJD</option>
+                <option value="TO">TO</option>
+            </select>
+        </section>
+
+        <form id="advForm" class="hidden">
+            <nav class="tabs-nav">
+                <button type="button" class="tab-btn active" data-tab="general">Infos Générales</button>
+                <button type="button" class="tab-btn" data-tab="croisement">Croisement</button>
+                <button type="button" class="tab-btn" data-tab="ecartement">Écartement</button>
+                <button type="button" class="tab-btn" data-tab="bois">Bois</button>
+                <button type="button" class="tab-btn conditional-tab" data-tab="demiAiguillage">Demi-Aiguillage</button>
+            </nav>
+
+            <div class="tabs-content">
+
+                <div id="tab-general" class="tab-pane active">
+                    <h3>Infos Générales</h3>
+                    
+                    <div class="form-grid">
+                        <fieldset>
+                            <legend>Identification & Localisation</legend>
+                            <div class="fieldset-grid"> 
+                                <div><label for="general_1">Nom ADV:</label><input type="text" id="general_1" name="general_1"></div>
+                                <div><label for="general_2">Type:</label><input type="text" id="general_2" name="general_2"></div>
+                                <div><label for="general_5">Tangente:</label><input type="number" id="general_5" name="general_5"></div>
+                                <div><label for="general_6">Modèle:</label><input type="text" id="general_6" name="general_6"></div>
+                                <div><label for="general_3">Latitude:</label><input type="number" id="general_3" name="general_3"></div>
+                                <div><label for="general_4">Longitude:</label><input type="number" id="general_4" name="general_4"></div>
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>Caractéristiques Techniques</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="general_7">Plancher:</label><input type="text" id="general_7" name="general_7"></div>
+                                <div><label for="general_8">Pose:</label><input type="text" id="general_8" name="general_8"></div>
+                                <div><label for="general_9">Rails:</label><input type="text" id="general_9" name="general_9"></div>
+                                <div><label for="general_10">Type d'attaches:</label><input type="text" id="general_10" name="general_10"></div>
+                                <div><label for="general_11">Sens de déviation:</label><input type="text" id="general_11" name="general_11"></div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                <div id="tab-croisement" class="tab-pane">
+                    <h3>Croisement</h3>
+                    <div class="form-grid" id="croisement-fields">
+                        </div>
+                </div>
+
+                <div id="tab-ecartement" class="tab-pane">
+                    <h3>Écartement</h3>
+                    <div class="form-grid" id="ecartement-fields">
+                        </div>
+                </div>
+
+                <div id="tab-bois" class="tab-pane">
+                    <h3>Bois</h3>
+                    <div class="form-grid">
+                        <fieldset>
+                            <legend>Traverses et Rails</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="bois_1">Bois en bon état:</label><input type="number" id="bois_1" name="bois_1"></div>
+                                <div><label for="bois_2">Bois à remplacer:</label><input type="number" id="bois_2" name="bois_2"></div>
+                                <div><label for="bois_6">Etat des rails:</label>
+                                    <select id="bois_6" name="bois_6">
+                                        <option value="bon">Bon État</option>
+                                        <option value="moyen">Moyen</option>
+                                        <option value="remplacer">À Remplacer</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+                        
+                        <fieldset>
+                            <legend>État des Joints</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="bois_3">Joints en bon état:</label><input type="number" id="bois_3" name="bois_3"></div>
+                                <div><label for="bois_4">Joints à remplacer:</label><input type="number" id="bois_4" name="bois_4"></div>
+                                <div><label for="bois_5">Joints à graisser:</label><input type="number" id="bois_5" name="bois_5"></div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+
+                <div id="tab-demiAiguillage" class="tab-pane">
+                    <h3>Demi-Aiguillage</h3>
+                    <div id="demi-aiguillage-content">
+                        </div>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">💾 Enregistrer l'ADV</button>
+            </div>
+        </form>
+    </div>
+    <ul id="custom-context-menu" class="context-menu">
+        <li id="apply-row">Appliquer à la ligne</li>
+        <li id="apply-col">Appliquer à la colonne</li>
+    </ul>
+    <script src="/js/new_adv.js"></script>
+</body>
+</html>

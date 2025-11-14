@@ -42,52 +42,60 @@ async function fetchUserProfile() {
             const role = getDisplayRole(user.is_admin);
             
             // Affichage des données
-            titleElement.innerHTML = `Bienvenue, ${user.username} !`;
-            roleElement.innerHTML = `Votre rôle : <span class="${user.is_admin ? 'text-orange-500' : 'text-green-500'} font-bold">${role}</span>`;
-        }
+            titleElement.textContent = `Bienvenue, ${user.username || 'Utilisateur'} !`;
+            roleElement.textContent = `Statut: ${role}`;
 
+            // 🆕 LOGIQUE DU DASHBOARD
+            if (user.is_admin) {
+                const dashboardLink = document.getElementById('dashboard-link');
+                if (dashboardLink) {
+                    // Rend le bouton visible si l'utilisateur est admin
+                    dashboardLink.style.display = 'inline-block'; 
+                }
+            }
+        }
     } catch (error) {
-        console.error('Erreur lors du chargement du profil:', error);
-        titleElement.textContent = 'Erreur de profil';
-        roleElement.textContent = 'Veuillez vous reconnecter.';
+        // Redirection en cas d'erreur
+        console.error("Erreur dans fetchUserProfile:", error);
+        window.location.href = '/login'; 
     }
 }
 
 async function loadFiles() {
-      const res = await fetch("/api/webdav/list");
-      if (!res.ok) { document.getElementById("document-buttons").textContent = "Erreur serveur"; return; }
-      const files = await res.json();
-      const container = document.getElementById("document-buttons");
-      container.innerHTML = "";
+    const res = await fetch("/api/webdav/list");
+    if (!res.ok) { document.getElementById("document-buttons").textContent = "Erreur serveur"; return; }
+    const files = await res.json();
+    const container = document.getElementById("document-buttons");
+    container.innerHTML = "";
 
-        files.forEach(file => {
-            const btn = document.createElement("button");
-            btn.textContent = file.name;
+    files.forEach(file => {
+        const btn = document.createElement("button");
+        btn.textContent = file.name;
 
-            btn.onclick = () => {
-                if (!file.path) {
-                console.warn("⚠️ fichier sans path détecté", file);
-                return;
-                }
-                const url = `/api/webdav/open/${encodeURIComponent(file.path)}`;
-                
-                const a = document.createElement("a");
-                a.href = url;
-                a.target = "_blank";
-                a.rel = "noopener noreferrer";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
+        btn.onclick = () => {
+            if (!file.path) {
+            console.warn("⚠️ fichier sans path détecté", file);
+            return;
+            }
+            const url = `/api/webdav/open/${encodeURIComponent(file.path)}`;
+            
+            const a = document.createElement("a");
+            a.href = url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
 
-            container.appendChild(btn);
-        });
+        container.appendChild(btn);
+    });
 
 
-    }
+}
 document.addEventListener('DOMContentLoaded', () => {
     fetchUserProfile();
-    loadFiles(); 
+    // loadFiles(); 
     const logoutLink = document.getElementById('logout-link');
     if (logoutLink) {
         logoutLink.addEventListener('click', handleLogout);

@@ -3,7 +3,7 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const PRIMARY_STRING = process.env.CONNECTIONSTRING;
-const SECONDARY_STRING = process.env.CONNECTIONSTRING2;
+// const SECONDARY_STRING = process.env.CONNECTIONSTRING2;
 
 let activePoolPromise = null;
 
@@ -15,7 +15,8 @@ let activePoolPromise = null;
  */
 async function createAndConnectPool(connectionString, name) {
     if (!connectionString) {
-        console.warn(`[DB] Chaîne de connexion pour ${name} manquante.`);
+        // Le log devient une erreur FATALE car la seule chaîne de connexion est manquante
+        console.error(`❌ FATAL: Chaîne de connexion pour ${name} manquante.`);
         return null;
     }
 
@@ -28,43 +29,37 @@ async function createAndConnectPool(connectionString, name) {
 
     try {
         const client = await pool.connect();
+        // Utilisation de `SET TIME ZONE` pour le fuseau horaire de session, pas du serveur.
         await client.query("SET TIME ZONE 'Europe/Paris'");
         client.release();
         console.log(`✅ Connecté à PostgreSQL via Pool sur : ${name} !`);
         console.log('🕓 Fuseau horaire PostgreSQL défini sur Europe/Paris');
         return pool;
     } catch (err) {
-        console.warn(`❌ Échec de la connexion à la BDD ${name}. Tentative de bascule...`);
+        // Le log devient une erreur FATALE car il n'y a pas de bascule possible
+        console.error(`❌ FATAL: Échec de la connexion à la BDD ${name}.`, err.message);
         pool.end();
         return null;
     }
 }
 
 /**
- * Initialise le Pool (Primaire puis Secours).
+ * Initialise le Pool (Uniquement Primaire).
  * @returns {Promise<Pool>}
  */
 async function initializePool() {
-    let pool = await createAndConnectPool(PRIMARY_STRING, 'Primaire (Limoges)');
+    const pool = await createAndConnectPool(PRIMARY_STRING, 'Primaire');
     
     if (pool) {
-        // Ajout de la gestion d'erreur au Pool principal
+        // Ajout de la gestion d'erreur au Pool
         pool.on('error', (err) => {
             console.error('❌ FATAL: Erreur inattendue sur le Pool BDD.', err);
         });
         return pool;
     }
     
-    pool = await createAndConnectPool(SECONDARY_STRING, 'Secours (Bureau)');
-
-    if (pool) {
-        // Ajout de la gestion d'erreur au Pool de secours
-        pool.on('error', (err) => {
-            console.error('❌ FATAL: Erreur inattendue sur le Pool BDD.', err);
-        });
-        return pool;
-    }
-    console.error('❌ FATAL: Aucune base de données PostgreSQL disponible.');
+    // Si la connexion primaire échoue, on lève une erreur directement
+    console.error('❌ FATAL: Base de données PostgreSQL primaire non disponible.');
     throw new Error('Database service unavailable.');
 }
 
@@ -77,10 +72,13 @@ module.exports = {
         const pool = await activePoolPromise; 
 
         if (!pool) {
+            // Cette erreur est théoriquement atteinte uniquement si initializePool a échoué 
+            // et la Promesse a été rejetée/activePoolPromise n'est pas un Pool.
             throw new Error("Base de données non initialisée ou indisponible.");
         }
         return pool.query(text, params);
-    },getClient: async () => {
+    },
+    getClient: async () => {
         const pool = await activePoolPromise; 
 
         if (!pool) {
@@ -88,7 +86,7 @@ module.exports = {
         }
         // Le Pool a une méthode connect qui agit comme getClient
         return pool.connect(); 
-    },    
+    },    
     getPool: async () => {
         return await activePoolPromise;
     }
