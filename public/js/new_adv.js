@@ -1,4 +1,4 @@
-// Définition des options pour les sélecteurs, regroupées par thème
+// Définition des options pour les sélecteurs, regroupées par thème (Inchgées)
 const SELECT_OPTIONS = {
     // Bavures
     bavures: [
@@ -48,7 +48,7 @@ const SELECT_OPTIONS = {
     ]
 };
 
-// Configuration des 15 lignes du Demi-Aiguillage :
+// Configuration des 15 lignes du Demi-Aiguillage : (Inchgées)
 const DEMI_AIG_CONFIG = [
     { label: "Bavures", type: 'select', options: SELECT_OPTIONS.bavures },
     { label: "Ebrechure aiguille", type: 'select', options: SELECT_OPTIONS.ebrechureAiguille },
@@ -70,11 +70,6 @@ const DEMI_AIG_CONFIG = [
 // Les listes d'écartement/croisement sont conservées de votre code précédent
 const ADV_CONFIG = {
     BS: {
-        croisement: [
-            "N° Cœur de croisement",	"Épaisseur contre-rail Gauche",	"Épaisseur de calage Gauche",
-            "Nombre de cales Gauche",	"Épaisseur contre-rail Droite",	"Épaisseur de calage Droite",
-            "Nombre de cales Droite",	"État Cœur"
-        ],
         ecartement: [
             "Ecartement 1", "Ecartement 2", "Ecartement 3",
             "Ecartement 4", "Ecartement 5", "Ecartement 7",
@@ -92,17 +87,6 @@ const ADV_CONFIG = {
     },
 
     TJD: {
-        croisement: [
-            "Epaisseur contre-rail haut Gauche", "Epaisseur calage haut Gauche", "Nombre cales haut Gauche",
-            "Protection de pointe Croisement haut Gauche", "Protection de pointe Croisement haut Droite",
-            "Protection de pointe Traversée haut Gauche", "Protection de pointe Traversée haut Droite",
-            "Epaisseur contre-rail haut Droite", "Epaisseur calage haut Droite", "Nombre cales haut Droite",
-            "Epaisseur contre-rail bas Gauche", "Epaisseur calage bas Gauche", "Nombre cales bas Gauche",
-            "Protection de pointe Croisement bas Gauche", "Protection de pointe Croisement bas Droite",
-            "Protection de pointe Traversée bas Gauche", "Protection de pointe Traversée bas Droite",
-            "Epaisseur contre-rail bas Droite", "Epaisseur calage bas Droite", "Nombre cales bas Droite",
-            "Coeur de croisement haut n°", "Coeur de croisement bas n°", "Coeur de traversée gauche n°", "Coeur de traversée droite n°"
-        ],
         ecartement: [
             "Ecartement 1", "Ecartement 2", "Ecartement 3",
             "Ecartement 4", "Ecartement 5", "Ecartement 6",
@@ -125,11 +109,6 @@ const ADV_CONFIG = {
     },
 
     TO: {
-        croisement: [
-            "Protection de pointe haut Gauche", "Protection de pointe haut Droite",
-            "Protection de pointe haut Gauche", "Protection de pointe haut Droite",
-            "Coeur de croisement haut n°", "Coeur de croisement bas n°", "Coeur de traversée gauche n°", "Coeur de traversée droite n°"
-        ],
         ecartement: [
             "Ecartement 1", "Ecartement 2", "Ecartement 3",
             "Ecartement 4", "Ecartement 5", "Ecartement 6",
@@ -152,8 +131,8 @@ const ADV_CONFIG = {
 };
 
 /**
- * Génère un champ label + input à partir d'une liste de libellés.
- * @param {string} section - Nom de la section (ex: 'croisement').
+ * Génère un champ label + input à partir d'une liste de libellés (pour l'onglet Écartement).
+ * @param {string} section - Nom de la section (ex: 'ecartement').
  * @param {string} labelText - Le texte exact du label.
  * @param {number} index - L'index pour créer l'ID/Name unique.
  * @returns {string} Le HTML du div contenant le label et l'input.
@@ -255,9 +234,6 @@ function generateDemiAiguillageTable(advType) {
                         <td class="row-label">
                             ${rowConfig.label}
                         </td>`;
-
-        // ... (Reste de la boucle for pour les TD) ...
-        // ...
         
         for (let j = 1; j <= cols; j++) {
             const colIndexName = (advType === 'BS') ? (j === 1 ? 'gauche' : 'droite') : `aig_${j}`;
@@ -289,6 +265,12 @@ function updateForm() {
     const demiAiguillageTabBtn = document.querySelector('.tab-btn[data-tab="demiAiguillage"]');
     const demiAiguillageContent = document.getElementById('demi-aiguillage-content');
     const demiAiguillageTabPane = document.getElementById('tab-demiAiguillage');
+    const ecartementFieldsContainer = document.getElementById('ecartement-fields');
+    
+    // Nouveaux éléments
+    const croisementContainer = document.querySelector('#tab-croisement .voie-type-container');
+    // Sélecteur mis à jour pour data-type
+    const specificCroisementSections = document.querySelectorAll('.croisement-type-content[data-type]');
 
     if (!advType) {
         advForm.classList.add('hidden');
@@ -298,17 +280,25 @@ function updateForm() {
     advForm.classList.remove('hidden');
 
     const config = ADV_CONFIG[advType];
+    const advTypeLower = advType.toLowerCase();
 
-    // 1. Mise à jour des champs 'Croisement'
-    const croisementFieldsContainer = document.getElementById('croisement-fields');
-    let croisementHTML = '';
-    config.croisement.forEach((label, index) => {
-        croisementHTML += generateSpecificField('croisement', label, index + 1);
-    });
-    croisementFieldsContainer.innerHTML = croisementHTML;
+    // 1. Mise à jour de l'onglet 'Croisement' (Affichage/Masquage HTML statique)
+    
+    // Masquer tous les contenus spécifiques
+    specificCroisementSections.forEach(section => section.classList.add('hidden-adv-type'));
+    
+    // Afficher le contenu correspondant
+    // Sélecteur mis à jour pour data-type
+    const targetCroisement = document.querySelector(`.croisement-type-content[data-type="${advTypeLower}"]`);
+    if (targetCroisement) {
+        targetCroisement.classList.remove('hidden-adv-type');
+    }
+    
+    // Mettre à jour la classe du conteneur parent pour les styles de layout
+    croisementContainer.setAttribute('data-type', advTypeLower);
+
 
     // 2. Mise à jour des champs 'Écartement'
-    const ecartementFieldsContainer = document.getElementById('ecartement-fields');
     let ecartementHTML = '';
     config.ecartement.forEach((label, index) => {
         ecartementHTML += generateSpecificField('ecartement', label, index + 1);
@@ -399,17 +389,20 @@ function copyColumn(table, sourceColIndex) {
         const cells = row.querySelectorAll('td');
         if (cells.length > sourceColIndex) {
             // 1. Récupérer la valeur de la cellule source
+            // L'index réel dans `cells` est `sourceColIndex` (car cells[0] est la colonne Libellé)
             const sourceInput = cells[sourceColIndex].querySelector('.table-input');
             if (!sourceInput) return;
             const sourceValue = sourceInput.value;
             
-            // 2. Appliquer cette valeur à toutes les colonnes suivantes de la même ligne
+            // 2. Parcourir toutes les colonnes de contenu (index 1 à max)
             cells.forEach((td, index) => {
-                // Copie vers toutes les colonnes qui suivent la source
-                if (index > sourceColIndex) { 
+                // On s'assure d'être dans une colonne de contenu (index > 0)
+                // ET que ce n'est PAS la colonne source
+                if (index > 0 && index !== sourceColIndex) { 
                     const targetInput = td.querySelector('.table-input');
                     if (targetInput) {
                         targetInput.value = sourceValue;
+                        // Déclencher un événement change pour mettre à jour l'état visuel/logique si nécessaire
                         targetInput.dispatchEvent(new Event('change'));
                     }
                 }
@@ -417,7 +410,6 @@ function copyColumn(table, sourceColIndex) {
         }
     });
 }
-
 // --- Gestion des Événements ---
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -468,20 +460,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // 3. Copie Colonne (Icône TH)
         if (target.classList.contains('copy-col-btn')) {
             const header = target.closest('th');
             const sourceColIndex = parseInt(header.getAttribute('data-col-index'));
             copyColumn(table, sourceColIndex);
             return; 
         }
-
-        // 4. Clear Ligne (Icône TD Libellé)
         if (target.classList.contains('clear-row-btn')) {
             const row = target.closest('tr');
             if (!row) return;
-
-            // Parcourir toutes les cellules de contenu (TD index > 0) de la ligne
             row.querySelectorAll('td').forEach((td, index) => {
                  if (index > 0) {
                      const input = td.querySelector('.table-input');
@@ -494,11 +481,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-
-    // --- Logique du Clic Droit (Maintenue uniquement pour Appliquer à la Ligne) ---
     
     applyRowBtn.addEventListener('click', () => {
-        // Logique de copie de ligne depuis la TD cliquée (maintenue)
         if (!targetCell || targetCell.tagName !== 'TD' || targetCell.cellIndex === 0) {
             hideContextMenu();
             return;
@@ -525,20 +509,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('contextmenu', (e) => {
-        const demiAiguillageContent = document.getElementById('tab-demiAiguillage');
-        
-        // On n'affiche le menu que si on clique sur une cellule de contenu (TD index > 0)
+        const demiAiguillageContent = document.getElementById('tab-demiAiguillage');        
         if (demiAiguillageContent && demiAiguillageContent.contains(e.target)) {
-            if (e.target.closest('td') && e.target.closest('td').cellIndex > 0) {
+            const clickedTD = e.target.closest('td');
+
+            if (clickedTD && clickedTD.cellIndex > 0) {
                 e.preventDefault();
-                targetCell = e.target.closest('td');
+                targetCell = clickedTD;
+                const rect = clickedTD.getBoundingClientRect();
+                const posX = rect.left;
+                const posY = rect.top; 
 
-                contextMenu.style.left = `${e.clientX}px`;
-                contextMenu.style.top = `${e.clientY}px`;
-                contextMenu.style.display = 'block';
 
-                applyRowBtn.classList.remove('hidden'); // Option Ligne affichée
-                applyColBtn.classList.add('hidden'); // Option Colonne masquée
+                contextMenu.style.left = `${posX}px`;
+                contextMenu.style.display = 'block'; 
+                const menuHeight = contextMenu.offsetHeight;
+                contextMenu.style.top = `${rect.top - menuHeight}px`;
+
+                applyRowBtn.classList.remove('hidden');
+                applyColBtn.classList.add('hidden');
             } else {
                 hideContextMenu();
             }
@@ -550,4 +539,136 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', () => {
         hideContextMenu();
     });
+});
+
+
+// Définition des variables globales pour stocker les instances de Chart
+let traversesChartInstance = null;
+let jointsChartInstance = null;
+
+/**
+ * Initialise le graphique des traverses (Diagramme en Donut).
+ * @returns {Chart} Instance du graphique.
+ */
+function initTraversesChart() {
+    const ctx = document.getElementById('traversesChart').getContext('2d');
+    return new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Bois en bon état', 'Bois à remplacer'],
+            datasets: [{
+                data: [0, 0], // Données initiales
+                backgroundColor: ['#28a745', '#dc3545'], // Vert / Rouge
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            aspectRatio: 1.5,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Initialise le graphique des joints (Diagramme à Barres).
+ * @returns {Chart} Instance du graphique.
+ */
+function initJointsChart() {
+    const ctx = document.getElementById('jointsChart').getContext('2d');
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Joints en bon état', 'Joints à remplacer', 'Joints à graisser'],
+            datasets: [{
+                label: 'Nombre de joints',
+                data: [0, 0, 0],
+                backgroundColor: ['#e2df13ff', '#eb7d16ff', '#e93f15ff'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            aspectRatio: 1.5,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Met à jour les graphiques avec les données saisies par l'utilisateur.
+ */
+function updateCharts() {
+    // 1. Récupération des données du Bois/Traverses
+    const bonBois = parseFloat(document.getElementById('bois_1').value) || 0;
+    const aRemplacerBois = parseFloat(document.getElementById('bois_2').value) || 0;
+    // L'état des rails (bois_6) est une donnée qualitative, non utilisée dans ce graphique de quantité.
+
+    // 2. Récupération des données des Joints
+    const bonJoints = parseFloat(document.getElementById('bois_3').value) || 0;
+    const aRemplacerJoints = parseFloat(document.getElementById('bois_4').value) || 0;
+    const aGraisserJoints = parseFloat(document.getElementById('bois_5').value) || 0;
+
+    // Mise à jour du graphique des traverses (Donut)
+    if (traversesChartInstance) {
+        traversesChartInstance.data.datasets[0].data = [bonBois, aRemplacerBois];
+        traversesChartInstance.update();
+    }
+
+    // Mise à jour du graphique des joints (Barres)
+    if (jointsChartInstance) {
+        jointsChartInstance.data.datasets[0].data = [bonJoints, aRemplacerJoints, aGraisserJoints];
+        jointsChartInstance.update();
+    }
+}
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (Logique existante du DOMContentLoaded) ...
+
+    // --- NOUVELLE LOGIQUE CHART.JS ---
+    const tabBois = document.getElementById('tab-bois');
+
+    if (tabBois) {
+        // 1. Initialisation des graphiques
+        traversesChartInstance = initTraversesChart();
+        jointsChartInstance = initJointsChart();
+
+        // 2. Ajout des écouteurs d'événements sur les inputs de la section "Bois"
+        const inputsToListen = [
+            document.getElementById('bois_1'),
+            document.getElementById('bois_2'),
+            document.getElementById('bois_3'),
+            document.getElementById('bois_4'),
+            document.getElementById('bois_5')
+            // 'bois_6' est qualitatif et n'affecte pas les graphiques de quantité
+        ];
+
+        inputsToListen.forEach(input => {
+            if (input) {
+                // Écoute des événements 'input' (temps réel) et 'change'
+                input.addEventListener('input', updateCharts);
+                input.addEventListener('change', updateCharts);
+            }
+        });
+    }
 });

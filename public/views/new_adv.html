@@ -60,10 +60,99 @@
                         </fieldset>
                     </div>
                 </div>
+                
                 <div id="tab-croisement" class="tab-pane">
                     <h3>Croisement</h3>
-                    <div class="form-grid" id="croisement-fields">
+                    
+                    <div class="voie-type-container">
+                        
+                        <div class="croisement-type-content hidden-adv-type" data-type="bs">
+                            <div class="croisement-img-bs">
+                                <img src="../assets/coeur2c_h_bs.png" alt="Cœur de croisement BS" />
+                                <input class="p2p_g" name="croisement_1" title="Protection de pointe Gauche" />
+                                <input class="p2p_d" name="croisement_2" title="Protection de pointe Droite" />
+                                <input class="ep_cr_g" name="croisement_3" title="Épaisseur contre-rail Gauche" />
+                                <input class="ep_cr_d" name="croisement_4" title="Épaisseur contre-rail Droite" />
+                                <input class="ep_cal_g" name="croisement_5" title="Épaisseur de calage Gauche" />
+                                <input class="ep_cal_d" name="croisement_6" title="Épaisseur de calage Droite" />
+                                <input class="nb_cal_g" name="croisement_7" title="Nombre de cales Gauche" />
+                                <input class="nb_cal_d" name="croisement_8" title="Nombre de cales Droite" />
+                                <input class="coeur2c_num_h" name="croisement_9" title="N° Cœur de croisement" />
+                                <input class="coeur_etat" name="croisement_10" title="État Cœur" />
+                            </div>
                         </div>
+
+                        <div class="croisement-type-content hidden-adv-type" data-type="tjd">
+                            <div class="croisement-img">
+                                <div class="container_coeur2c_h">
+                                    <img src="../assets/coeur2c_h.png" alt="Cœur haut TJD" />
+                                    <input class="ep_cr_g" name="croisement_h_1" title="Epaisseur contre-rail haut Gauche" />
+                                    <input class="ep_cal_g" name="croisement_h_2" title="Epaisseur calage haut Gauche" />
+                                    <input class="nb_cal_g" name="croisement_h_3" title="Nombre cales haut Gauche" />
+                                    <input class="p2p_g_h" name="croisement_h_4" title="Protection de pointe Croisement haut Gauche" />
+                                    <input class="p2p_d_h" name="croisement_h_5" title="Protection de pointe Croisement haut Droite" />
+                                    <input class="ep_cr_d" name="croisement_h_6" title="Epaisseur contre-rail haut Droite" />
+                                    <input class="ep_cal_d" name="croisement_h_7" title="Epaisseur calage haut Droite" />
+                                    <input class="nb_cal_d" name="croisement_h_8" title="Nombre cales haut Droite" />
+                                    <input class="coeur2c_num_h" name="croisement_h_9" title="Coeur de croisement haut n°" />
+                                </div>
+
+                                <div class="container_coeur2c_b">
+                                    <img src="../assets/coeur2c_b.png" alt="Cœur bas TJD" />
+                                    <input class="ep_cr_g" name="croisement_b_1" title="Epaisseur contre-rail bas Gauche" />
+                                    <input class="ep_cal_g" name="croisement_b_2" title="Epaisseur calage bas Gauche" />
+                                    <input class="nb_cal_g" name="croisement_b_3" title="Nombre cales bas Gauche" />
+                                    <input class="p2p_g_b" name="croisement_b_4" title="Protection de pointe Croisement bas Gauche" />
+                                    <input class="p2p_d_b" name="croisement_b_5" title="Protection de pointe Croisement bas Droite" />
+                                    <input class="ep_cr_d" name="croisement_b_6" title="Epaisseur contre-rail bas Droite" />
+                                    <input class="ep_cal_d" name="croisement_b_7" title="Epaisseur calage bas Droite" />
+                                    <input class="nb_cal_d" name="croisement_b_8" title="Nombre cales bas Droite" />
+                                    <input class="coeur2c_num_b" name="croisement_b_9" title="Coeur de croisement bas n°" />
+                                </div>
+                            </div>
+                            <div class="traverse-img">
+                                <img src="../assets/coeur2t.png" alt="Cœur de traversée TJD" class="croisement-image" />
+                                <input class="p2pt_g_h" name="croisement_t_h_g" title="Protection de pointe Traversée haut Gauche" />
+                                <input class="p2pt_d_h" name="croisement_t_h_d" title="Protection de pointe Traversée haut Droite" />
+                                <input class="libre_passage_g" name="croisement_l_p_g" title="Libre passage Gauche" />
+                                <input class="libre_passage_d" name="croisement_l_p_d" title="Libre passage Droite" />
+                                <input class="p2pt_g_b" name="croisement_t_b_g" title="Protection de pointe Traversée bas Gauche" />
+                                <input class="p2pt_d_b" name="croisement_t_b_d" title="Protection de pointe Traversée bas Droite" />
+                                <input class="coeur2t_num_g" name="croisement_c_t_g" title="Coeur de traversée gauche n°" />
+                                <input class="coeur2t_num_d" name="croisement_c_t_d" title="Coeur de traversée droite n°" />
+                            </div>
+                        </div>
+
+                        <div class="croisement-type-content hidden-adv-type" data-type="to">
+                            <div class="croisement-img">
+                                <div class="container_coeur2c_h_t">
+                                    <img src="../assets/coeur2c_h_t.png" alt="Cœur haut TO" />
+                                    <input class="p2p_g_h" name="croisement_h_t_1" title="Protection de pointe haut Gauche" />
+                                    <input class="p2p_d_h" name="croisement_h_t_2" title="Protection de pointe haut Droite" />
+                                    <input class="coeur2c_num_h_t" name="croisement_h_t_3" title="Coeur de croisement haut n°" />
+                                </div>
+
+                                <div class="container_coeur2c_b_t">
+                                    <img src="../assets/coeur2c_b_t.png" alt="Cœur bas TO" />
+                                    <input class="p2p_g_b" name="croisement_b_t_1" title="Protection de pointe bas Gauche" />
+                                    <input class="p2p_d_b" name="croisement_b_t_2" title="Protection de pointe bas Droite" />
+                                    <input class="coeur2c_num_b_t" name="croisement_b_t_3" title="Coeur de croisement bas n°" />
+                                </div>
+                            </div>
+                            <div class="traverse-img">
+                                <img src="../assets/coeur2t.png" alt="Cœur de traversée TO" class="croisement-image" />
+                                <input class="p2pt_g_h" name="croisement_t_t_h_g" title="Protection de pointe T haut Gauche" />
+                                <input class="p2pt_d_h" name="croisement_t_t_h_d" title="Protection de pointe T haut Droite" />
+                                <input class="libre_passage_g" name="croisement_t_l_p_g" title="Libre passage Gauche" />
+                                <input class="libre_passage_d" name="croisement_t_l_p_d" title="Libre passage Droite" />
+                                <input class="p2pt_g_b" name="croisement_t_t_b_g" title="Protection de pointe T bas Gauche" />
+                                <input class="p2pt_d_b" name="croisement_t_t_b_d" title="Protection de pointe T bas Droite" />
+                                <input class="coeur2t_num_g" name="croisement_t_c_t_g" title="Coeur de traversée gauche n°" />
+                                <input class="coeur2t_num_d" name="croisement_t_c_t_d" title="Coeur de traversée droite n°" />
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
 
                 <div id="tab-ecartement" class="tab-pane">
@@ -74,8 +163,10 @@
 
                 <div id="tab-bois" class="tab-pane">
                     <h3>Bois</h3>
-                    <div class="form-grid">
-                        <fieldset>
+                    
+                    <div class="bois-layout">
+
+                        <fieldset id="fieldset-traverses">
                             <legend>Traverses et Rails</legend>
                             <div class="fieldset-grid">
                                 <div><label for="bois_1">Bois en bon état:</label><input type="number" id="bois_1" name="bois_1"></div>
@@ -90,7 +181,14 @@
                             </div>
                         </fieldset>
                         
-                        <fieldset>
+                        <div class="chart-item">
+                            <h4>Traverses</h4>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="traversesChart"></canvas>
+                            </div>
+                        </div>
+
+                        <fieldset id="fieldset-joints">
                             <legend>État des Joints</legend>
                             <div class="fieldset-grid">
                                 <div><label for="bois_3">Joints en bon état:</label><input type="number" id="bois_3" name="bois_3"></div>
@@ -98,6 +196,13 @@
                                 <div><label for="bois_5">Joints à graisser:</label><input type="number" id="bois_5" name="bois_5"></div>
                             </div>
                         </fieldset>
+
+                        <div class="chart-item">
+                            <h4>Joints</h4>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="jointsChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -119,5 +224,6 @@
         <li id="apply-col">Appliquer à la colonne</li>
     </ul>
     <script src="/js/new_adv.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

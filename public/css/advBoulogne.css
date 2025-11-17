@@ -412,41 +412,32 @@ th, td {
   justify-content: center;
   gap: 20px;
   width: 100%;
+  height: 100%;
 }
 .voie-type-container[data-type="bs"] input {
   text-align: center;
 }
 .voie-type-container[data-type="bs"] .croisement-img-bs img {
   width: 100%;
-  max-width: 550px;
+  max-width: 750px;
   height: auto;
+  margin: auto 0;
   border-radius: 8px;
   border: solid 1px blue;
 }
 .voie-type-container[data-type="bs"] .croisement-img-bs{
   position: relative;
 }
-.voie-type-container[data-type="bs"] .croisement-img-bs .p2p_g{
-  position: absolute;
-  top: 32%;
-  left: 14%;
-  width: 25%;
-  height: 10%;
-}
-.voie-type-container[data-type="bs"] .croisement-img-bs .p2p_d{
-  position: absolute;
-  top: 32%;
-  left: 57%;
-  width: 25%;
-  height: 10%;
-}
+
 .container_coeur2c_h,
-.container_coeur2c_b {
+.container_coeur2c_b,
+.croisement-img-bs {
   position: relative;
 }
 
 .container_coeur2c_h img,
-.container_coeur2c_b img {
+.container_coeur2c_b img,
+.croisement-img-bs {
   width: 100%;
   max-width: 750px;
   height: auto;
@@ -454,7 +445,8 @@ th, td {
 
 /* éléments côté gauche */
 .container_coeur2c_h .ep_cr_g,
-.container_coeur2c_b .ep_cr_g {
+.container_coeur2c_b .ep_cr_g,
+.croisement-img-bs .ep_cr_g{
   position: absolute;
   top: 4%;
   left: 16.87%;
@@ -462,21 +454,24 @@ th, td {
   height: 11%;
 }
 .container_coeur2c_h .ep_cal_g,
-.container_coeur2c_b .ep_cal_g {
+.container_coeur2c_b .ep_cal_g,
+.croisement-img-bs .ep_cal_g{
   position: absolute;
   top: 16%;
   left: 16.87%;
   width: 7.9%;
   height: 11%;
 }
-.container_coeur2c_h .p2p_g_h{
+.container_coeur2c_h .p2p_g_h,
+.croisement-img-bs .p2p_g{
   position: absolute;
   top: 28%;
   left: 30%;
   width: 15%;
   height: 11%;
 }
-.container_coeur2c_h .p2p_d_h {
+.container_coeur2c_h .p2p_d_h,
+.croisement-img-bs .p2p_d {
   position: absolute;
   top: 28%;
   right: 31%;
@@ -498,7 +493,8 @@ th, td {
   height: 11%;
 }
 .container_coeur2c_h .nb_cal_g,
-.container_coeur2c_b .nb_cal_g {
+.container_coeur2c_b .nb_cal_g,
+.croisement-img-bs .nb_cal_g {
   position: absolute;
   top: 29%;
   left: 16.87%;
@@ -508,7 +504,8 @@ th, td {
 
 /* éléments côté droit */
 .container_coeur2c_h .ep_cr_d,
-.container_coeur2c_b .ep_cr_d {
+.container_coeur2c_b .ep_cr_d,
+.croisement-img-bs .ep_cr_d {
   position: absolute;
   top: 4%;
   left: 91.31%;
@@ -516,7 +513,8 @@ th, td {
   height: 11%;
 }
 .container_coeur2c_h .ep_cal_d,
-.container_coeur2c_b .ep_cal_d {
+.container_coeur2c_b .ep_cal_d,
+.croisement-img-bs .ep_cal_d {
   position: absolute;
   top: 16%;
   left: 91.31%;
@@ -524,7 +522,8 @@ th, td {
   height: 11%;
 }
 .container_coeur2c_h .nb_cal_d,
-.container_coeur2c_b .nb_cal_d {
+.container_coeur2c_b .nb_cal_d,
+.croisement-img-bs .nb_cal_d {
   position: absolute;
   top: 29%;
   left: 91.31%;
@@ -534,11 +533,20 @@ th, td {
 
 /* élément central (numéro) */
 .container_coeur2c_h .coeur2c_num_h,
-.container_coeur2c_b .coeur2c_num_b {
+.container_coeur2c_b .coeur2c_num_b,
+.croisement-img-bs .coeur2c_num_h {
   position: absolute;
   top: 79%;
   left: 40%;
   width: 21%;
+  height: 14%;
+}
+
+.croisement-img-bs .coeur_etat{
+  position: absolute;
+  top: 65%;
+  left: 75%;
+  width: 17%;
   height: 14%;
 }
 

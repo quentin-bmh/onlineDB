@@ -1388,11 +1388,19 @@ function fillCoeur2cInputs(adv) {
     if (bs) {
       bs.querySelector(".p2p_g").value = adv["p2p_g"] ?? "no-data";
       bs.querySelector(".p2p_d").value = adv["p2p_d"] ?? "no-data";
+      bs.querySelector(".ep_cr_g").value = adv["ep_cr_g"] ?? "no-data";
+      bs.querySelector(".ep_cr_d").value = adv["ep_cr_d"] ?? "no-data";
+      bs.querySelector(".ep_cal_g").value = adv["ep_cal_g"] ?? "no-data";
+      bs.querySelector(".ep_cal_d").value = adv["ep_cal_d"] ?? "no-data";
+      bs.querySelector(".nb_cal_d").value = adv["nb_cales_d"] ?? "no-data";
+      bs.querySelector(".nb_cal_g").value = adv["nb_cales_g"] ?? "no-data";
+      bs.querySelector(".coeur2c_num_h").value = adv["coeur_num"] ?? "no-data";
+      bs.querySelector(".coeur_etat").value = adv["coeur_etat"] ?? "no-data";
     }
   });
 
   // Appeler UNE SEULE fois après la boucle
-  fillCroisementTable(document, adv);
+  // fillCroisementTable(document, adv);
 }
 
 function fillCroisementTable(container, adv) {
