@@ -28,7 +28,23 @@ router.get('/general_data', async (req, res) => {
   }
 });
 
-
+router.get('/adv_coordinates', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT "adv","type", "lat", "long" FROM general_data;');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/adv_coordinates/:type', async (req, res) => {
+  const type = req.params.type;
+  try {
+    const result = await pool.query('SELECT "adv", "lat", "long" FROM general_data WHERE type = $1;', [type]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get('/adv_types', async (req, res) => {
   try {

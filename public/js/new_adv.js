@@ -1,54 +1,43 @@
-// Définition des options pour les sélecteurs, regroupées par thème (Inchgées)
 const SELECT_OPTIONS = {
-    // Bavures
     bavures: [
         { value: 'aucune', label: 'Aucune bavure' },
         { value: 'eliminees', label: 'Bavures éliminées par meulage' },
         { value: 'presence', label: 'Présence de bavures' }
     ],
-    // Ébréchure aiguille
     ebrechureAiguille: [
         { value: 'aucune', label: 'Aucune ébréchure' },
         { value: 'presence', label: 'Présence d\'ébréchure' }
     ],
-    // Contact fente
     contactFente: [
         { value: 'dessous_repere', label: 'au dessous de la fente repère' },
         { value: 'dessus_repere', label: 'au dessus de la fente repère' }
     ],
-    // Classement (Ebrechure / État Butée / Usure LA / Usure LCA)
     classement: [
         { value: 'bon', label: 'Bon' },
         { value: 'va', label: 'VA' },
         { value: 'vr', label: 'VR' },
         { value: 'vi', label: 'VI' }
     ],
-    // Usure LCA (> 3mm, < 3mm, 0mm)
     usureLCA: [
         { value: 'sup_3mm', label: '> 3mm' },
         { value: 'inf_3mm', label: '< 3mm' },
         { value: '0mm', label: '0mm' }
     ],
-    // Calibre/Pige (Passage après/avant meulage)
     calibrePige: [
         { value: 'ne_passe_pas', label: 'ne passe pas' },
         { value: 'passe_apres_meulage', label: 'passe après meulage' },
         { value: 'passe_avant_meulage', label: 'passe avant meulage' }
     ],
-    // Usure LA Pente (Angle)
     usureLAPente: [
         { value: 'sup_60', label: '≥ 60°' },
         { value: 'inf_60', label: '≤ 60°' }
     ],
-    // Usure LA Contact (Position du contact)
     usureLAContact: [
         { value: 'dessus_dessous', label: 'au dessus et au dessous' },
         { value: 'dessus', label: 'au dessus' },
         { value: 'dessous', label: 'en dessous' }
     ]
 };
-
-// Configuration des 15 lignes du Demi-Aiguillage : (Inchgées)
 const DEMI_AIG_CONFIG = [
     { label: "Bavures", type: 'select', options: SELECT_OPTIONS.bavures },
     { label: "Ebrechure aiguille", type: 'select', options: SELECT_OPTIONS.ebrechureAiguille },
@@ -66,8 +55,6 @@ const DEMI_AIG_CONFIG = [
     { label: "Usure LA Contact", type: 'select', options: SELECT_OPTIONS.usureLAContact },
     { label: "Usure LA Classement", type: 'select', options: SELECT_OPTIONS.classement }
 ];
-
-// Les listes d'écartement/croisement sont conservées de votre code précédent
 const ADV_CONFIG = {
     BS: {
         ecartement: [
@@ -131,24 +118,60 @@ const ADV_CONFIG = {
 };
 
 /**
- * Génère un champ label + input à partir d'une liste de libellés (pour l'onglet Écartement).
- * @param {string} section - Nom de la section (ex: 'ecartement').
- * @param {string} labelText - Le texte exact du label.
- * @param {number} index - L'index pour créer l'ID/Name unique.
- * @returns {string} Le HTML du div contenant le label et l'input.
+ * Génère un champ input positionné sur l'image d'écartement.
+ * @param {string} labelText - Le texte exact du label (Ecartement N).
+ * @param {number} index - L'index de l'écartement (1 à N).
+ * @returns {string} Le HTML de l'input positionné.
  */
-function generateSpecificField(section, labelText, index) {
-    const baseName = labelText.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-    const id = `${section}_${baseName}_${index}`;
-    const name = `${section}_${index}`;
+function generateEcartementInput(labelText, index) {
+    // Le nom de l'input est basé sur le label dans ADV_CONFIG
+    // Ex: name="ecartement_1"
+    const name = labelText.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+    const id = `ecartement_input_${index}`;
 
-    return `
-        <div>
-            <label for="${id}">${labelText}:</label>
-            <input type="text" id="${id}" name="${name}">
-        </div>
-    `;
+    return `<input type="number" 
+                   class="ecartement-input"
+                   id="${id}" 
+                   name="${name}" 
+                   title="${labelText}"
+                   step="0.1" 
+                   placeholder="${index}">`;
 }
+
+/**
+ * Génère le corps (tbody) du tableau des attaches efficaces/inefficaces.
+ * La saisie se fera directement dans les cellules éditables (via l'attribut contenteditable).
+ * @param {string} advType - Le type d'ADV ('BS', 'TJD', 'TO').
+ * @returns {string} Le HTML du tbody du tableau des attaches.
+ */
+function generateAttachesTableRows(advType) {
+    const config = ADV_CONFIG[advType];
+    let rowsHTML = '';
+    
+    // On filtre la liste des labels pour ne garder que ceux concernant les Attaches efficaces/inefficaces
+    const zoneLabels = config.ecartement.filter(label => 
+        label.startsWith('Attaches efficaces')
+    ).map(label => {
+        const match = label.match(/\s(\w+'?)$/);
+        return match ? match[1] : '';
+    }).filter(zone => zone !== '');
+
+    zoneLabels.forEach((zone, index) => {
+        const nameEfficaces = `attaches_efficaces_${zone.replace(/'/g, 'p')}`;
+        const nameInefficaces = `attaches_inefficaces_${zone.replace(/'/g, 'p')}`;
+
+        rowsHTML += `
+            <tr>
+                <td class="zone-label">${zone}</td>
+                <td contenteditable="true" class="attaches-data efficaces" data-name="${nameEfficaces}" data-zone="${zone}" data-type="number" placeholder="0"></td>
+                <td contenteditable="true" class="attaches-data inefficaces" data-name="${nameInefficaces}" data-zone="${zone}" data-type="number" placeholder="0"></td>
+            </tr>
+        `;
+    });
+    
+    return rowsHTML;
+}
+
 
 /**
  * Génère le contenu d'une cellule de tableau (input ou select) pour le Demi-Aiguillage.
@@ -199,16 +222,12 @@ function generateDemiAiguillageTable(advType) {
                         </button>
                     </th>
     `;
-
-    // Génération des en-têtes de colonnes
     const colNames = (advType === 'BS')
         ? ['Aiguillage Gauche', 'Aiguillage Droite']
         : Array.from({ length: 8 }, (_, i) => `Aig ${i + 1}`);
 
     colNames.forEach((name, index) => {
         const colIndex = index + 1;
-        
-        // Icônes Copier et Effacer pour chaque TH de contenu
         const icons = `
             <span class="header-icons" data-col-index="${colIndex}">
                 <span class="copy-col-btn" title="Copier la colonne ${name} vers les autres">${String.fromCodePoint(0x1F4CB)}</span>
@@ -222,10 +241,8 @@ function generateDemiAiguillageTable(advType) {
                       </th>`;
     });
     tableHTML += '</tr></thead><tbody>';
-
-    // Génération des lignes du tableau (15 lignes)
     labels.forEach((rowConfig, i) => { 
-        const rowIndex = i + 1; // 1-based index pour le name
+        const rowIndex = i + 1; 
         let separatorClass = '';
         if (i === 0 || i === 1 || i === 6 || i === 8 || i === 12) {
             separatorClass = ' separator-row';
@@ -256,21 +273,28 @@ function generateDemiAiguillageTable(advType) {
     return tableHTML;
 }
 
-/**
- * Met à jour le formulaire (champs variables et onglets) en fonction du type d'ADV sélectionné.
- */
 function updateForm() {
     const advType = document.getElementById('advType').value;
     const advForm = document.getElementById('advForm');
+    
+    // Onglets conditionnels
     const demiAiguillageTabBtn = document.querySelector('.tab-btn[data-tab="demiAiguillage"]');
     const demiAiguillageContent = document.getElementById('demi-aiguillage-content');
     const demiAiguillageTabPane = document.getElementById('tab-demiAiguillage');
-    const ecartementFieldsContainer = document.getElementById('ecartement-fields');
+
+    const ecartementTabBtn = document.querySelector('.tab-btn[data-tab="ecartement"]');
+    const attachesTabBtn = document.querySelector('.tab-btn[data-tab="attaches"]');
     
-    // Nouveaux éléments
+    // Conteneurs des onglets
+    const ecartementMainContainer = document.getElementById('ecartement-main-container');
+    const attachesMainContainer = document.getElementById('attaches-main-container');
+
+    const specificEcartementSections = document.querySelectorAll('#tab-ecartement .ecartement-type-content');
+    const specificAttachesSections = document.querySelectorAll('#tab-attaches .attaches-type-content'); // Nouveau ciblage
+    
     const croisementContainer = document.querySelector('#tab-croisement .voie-type-container');
-    // Sélecteur mis à jour pour data-type
     const specificCroisementSections = document.querySelectorAll('.croisement-type-content[data-type]');
+
 
     if (!advType) {
         advForm.classList.add('hidden');
@@ -281,40 +305,79 @@ function updateForm() {
 
     const config = ADV_CONFIG[advType];
     const advTypeLower = advType.toLowerCase();
-
-    // 1. Mise à jour de l'onglet 'Croisement' (Affichage/Masquage HTML statique)
     
-    // Masquer tous les contenus spécifiques
+    // GESTION DE L'ONGLET CROISEMENT
     specificCroisementSections.forEach(section => section.classList.add('hidden-adv-type'));
-    
-    // Afficher le contenu correspondant
-    // Sélecteur mis à jour pour data-type
     const targetCroisement = document.querySelector(`.croisement-type-content[data-type="${advTypeLower}"]`);
     if (targetCroisement) {
         targetCroisement.classList.remove('hidden-adv-type');
     }
-    
-    // Mettre à jour la classe du conteneur parent pour les styles de layout
     croisementContainer.setAttribute('data-type', advTypeLower);
 
+    // GESTION DE L'ONGLET ÉCARTEMENT (Image + Inputs)
+    specificEcartementSections.forEach(section => section.classList.add('hidden-adv-type'));
+    const targetEcartement = document.querySelector(`#tab-ecartement .ecartement-type-content[data-type="${advTypeLower}"]`);
+    
+    // GESTION DE L'ONGLET ATTACHES (Tableau + Image)
+    specificAttachesSections.forEach(section => section.classList.add('hidden-adv-type'));
+    const targetAttaches = document.querySelector(`#tab-attaches .attaches-type-content[data-type="${advTypeLower}"]`);
 
-    // 2. Mise à jour des champs 'Écartement'
-    let ecartementHTML = '';
-    config.ecartement.forEach((label, index) => {
-        ecartementHTML += generateSpecificField('ecartement', label, index + 1);
-    });
-    ecartementFieldsContainer.innerHTML = ecartementHTML;
+    
+    if (targetEcartement && targetAttaches) {
+        // Affichage des onglets Écartement et Attaches
+        ecartementTabBtn.classList.remove('hidden');
+        attachesTabBtn.classList.remove('hidden');
 
-    // 3. Mise à jour de l'onglet 'Demi-Aiguillage'
-    if (advType === 'BS' || advType === 'TJD') {
+        // Contenu Ecartement (Image + Inputs)
+        targetEcartement.classList.remove('hidden-adv-type');
+        ecartementMainContainer.setAttribute('data-type', advTypeLower);
+
+        const ecartementInputsDiv = targetEcartement.querySelector(`.ecartement-img-${advTypeLower}`);
+        
+        // --- STRUCTURE FLEXBOX POUR ÉCARTEMENT ---
+        let ecartementInputsHTML = `
+            <div class="ecartement-visual">
+                ${ecartementInputsDiv.querySelector('img').outerHTML}
+            </div>
+            <div class="ecartement-inputs-list">
+        `;
+        
+        const ecartementLabels = config.ecartement.filter(label => label.startsWith('Ecartement'));
+        
+        ecartementLabels.forEach((label, index) => {
+            ecartementInputsHTML += `<div><label>${label}:</label>${generateEcartementInput(label, index + 1)}</div>`;
+        });
+        
+        ecartementInputsHTML += `</div>`;
+        ecartementInputsDiv.innerHTML = ecartementInputsHTML; 
+        // ---------------------------------------------------
+
+
+        // Contenu Attaches (Tableau + Image)
+        targetAttaches.classList.remove('hidden-adv-type');
+        attachesMainContainer.setAttribute('data-type', advTypeLower);
+
+        const attachesTableBody = targetAttaches.querySelector(`.attaches-table[data-type="${advTypeLower}"] tbody`);
+        attachesTableBody.innerHTML = generateAttachesTableRows(advType);
+
+    } else {
+        ecartementTabBtn.classList.add('hidden');
+        attachesTabBtn.classList.add('hidden');
+    }
+
+    
+    // GESTION DE L'ONGLET DEMI-AIGUILLAGE
+    if (config.demiAiguillageCols > 0) { // BS ou TJD
         demiAiguillageTabBtn.classList.remove('hidden');
         demiAiguillageTabPane.classList.remove('hidden');
         demiAiguillageContent.innerHTML = generateDemiAiguillageTable(advType);
     } else { // TO
         demiAiguillageTabBtn.classList.add('hidden');
         demiAiguillageTabPane.classList.add('hidden');
-        // Si l'onglet actif est 'Demi-Aiguillage' et qu'il est masqué, basculer sur 'Général'
-        if (demiAiguillageTabBtn.classList.contains('active')) {
+        
+        // Si l'onglet actif est un onglet qui vient d'être masqué (demiAiguillage, ecartement ou attaches), basculer sur 'general'
+        const currentActiveTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
+        if (currentActiveTab === 'demiAiguillage' || currentActiveTab === 'ecartement' || currentActiveTab === 'attaches') {
              switchTab('general');
         }
     }
@@ -336,17 +399,11 @@ function switchTab(tabId) {
         targetPane.classList.add('active');
     }
 }
-
-// --- Logique du Clic Droit (TD -> Ligne) ---
-
 const contextMenu = document.getElementById('custom-context-menu');
 const applyRowBtn = document.getElementById('apply-row');
-const applyColBtn = document.getElementById('apply-col'); // Maintenu mais masqué pour cette fonctionnalité
+const applyColBtn = document.getElementById('apply-col');
 let targetCell = null; 
 
-/**
- * Masque le menu contextuel.
- */
 function hideContextMenu() {
     contextMenu.style.display = 'none';
     targetCell = null;
@@ -361,10 +418,6 @@ function hideContextMenu() {
 function resetInputValue(inputElement) {
     // Réinitialise la valeur pour input (text/number) et select
     inputElement.value = '';
-    
-    // Pour les select, si la première option est vide et selected (ce qui est le cas dans generateTableField), 
-    // l'affectation de '' la sélectionnera.
-    
     inputElement.dispatchEvent(new Event('change'));
 }
 
@@ -374,8 +427,14 @@ function resetInputValue(inputElement) {
  */
 function resetAllTableInputs(table) {
     if (!table) return;
+    // Cibler les inputs dans les selects et les inputs des demi-aiguillages
     table.querySelectorAll('.table-input').forEach(input => {
         resetInputValue(input);
+    });
+    // Cibler les cellules contenteditable du tableau Attaches
+    table.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
+        cell.innerText = '';
+        cell.dispatchEvent(new Event('change'));
     });
 }
 
@@ -388,11 +447,19 @@ function copyColumn(table, sourceColIndex) {
     table.querySelectorAll('tbody tr').forEach((row) => {
         const cells = row.querySelectorAll('td');
         if (cells.length > sourceColIndex) {
-            // 1. Récupérer la valeur de la cellule source
-            // L'index réel dans `cells` est `sourceColIndex` (car cells[0] est la colonne Libellé)
-            const sourceInput = cells[sourceColIndex].querySelector('.table-input');
-            if (!sourceInput) return;
-            const sourceValue = sourceInput.value;
+            
+            // 1. Récupérer la valeur de la cellule source (peut être un input ou contenteditable)
+            const sourceCell = cells[sourceColIndex];
+            const sourceInput = sourceCell.querySelector('.table-input');
+            let sourceValue;
+
+            if (sourceInput) {
+                sourceValue = sourceInput.value;
+            } else if (sourceCell.getAttribute('contenteditable') === 'true') {
+                sourceValue = sourceCell.innerText;
+            } else {
+                return;
+            }
             
             // 2. Parcourir toutes les colonnes de contenu (index 1 à max)
             cells.forEach((td, index) => {
@@ -400,10 +467,13 @@ function copyColumn(table, sourceColIndex) {
                 // ET que ce n'est PAS la colonne source
                 if (index > 0 && index !== sourceColIndex) { 
                     const targetInput = td.querySelector('.table-input');
+                    
                     if (targetInput) {
                         targetInput.value = sourceValue;
-                        // Déclencher un événement change pour mettre à jour l'état visuel/logique si nécessaire
                         targetInput.dispatchEvent(new Event('change'));
+                    } else if (td.getAttribute('contenteditable') === 'true') {
+                        td.innerText = sourceValue;
+                        td.dispatchEvent(new Event('change'));
                     }
                 }
             });
@@ -413,8 +483,8 @@ function copyColumn(table, sourceColIndex) {
 // --- Gestion des Événements ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Écouteurs pour la navigation et soumission... (conservés)
-
+    
+    // Initialisation des onglets
     document.querySelectorAll('.tabs-nav').forEach(nav => {
         nav.addEventListener('click', (event) => {
             if (event.target.classList.contains('tab-btn')) {
@@ -452,8 +522,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cells = row.querySelectorAll('td');
                 if (cells[columnIndex]) { 
                     const input = cells[columnIndex].querySelector('.table-input');
+                    const editable = cells[columnIndex].getAttribute('contenteditable') === 'true';
+
                     if (input) {
                         resetInputValue(input);
+                    } else if (editable) {
+                        cells[columnIndex].innerText = '';
+                        cells[columnIndex].dispatchEvent(new Event('change'));
                     }
                 }
             });
@@ -472,8 +547,13 @@ document.addEventListener('DOMContentLoaded', () => {
             row.querySelectorAll('td').forEach((td, index) => {
                  if (index > 0) {
                      const input = td.querySelector('.table-input');
+                     const editable = td.getAttribute('contenteditable') === 'true';
+
                      if (input) {
                          resetInputValue(input);
+                     } else if (editable) {
+                         td.innerText = '';
+                         td.dispatchEvent(new Event('change'));
                      }
                  }
             });
@@ -488,19 +568,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const sourceElement = targetCell.querySelector('.table-input');
-        if (!sourceElement) return;
+        const sourceInput = targetCell.querySelector('.table-input');
+        let sourceValue;
 
-        const sourceValue = sourceElement.value;
+        if (sourceInput) {
+            sourceValue = sourceInput.value;
+        } else if (targetCell.getAttribute('contenteditable') === 'true') {
+            sourceValue = targetCell.innerText;
+        } else {
+            hideContextMenu();
+            return;
+        }
+        
         const row = targetCell.closest('tr');
         
         if (row) {
             row.querySelectorAll('td').forEach((td, index) => {
                 if (index > 0) {
                     const targetInput = td.querySelector('.table-input');
+                    
                     if (targetInput) {
                         targetInput.value = sourceValue;
                         targetInput.dispatchEvent(new Event('change')); 
+                    } else if (td.getAttribute('contenteditable') === 'true') {
+                        td.innerText = sourceValue;
+                        td.dispatchEvent(new Event('change'));
                     }
                 }
             });
@@ -510,27 +602,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('contextmenu', (e) => {
         const demiAiguillageContent = document.getElementById('tab-demiAiguillage');        
-        if (demiAiguillageContent && demiAiguillageContent.contains(e.target)) {
-            const clickedTD = e.target.closest('td');
+        const attachesContent = document.getElementById('tab-attaches');
 
-            if (clickedTD && clickedTD.cellIndex > 0) {
-                e.preventDefault();
-                targetCell = clickedTD;
-                const rect = clickedTD.getBoundingClientRect();
-                const posX = rect.left;
-                const posY = rect.top; 
+        const clickedTD = e.target.closest('td');
+
+        if (clickedTD && clickedTD.cellIndex > 0 && 
+           (demiAiguillageContent?.contains(e.target) || attachesContent?.contains(e.target))) {
+            
+            e.preventDefault();
+            targetCell = clickedTD;
+            const rect = clickedTD.getBoundingClientRect();
+            const posX = rect.left;
+            const posY = rect.top; 
 
 
-                contextMenu.style.left = `${posX}px`;
-                contextMenu.style.display = 'block'; 
-                const menuHeight = contextMenu.offsetHeight;
-                contextMenu.style.top = `${rect.top - menuHeight}px`;
+            contextMenu.style.left = `${posX}px`;
+            contextMenu.style.display = 'block'; 
+            const menuHeight = contextMenu.offsetHeight;
+            contextMenu.style.top = `${rect.top - menuHeight}px`;
 
-                applyRowBtn.classList.remove('hidden');
-                applyColBtn.classList.add('hidden');
-            } else {
-                hideContextMenu();
-            }
+            applyRowBtn.classList.remove('hidden');
+            applyColBtn.classList.add('hidden'); // La copie de colonne n'est pas gérée dans ce menu
         } else {
             hideContextMenu();
         }

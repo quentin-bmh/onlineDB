@@ -26,15 +26,15 @@
                 <button type="button" class="tab-btn active" data-tab="general">Infos Générales</button>
                 <button type="button" class="tab-btn" data-tab="croisement">Croisement</button>
                 <button type="button" class="tab-btn" data-tab="ecartement">Écartement</button>
+                <button type="button" class="tab-btn" data-tab="attaches">Attaches</button>
                 <button type="button" class="tab-btn" data-tab="bois">Bois</button>
+                <button type="button" class="tab-btn" data-tab="joints">Joints</button>
                 <button type="button" class="tab-btn conditional-tab" data-tab="demiAiguillage">Demi-Aiguillage</button>
             </nav>
 
             <div class="tabs-content">
 
                 <div id="tab-general" class="tab-pane active">
-                    <h3>Infos Générales</h3>
-                    
                     <div class="form-grid">
                         <fieldset>
                             <legend>Identification & Localisation</legend>
@@ -62,8 +62,6 @@
                 </div>
                 
                 <div id="tab-croisement" class="tab-pane">
-                    <h3>Croisement</h3>
-                    
                     <div class="voie-type-container">
                         
                         <div class="croisement-type-content hidden-adv-type" data-type="bs">
@@ -156,28 +154,109 @@
                 </div>
 
                 <div id="tab-ecartement" class="tab-pane">
-                    <h3>Écartement</h3>
-                    <div class="form-grid" id="ecartement-fields">
+                    <div class="voie-type-container" id="ecartement-main-container"> 
+                        
+                        <div class="ecartement-type-content hidden-adv-type" data-type="bs">
+                            <div class="ecartement-inputs-container">
+                                <div class="ecartement-img-bs" id="ecartement-inputs-bs">
+                                    <!-- <img src="../assets/eca_new_adv.png" alt="Emplacements Écartements BS" /> -->
+                                    <img src="../assets/ecartements.png" alt="Emplacements Écartements BS" />
+                                </div>
+                            </div>
                         </div>
+
+                        <div class="ecartement-type-content hidden-adv-type" data-type="tjd">
+                            <div class="ecartement-inputs-container">
+                                <div class="ecartement-img-tjd" id="ecartement-inputs-tjd">
+                                    <!-- <img src="../assets/eca_tj_new_adv.png" alt="Emplacements Écartements TJD" /> -->
+                                    <img src="../assets/tj_ecartements.jpg" alt="Emplacements Écartements TJD" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ecartement-type-content hidden-adv-type" data-type="to">
+                            <div class="ecartement-inputs-container">
+                                <div class="ecartement-img-to" id="ecartement-inputs-to">
+                                    <!-- <img src="../assets/eca_tj_new_adv.png" alt="Emplacements Écartements TO" /> -->
+                                    <img src="../assets/tj_ecartements.jpg" alt="Emplacements Écartements TO" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
+                <div id="tab-attaches" class="tab-pane">
+                    <div class="voie-type-container" id="attaches-main-container"> 
+                        
+                        <div class="attaches-type-content hidden-adv-type" data-type="bs">
+                            <div class="attaches-section">
+                                <div class="table-wrapper">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="bs">
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Nbr Attaches efficaces</th>
+                                                <th>Nbr Attaches inefficaces</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <img src="../assets/attaches_new_adv.png" alt="Zones Attaches BS" class="attaches-img" />
+                            </div>
+                        </div>
+
+                        <div class="attaches-type-content hidden-adv-type" data-type="tjd">
+                            <div class="attaches-section">
+                                <div class="table-wrapper">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="tjd">
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Nbr Attaches efficaces</th>
+                                                <th>Nbr Attaches inefficaces</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <img src="../assets/tj_attaches.png" alt="Zones Attaches TJD" class="attaches-img" />
+                            </div>
+                        </div>
+
+                        <div class="attaches-type-content hidden-adv-type" data-type="to">
+                            <div class="attaches-section">
+                                <div class="table-wrapper">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="to">
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Nbr Attaches efficaces</th>
+                                                <th>Nbr Attaches inefficaces</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <img src="../assets/to_attaches.png" alt="Zones Attaches TO" class="attaches-img" />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                
+
                 <div id="tab-bois" class="tab-pane">
-                    <h3>Bois</h3>
-                    
                     <div class="bois-layout">
 
                         <fieldset id="fieldset-traverses">
-                            <legend>Traverses et Rails</legend>
+                            <legend>Traverses</legend>
                             <div class="fieldset-grid">
                                 <div><label for="bois_1">Bois en bon état:</label><input type="number" id="bois_1" name="bois_1"></div>
                                 <div><label for="bois_2">Bois à remplacer:</label><input type="number" id="bois_2" name="bois_2"></div>
-                                <div><label for="bois_6">Etat des rails:</label>
-                                    <select id="bois_6" name="bois_6">
-                                        <option value="bon">Bon État</option>
-                                        <option value="moyen">Moyen</option>
-                                        <option value="remplacer">À Remplacer</option>
-                                    </select>
-                                </div>
                             </div>
                         </fieldset>
                         
@@ -187,7 +266,22 @@
                                 <canvas id="traversesChart"></canvas>
                             </div>
                         </div>
-
+                        <fieldset>
+                            <legend>Rails</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="bois_6">Etat des rails:</label>
+                                    <select id="bois_6" name="bois_6">
+                                        <option value="bon">Bon État</option>
+                                        <option value="moyen">Moyen</option>
+                                        <option value="remplacer">À Remplacer</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>                
+                <div id="tab-joints" class="tab-pane">
+                    <div class="bois-layout">
                         <fieldset id="fieldset-joints">
                             <legend>État des Joints</legend>
                             <div class="fieldset-grid">
@@ -207,9 +301,8 @@
                 </div>
 
                 <div id="tab-demiAiguillage" class="tab-pane">
-                    <h3>Demi-Aiguillage</h3>
                     <div id="demi-aiguillage-content">
-                        </div>
+                    </div>
                 </div>
 
             </div>

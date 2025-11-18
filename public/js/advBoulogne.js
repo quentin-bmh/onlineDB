@@ -2,109 +2,26 @@ let map;
 let marker;
 let boisChartInstance = null;
 let jointsChartInstance = null;
+let advMarkers = L.layerGroup();
 let currentType = '';
 let summaryData = [];
 
+// --- Fonctions factices (supposées exister) ---
+function getAdvDetails(adv) { /* ... */ }
+function getAdvData(data) { /* ... */ }
+function setupToggleMenu() { /* ... */ }
+function initCharts() { /* ... */ }
+// ---------------------------------------------
+
 document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  loadTypeButtons();
-  setupToggleMenu();
-  initCharts();
-
-  // if (typeof setInputsDisabled !== 'function') {
-  //   window.setInputsDisabled = (disabled) => {
-  //     const container = document.querySelector('.dataVoie-Container');
-  //     if (!container) return console.warn('⚠️ .dataVoie-Container introuvable au chargement');
-  //     container.querySelectorAll('input, select, textarea, button').forEach(el => {
-  //       el.disabled = !!disabled;
-  //     });
-  //   };
-  //   console.warn('setInputsDisabled() n\'existait pas — fallback créé.');
-  // }
-
-  // // Appliquer l'état initial du toggle au chargement
-  // const toggle = document.getElementById('toggleButton'); // adapte l'ID si besoin
-  // if (!toggle) {
-  //   console.warn('⚠️ toggleButton introuvable au chargement');
-  // } else {
-  //   const isAdmin = toggle.classList.contains('on');
-  //   // console.log('Initial toggle state:', isAdmin ? 'Admin' : 'Technicien');
-  //   setInputsDisabled(!isAdmin);
-  // }
+    initMap();
+    loadTypeButtons();
+    setupToggleMenu();
+    initCharts();
 });
-// document.querySelectorAll("table[data-editable='true'] tbody td").forEach(td => {
-//   td.contentEditable = true;
-// });
-// document.querySelectorAll("[data-editable='true']").forEach(el => {
-//   el.contentEditable = true;
-// });
-// document.querySelectorAll("table[data-editable='true']").forEach(table => {
-//   const lockAttr = (table.dataset.lock || "").toLowerCase();
-//   const lockFirstRow = lockAttr.includes("first-row");
-//   const lockFirstCol = lockAttr.includes("first-col");
+ 
+// ------------------- GESTION DE LA CARTE (LEAFLET) -------------------
 
-//   if (lockFirstRow) {
-//     table.querySelectorAll("thead th").forEach(th => {
-//       th.contentEditable = false;
-//       th.classList.add("non-editable");  
-//     });
-//   }
-
-//   table.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
-//     row.querySelectorAll("td").forEach((cell, colIndex) => {
-//       if (lockFirstCol && colIndex === 0) {
-//         cell.contentEditable = false;
-//         cell.classList.add("non-editable");
-//       } else {
-//         cell.contentEditable = true;
-//         cell.classList.remove("non-editable");
-//       }
-//     });
-//   });
-// });
-
-
-  
-document.getElementById("new-measure-btn").addEventListener("click", () => {
-  const activeVoie = document.querySelector(".voie-content.active");
-  if (!activeVoie) {
-    console.warn("Aucune voie active trouvée !");
-    return;
-  }
-
-  const visibleContainers = Array.from(
-    activeVoie.querySelectorAll(".voie-type-container")
-  ).filter(c => c.style.display !== "none");
-
-  visibleContainers.forEach(container => {
-    const elements = container.querySelectorAll(
-      "input, textarea, select, table, [data-value], [data-editable], .ecartement-card"
-    );
-
-    elements.forEach(el => {
-      let identifier =
-        el.id ||
-        el.getAttribute("name") ||
-        (el.className ? "." + el.className.split(" ").join(".") : "(sans id/classe)");
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
-        el.disabled = false;
-      } else if (el.tagName === "TABLE") {
-      } else if (el.classList.contains("ecartement-card")) {
-        el.contentEditable = true;
-        el.style.cursor = "text";
-      }
-      let value = "";
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
-        value = el.value;
-      } else if (el.tagName === "TABLE") {
-        value = el.innerText.trim();
-      } else {
-        value = el.getAttribute("data-value") || el.innerText.trim();
-      }
-      console.log(identifier,`Valeur ${value}`);
-    });
-  });
-});
 function initMap() {
     map = L.map('map').setView([46.5, 2.5], 7);
 
@@ -122,9 +39,14 @@ function initMap() {
       "Plan Standard": normalLayer,
       "Satellite": satelliteLayer
     }).addTo(map);
+
+    advMarkers.addTo(map);
 }
 
 function updateMap(adv) {
+    if (marker) map.removeLayer(marker); 
+    advMarkers.clearLayers(); 
+
     const lat = parseFloat(adv["lat"] ?? adv["Latitude"]);
     const lng = parseFloat(adv["long"] ?? adv["Longitude"]);
 
@@ -133,18 +55,223 @@ function updateMap(adv) {
       return;
     }
 
-    if (marker) map.removeLayer(marker);
-
     marker = L.marker([lat, lng])
       .addTo(map)
       .bindPopup(`<b>${adv["adv"] ?? adv["ADV"] ?? "ADV"}</b>`)
       .openPopup();
 
     map.setView([lat, lng], 20);
+    
     setTimeout(() => {
       map.invalidateSize();
     }, 200);
 }
+
+function displayAdvMarkers(advList) {
+    if (marker) map.removeLayer(marker); 
+    marker = null;
+    advMarkers.clearLayers();
+
+    let bounds = [];
+
+    advList.forEach(adv => {
+        const name = adv["adv"];
+        const type = adv["type"]; // Type de l'ADV (BS, TJ, etc.)
+        const lat = parseFloat(adv["lat"] ?? adv["Latitude"]);
+        const lng = parseFloat(adv["long"] ?? adv["Longitude"]);
+
+        if (lat && lng) {
+            const newMarker = L.marker([lat, lng])
+              .bindPopup(`<b>${name ?? "ADV"}</b><br>Type: ${type ?? ""}`);
+              
+            // --- Logique de bascule au clic sur le marqueur ---
+            newMarker.on('click', function(e) {
+                const rowId = `adv-row-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                
+                // 1. Vérifier si on est en mode ALL et si le type est connu
+                if (currentType === 'all' && type) {
+                    const targetButton = document.querySelector(`.data-btn[data-type="${type}"]`);
+                    if (targetButton) {
+                        // 2. Simuler le clic sur le bouton de type
+                        targetButton.click(); 
+                        
+                        const advNameToSelect = name;
+                        
+                        // 3. Attendre que la nouvelle table soit chargée par le clic du bouton
+                        setTimeout(() => {
+                             const targetRow = document.getElementById(`adv-row-${advNameToSelect.replace(/[^a-zA-Z0-9]/g, '-')}`);
+                             if (targetRow) {
+                                 // 4. Simuler le clic sur la ligne de la nouvelle table pour la sélection finale
+                                 targetRow.click();
+                             }
+                        }, 100); 
+                        return; // Arrêter l'exécution, le reste est géré par la simulation ci-dessus.
+                    }
+                }
+                
+                // Logique de sélection standard (si non 'ALL' ou bascule non nécessaire)
+                const targetRow = document.getElementById(rowId);
+                if (targetRow) {
+                    targetRow.click();
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    console.warn(`Ligne de tableau non trouvée pour l'ADV : ${name}`);
+                }
+            });
+            // --- Fin de Logique ---
+
+            advMarkers.addLayer(newMarker);
+            bounds.push([lat, lng]);
+        }
+    });
+    
+    if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50] }); 
+    } else {
+        map.setView([46.5, 2.5], 7);
+    }
+    
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+}
+
+// ------------------- GESTION DES BOUTONS DE TYPE ET DE LA TABLE -------------------
+
+function loadTypeButtons() {
+    fetch('/api/adv_types')
+      .then(res => res.json())
+      .then(types => {
+        const advSection = document.querySelector('.adv-section');
+        if (!advSection) return;
+
+        const allType = { type: 'ALL' };
+        const finalTypes = [allType, ...types];
+
+        advSection.innerHTML = '';
+
+        let firstButton = null;
+        finalTypes.forEach(({ type }, index) => {
+          const button = document.createElement('button');
+          button.textContent = type;
+          button.classList.add('data-btn');
+          button.setAttribute('data-type', type);
+
+          button.addEventListener('click', () => {
+            document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
+            button.classList.add('active-type');
+            currentType = type.toLowerCase();
+            
+            document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
+              boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
+            });
+            
+            const fetchUrl = (type === 'ALL') 
+              ? '/api/adv_coordinates'
+              : `/api/adv_coordinates/${encodeURIComponent(type)}`;
+
+            console.log("appel de fetch pour le type :", type);
+            fetch(fetchUrl)
+              .then(res => res.json())
+              .then(data => {
+                summaryData = data;
+                createTable(data);
+                displayAdvMarkers(data);
+
+              })
+              .catch(err => {
+                console.error("Erreur lors du chargement des ADV par type:", err);
+              });
+          });
+
+          advSection.appendChild(button);
+          if (index === 0) firstButton = button;
+        });
+
+        if (firstButton) firstButton.click();
+      })
+      .catch(err => {
+        console.error('Erreur lors du chargement des types ADV :', err);
+      });
+}
+
+function createTable(data) {
+    const tbody = document.querySelector("#advTable tbody");
+    tbody.innerHTML = '';
+    
+    data.forEach((adv, index) => {
+      const name = adv["adv"];
+      const advType = adv["type"] ?? currentType.toUpperCase();
+      
+      const row = document.createElement("tr");
+      row.setAttribute('id', `adv-row-${name.replace(/[^a-zA-Z0-9]/g, '-')}`);
+      row.innerHTML = `<td>${name}</td>`;
+
+      row.addEventListener("click", () => {
+        
+        // --- Bascule de type si clic direct sur la ligne en mode ALL ---
+        if (currentType === 'all' && advType) {
+            const targetButton = document.querySelector(`.data-btn[data-type="${advType}"]`);
+            if (targetButton) {
+                targetButton.click();
+                
+                const advNameToSelect = name;
+                // Attendre le rechargement pour recliquer sur la nouvelle ligne
+                setTimeout(() => {
+                    const newRowId = `adv-row-${advNameToSelect.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                    const newTargetRow = document.getElementById(newRowId);
+                    
+                    if (newTargetRow) {
+                        // Relancer le clic sur la nouvelle ligne. Ce clic ne relancera pas la bascule 
+                        // car currentType sera différent de 'all'.
+                        newTargetRow.click();
+                    }
+                }, 100);
+                return; // Fin de l'exécution pour le clic en mode ALL
+            }
+        }
+        
+        // --- Logique de sélection standard ---
+        // S'exécute après la bascule (second clic simulé) ou en mode type spécifique.
+        
+        updateMap(adv); 
+
+        document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
+        row.classList.add("active-adv");
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        getAdvDetails(adv);
+        
+        if (advType && name) {
+          const lowerType = advType.toLowerCase();
+          // L'appel API utilise le type correct
+          fetch(`/api/${lowerType}/${encodeURIComponent(name)}`) 
+            .then(res => {
+              if (!res.ok) throw new Error(`Erreur ${res.status}`);
+              return res.json();
+            })
+            .then(data => {
+              const advData = Array.isArray(data) ? data[0] : data;
+              console.log(`Données ADV récupérées pour ${name}:`, advData);
+              getAdvData(advData);
+            })
+            .catch(err => {
+              console.error("Erreur lors de la récupération des données ADV détaillées:", err);
+            });
+        } else {
+          console.warn("Type ou nom ADV manquant:", { type: advType, name });
+        }
+      });
+
+      tbody.appendChild(row);
+    });
+}
+
+
+
+
+
+
 const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public";
 
 function createDocumentButton(advName) {
@@ -199,114 +326,48 @@ function getAdvDetails(adv) {
 }
 
 
-function loadTypeButtons() {
-  fetch('/api/adv_types')
-    .then(res => res.json())
-    .then(types => {
-      const advSection = document.querySelector('.adv-section');
-      if (!advSection || types.length === 0) return;
-
-      advSection.innerHTML = '';
-
-      let firstButton = null;
-      types.forEach(({ type }, index) => {
-        const button = document.createElement('button');
-        button.textContent = type;
-        button.classList.add('data-btn');
-        button.setAttribute('data-type', type);
-
-        button.addEventListener('click', () => {
-          document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
-          button.classList.add('active-type');
-          currentType = type.toLowerCase();
-
-          // Gestion boutons aiguillage
-          document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
-            boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
-          });
-          console.log("appel de fetch pour le type :", type);
-          fetch(`/api/adv_from/${encodeURIComponent(type)}`)
-            .then(res => res.json())
-            .then(data => {
-              summaryData = data;
-              createTable(data);
-
-              if (data.length > 0) {
-                updateMap(data[0]);
-                getAdvDetails(data[0]);
-                const firstRow = document.querySelector("#advTable tbody tr");
-                if (firstRow) firstRow.click();
-              }
-            })
-            .catch(err => {
-              console.error("Erreur lors du chargement des ADV par type:", err);
-            });
-        });
-
-        advSection.appendChild(button);
-        if (index === 0) firstButton = button;
-      });
-
-      if (firstButton) firstButton.click();
-    })
-    .catch(err => {
-      console.error('Erreur lors du chargement des types ADV :', err);
-    });
-}
 
 
-function createTable(data) {
-  const tbody = document.querySelector("#advTable tbody");
-  tbody.innerHTML = '';
-  data.forEach((adv, index) => {
-    const name = adv["adv"];
-    const type = adv["type"];
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${name}</td>`;
+document.getElementById("new-measure-btn").addEventListener("click", () => {
+  const activeVoie = document.querySelector(".voie-content.active");
+  if (!activeVoie) {
+    console.warn("Aucune voie active trouvée !");
+    return;
+  }
 
-    row.addEventListener("click", () => {
-      // console.log('row sélectionnée:', name, type, adv); 
-      updateMap(adv);
-      document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
-      row.classList.add("active-adv");
-      getAdvDetails(adv);
-      // resetVoieContent();
-      if (type && name) {
-        const lowerType = type.toLowerCase();
-        fetch(`/api/${lowerType}/${encodeURIComponent(name)}`)
-          .then(res => {
-            if (!res.ok) throw new Error(`Erreur ${res.status}`);
-            return res.json();
-          })
-          .then(data => {
-            const advData = Array.isArray(data) ? data[0] : data;
-            console.log(`Données ADV récupérées pour ${name}:`, advData);
-            getAdvData(advData);
-          })
-          .catch(err => {
-            console.error("Erreur lors de la récupération des données ADV détaillées:", err);
-          });
-      } else {
-        console.warn("Type ou nom ADV manquant:", { type, name });
+  const visibleContainers = Array.from(
+    activeVoie.querySelectorAll(".voie-type-container")
+  ).filter(c => c.style.display !== "none");
+
+  visibleContainers.forEach(container => {
+    const elements = container.querySelectorAll(
+      "input, textarea, select, table, [data-value], [data-editable], .ecartement-card"
+    );
+
+    elements.forEach(el => {
+      let identifier =
+        el.id ||
+        el.getAttribute("name") ||
+        (el.className ? "." + el.className.split(" ").join(".") : "(sans id/classe)");
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+        el.disabled = false;
+      } else if (el.tagName === "TABLE") {
+      } else if (el.classList.contains("ecartement-card")) {
+        el.contentEditable = true;
+        el.style.cursor = "text";
       }
+      let value = "";
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+        value = el.value;
+      } else if (el.tagName === "TABLE") {
+        value = el.innerText.trim();
+      } else {
+        value = el.getAttribute("data-value") || el.innerText.trim();
+      }
+      console.log(identifier,`Valeur ${value}`);
     });
-
-    tbody.appendChild(row);
   });
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
+});
 
 
 

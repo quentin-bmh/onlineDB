@@ -9,7 +9,7 @@ body {
         max-width: 1200px;
         margin: 0 auto;
         background: #fff;
-        padding: 20px;
+        padding: 10px;
         border-radius: 8px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
@@ -94,7 +94,9 @@ body {
         height: 100%; 
         box-sizing: border-box;
     }
-
+    fieldset input{
+        width: 80%;
+    }
 
     legend {
         font-weight: bold;
@@ -406,10 +408,12 @@ body {
         font-size: 1.1em;
         color: #333;
     }
-
+    .bois-layout > div {
+        width: 350px;
+    }
     .bois-layout {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 15px;
         padding: 10px 0;
         width: 100%;
@@ -447,4 +451,142 @@ body {
         grid-template-columns: 1fr;
         gap: 0;
         padding: 0;
+    }
+    
+    /* Styles pour la nouvelle section Écartement */
+    #tab-ecartement .voie-type-container {
+        padding: 20px 0;
+    }
+    .ecartement-type-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start; 
+        gap: 15px; /* Réduit l'espace pour faire tenir les 3 éléments */
+        padding: 10px 0;
+    }
+
+    .ecartement-inputs-container {
+        flex: 1 1 35%; /* L'image Écartement prend ~35% */
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Style Flexbox pour aligner l'image et la liste d'inputs côte à côte */
+    .ecartement-img-bs,
+    .ecartement-img-tjd,
+    .ecartement-img-to {
+        position: relative;
+        max-width: 100%;
+        width: 100%;
+        display: flex; 
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px; 
+    }
+
+    .ecartement-visual {
+        flex: 0 0 50%; /* L'image visuelle prend 50% de l'espace disponible */
+        position: relative; 
+    }
+
+    .ecartement-visual img {
+        width: 100%;
+        max-height: 500px;
+        height: auto;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    .ecartement-inputs-list {
+        flex: 0 0 45%; /* La liste d'inputs prend 45% de l'espace disponible */
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0;
+    }
+
+    .ecartement-inputs-list > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ecartement-inputs-list label {
+        font-weight: normal;
+        white-space: nowrap;
+        margin-right: auto;
+    }
+
+    .ecartement-inputs-list input[type="number"] {
+        position: static; /* Annule l'éventuelle position absolue héritée */
+        width: 70px; /* Taille fixe pour les inputs de valeur */
+        padding: 4px;
+        font-size: 14px;
+    }
+
+    /* Annuler les anciens styles d'image qui fixaient une largeur trop petite */
+    .ecartement-img-bs img,
+    .ecartement-img-tjd img,
+    .ecartement-img-to img {
+        width: 100%; /* La largeur est gérée par .ecartement-visual */
+        max-height: 500px;
+        height: auto;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        object-fit: contain;
+    }
+
+    /* Section Attaches (Tableau + Image Attaches) */
+    .attaches-section {
+        flex: 1 1 60%; 
+        display: flex;
+        flex-direction: row; 
+        gap: 15px;
+        align-items: center;
+    }
+
+    .table-wrapper {
+        flex: 1 1 45%; 
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .attaches-img {
+        flex: 1 1 50%; 
+        max-width: 40%;
+        height: 50%;
+        max-height: 500px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        object-fit: contain; 
+    }
+
+    /* Styles pour rendre le tableau éditable (point 1) */
+    .attaches-table td[contenteditable="true"] {
+        text-align: center;
+        min-width: 80px;
+        border: 1px solid #ddd;
+        background-color: #fff; 
+        cursor: text;
+        transition: background-color 0.1s;
+        /* Ajout de la gestion des données numériques si possible */
+        -moz-appearance: textfield; 
+    }
+
+    .attaches-table td[contenteditable="true"]:hover {
+        background-color: #f7f7f7;
+    }
+
+    .attaches-table td:focus {
+        outline: 2px solid #007bff;
+    }
+
+    .attaches-table th:first-child,
+    .attaches-table td:first-child {
+        pointer-events: none; 
+        background-color: #fafafa !important;
+        font-weight: bold;
     }
