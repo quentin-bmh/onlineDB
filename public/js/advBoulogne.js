@@ -170,7 +170,7 @@ function loadTypeButtons() {
               ? '/api/adv_coordinates'
               : `/api/adv_coordinates/${encodeURIComponent(type)}`;
 
-            console.log("appel de fetch pour le type :", type);
+            // console.log("appel de fetch pour le type :", type);
             fetch(fetchUrl)
               .then(res => res.json())
               .then(data => {
@@ -199,6 +199,32 @@ function createTable(data) {
     const tbody = document.querySelector("#advTable tbody");
     tbody.innerHTML = '';
     
+    // Récupération des conteneurs pour manipulation
+    const dataVoieContainer = document.getElementById('dataVoie-container');
+    const dataContainer = document.getElementById('data');
+    const mapContainer = document.getElementById('map-container'); // NOUVEAU: Récupération du conteneur de la carte
+    
+    // Règle 1: Masquer les conteneurs de données et ajuster la carte (Réinitialisation)
+    if (dataVoieContainer && dataContainer && mapContainer) {
+        dataVoieContainer.classList.remove('active-adv-data');
+        dataContainer.classList.remove('active-adv-data'); 
+        
+        dataContainer.style.display = '';
+        dataVoieContainer.style.display = '';
+        
+        // NOUVEAU: Étendre la carte quand aucun ADV n'est sélectionné
+        mapContainer.classList.add('map-no-adv-selected');
+        
+        // Invalider la taille de la carte après changement de conteneur
+        if (map) map.invalidateSize();
+    }
+    
+    if (data.length === 0) {
+        console.log(`Aucun ADV trouvé pour le type: ${currentType.toUpperCase()}`);
+    } else {
+        // console.log("Aucun ADV sélectionné"); 
+    }
+    
     data.forEach((adv, index) => {
       const name = adv["adv"];
       const advType = adv["type"] ?? currentType.toUpperCase();
@@ -209,30 +235,42 @@ function createTable(data) {
 
       row.addEventListener("click", () => {
         
-        // --- Bascule de type si clic direct sur la ligne en mode ALL ---
+        // --- Bascule de type si clic direct sur la ligne en mode ALL (non modifiée) ---
         if (currentType === 'all' && advType) {
             const targetButton = document.querySelector(`.data-btn[data-type="${advType}"]`);
             if (targetButton) {
                 targetButton.click();
                 
                 const advNameToSelect = name;
-                // Attendre le rechargement pour recliquer sur la nouvelle ligne
                 setTimeout(() => {
                     const newRowId = `adv-row-${advNameToSelect.replace(/[^a-zA-Z0-9]/g, '-')}`;
                     const newTargetRow = document.getElementById(newRowId);
                     
                     if (newTargetRow) {
-                        // Relancer le clic sur la nouvelle ligne. Ce clic ne relancera pas la bascule 
-                        // car currentType sera différent de 'all'.
                         newTargetRow.click();
                     }
                 }, 100);
-                return; // Fin de l'exécution pour le clic en mode ALL
+                return;
             }
         }
         
         // --- Logique de sélection standard ---
-        // S'exécute après la bascule (second clic simulé) ou en mode type spécifique.
+        
+        if (dataVoieContainer && dataContainer && mapContainer) {
+            // NOUVEAU: Réduire la carte et afficher les conteneurs de données
+            mapContainer.classList.remove('map-no-adv-selected');
+            
+            dataVoieContainer.style.display = '';
+            dataContainer.style.display = '';
+
+            dataVoieContainer.classList.add('active-adv-data');
+            dataContainer.classList.add('active-adv-data');
+            
+            // Invalider la taille de la carte après changement de conteneur
+            if (map) map.invalidateSize();
+        }
+        
+        console.log(`ADV sélectionné: ${name}`);
         
         updateMap(adv); 
 
@@ -244,7 +282,6 @@ function createTable(data) {
         
         if (advType && name) {
           const lowerType = advType.toLowerCase();
-          // L'appel API utilise le type correct
           fetch(`/api/${lowerType}/${encodeURIComponent(name)}`) 
             .then(res => {
               if (!res.ok) throw new Error(`Erreur ${res.status}`);
@@ -266,11 +303,6 @@ function createTable(data) {
       tbody.appendChild(row);
     });
 }
-
-
-
-
-
 
 const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public";
 
@@ -477,9 +509,20 @@ function initCharts() {
 function getAdvData(adv) {
   const name = (adv["adv"] || adv["ADV"] || '').trim();
   const type = (adv["type"] || '').toLowerCase();
+  
+  // Gérer le cas où l'ADV est null/undefined/vide, ce qui signifie qu'on a cliqué
+  // sur le type, mais pas encore sur un ADV spécifique, ou que les données sont vides.
   if (!name || !type) {
+    if (currentType !== 'all') {
+      // Si on est en mode type spécifique et qu'on reçoit des données vides,
+      // on suppose que l'ADV sélectionné dans la table latérale est le seul
+      // connu pour le moment, mais qu'il n'y a pas de données détaillées.
+      // Le log 'Aucun ADV sélectionné' a déjà été fait dans createTable.
+      console.warn("ADV ou Type non défini. Données détaillées ADV non chargées.");
+    }
     return;
   }
+  
   // console.log(`/api/${type}/${encodeURIComponent(name)}`);
   fetch(`/api/${type}/${encodeURIComponent(name)}`)
     .then(res => {
@@ -489,6 +532,7 @@ function getAdvData(adv) {
     .then(data => {
       const advData = Array.isArray(data) ? data[0] : data;
       if (!advData) {
+        // Le log a été fait dans createTable avant l'appel à getAdvData
         return;
       }
       switchVoieTypeContent(type, 'voie-croisement');
@@ -596,34 +640,36 @@ function showOrHideDataForAiguillage(type) {
   }
 }
 
-
 function updateToButtonVisibility() {
   const voieAiguillage = document.getElementById('voie-aiguillage');
   const toButton = document.querySelector('button[data-type="TO"]');
   if (!toButton) return;
-  const isAiguillageVisible = voieAiguillage && voieAiguillage.style.display !== 'none' && voieAiguillage.classList.contains('active');
-  toButton.style.display = isAiguillageVisible ? 'none' : 'inline-block';
-  // console.log("utilisation de updateToButtonVisibility")
+  
+  const isAiguillageActive = voieAiguillage && voieAiguillage.classList.contains('active');
+  
+  toButton.style.display = isAiguillageActive ? 'none' : 'inline-block';
   updateButtons();
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
   button.addEventListener('click', () => {
     const targetId = button.getAttribute('data-target');
     const current = document.querySelector('.voie-content.active');
-    const type = button.getAttribute('data-type') || '';
     const next = document.getElementById(targetId);
-    const data = document.getElementById('info-container');
+    const infoContainer = document.getElementById('info-container'); 
     const img_ag_tj = document.getElementById('tj_aiguille_img');
     const left_sidebar = document.getElementById('left-sidebar');
     const data_section = document.querySelector('.data-actions');
-    const dataADV = document.getElementById('data');
+    const dataADV = document.getElementById('data'); // Le conteneur #data
     const data_voie_container = document.getElementById('dataVoie-container');
     const mapEl = document.getElementById('map');
+    
     if (!next || current === next) return;
+
+    const isAdvSelected = data_voie_container && data_voie_container.classList.contains('active-adv-data');
     
     // Logique de mise en page CSS/Grid
     if (targetId === 'voie-aiguillage') {
-      data.style.display = 'none';
+      infoContainer.style.display = 'none';
       img_ag_tj.style.display = 'flex';
       left_sidebar.style.gridRow = '1 / 4';
       data_section.style.gridRow = '4 / 6';
@@ -632,8 +678,13 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       dataADV.style.gridRow = '6 / 9';
       data_voie_container.style.gridRow = '1 / 11';
       mapEl.style.display = 'none';
+      
+      // Laisser le style display à 'none' pour ce mode spécifique
+      dataADV.style.display = 'none'; 
+      data_voie_container.style.display = 'flex'; 
+      
     } else {
-      data.style.display = 'flex';
+      infoContainer.style.display = 'flex';
       img_ag_tj.style.display = 'none';
       left_sidebar.style.gridRow = '1 / 9';
       data_section.style.gridRow = '1 / 4';
@@ -642,6 +693,17 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       dataADV.style.gridRow = '1 / 4';
       data_voie_container.style.gridRow = '4 / 11';
       mapEl.style.display = 'block';
+      
+      // FIX CRITIQUE: Réinitialiser les styles 'display' des conteneurs 
+      // pour permettre à la logique de classe (`active-adv-data`) de les masquer/afficher.
+      dataADV.style.display = ''; 
+      data_voie_container.style.display = '';
+
+      // On s'assure que la classe est là si un ADV est sélectionné
+      if (isAdvSelected) {
+        dataADV.classList.add('active-adv-data');
+        data_voie_container.classList.add('active-adv-data');
+      } 
     }
     
     // Logique d'animation et de transition
@@ -673,9 +735,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
           const type = visibleType ? visibleType.dataset.type : '';
           // showOrHideDataForAiguillage(type);
         } else {
-          document.getElementById('data').style.display = 'flex';
-          // Invalider la taille de la carte après son réaffichage
-          if (map) map.invalidateSize(); // ⬅️ AJOUT ICI
+          if (map) map.invalidateSize(); 
         }
       }, 500);
     } else {
@@ -698,15 +758,11 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
         const type = visibleType ? visibleType.dataset.type : '';
         showOrHideDataForAiguillage(type);
       } else {
-        document.getElementById('data').style.display = 'flex';
-        // Invalider la taille de la carte
-        if (map) map.invalidateSize(); // ⬅️ AJOUT ICI
+        if (map) map.invalidateSize();
       }
     }
   });
 });
-
-
 
 
 
