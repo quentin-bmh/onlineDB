@@ -97,7 +97,10 @@ body {
   background-color: #d6e9ff; /* bleu pâle */
   font-weight: 600;
 }
-
+#advTable tbody tr:hover {
+  background-color: #f0f8ff; /* bleu très clair */
+  cursor: pointer;
+}
 
 .separator {
   width: 90%;

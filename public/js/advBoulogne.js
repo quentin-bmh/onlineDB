@@ -137,7 +137,7 @@ function displayAdvMarkers(advList) {
 }
 
 // ------------------- GESTION DES BOUTONS DE TYPE ET DE LA TABLE -------------------
-
+//partie où là ça fonctionne ok 
 function loadTypeButtons() {
     fetch('/api/adv_types')
       .then(res => res.json())
@@ -158,6 +158,18 @@ function loadTypeButtons() {
           button.setAttribute('data-type', type);
 
           button.addEventListener('click', () => {
+            
+            // --- NOUVELLE LOGIQUE DE REDIRECTION SYSTÉMATIQUE VERS HUB ---
+            const activeVoie = document.querySelector('.voie-content.active');
+            const hubButton = document.querySelector('.toggle-menu button[data-target="hub"]');
+            
+            // Si la voie active n'est pas le Hub, simuler le clic sur le bouton Hub
+            if (activeVoie && activeVoie.id !== 'hub' && hubButton) {
+                hubButton.click();
+            }
+            // -----------------------------------------------------------
+
+
             document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
             button.classList.add('active-type');
             currentType = type.toLowerCase();
@@ -169,6 +181,16 @@ function loadTypeButtons() {
             const fetchUrl = (type === 'ALL') 
               ? '/api/adv_coordinates'
               : `/api/adv_coordinates/${encodeURIComponent(type)}`;
+              
+            const mapContainer = document.getElementById('map-container');
+            const mapEl = document.getElementById('map');
+            
+            if (mapContainer && mapEl) {
+              mapContainer.style.display = 'block';
+              mapContainer.classList.remove('map-no-adv-selected');
+              mapEl.style.display = 'block'; 
+            }
+            if (map) map.invalidateSize();
 
             // console.log("appel de fetch pour le type :", type);
             fetch(fetchUrl)
@@ -234,8 +256,6 @@ function createTable(data) {
       row.innerHTML = `<td>${name}</td>`;
 
       row.addEventListener("click", () => {
-        
-        // --- Bascule de type si clic direct sur la ligne en mode ALL (non modifiée) ---
         if (currentType === 'all' && advType) {
             const targetButton = document.querySelector(`.data-btn[data-type="${advType}"]`);
             if (targetButton) {
@@ -643,11 +663,13 @@ function showOrHideDataForAiguillage(type) {
 function updateToButtonVisibility() {
   const voieAiguillage = document.getElementById('voie-aiguillage');
   const toButton = document.querySelector('button[data-type="TO"]');
+  const allButton = document.querySelector('button[data-type="ALL"]');
   if (!toButton) return;
   
   const isAiguillageActive = voieAiguillage && voieAiguillage.classList.contains('active');
   
-  toButton.style.display = isAiguillageActive ? 'none' : 'inline-block';
+  // toButton.style.display = isAiguillageActive ? 'none' : 'inline-block';
+  // allButton.style.display = isAiguillageActive ? 'none' : 'inline-block';
   updateButtons();
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
@@ -662,6 +684,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
     const dataADV = document.getElementById('data'); // Le conteneur #data
     const data_voie_container = document.getElementById('dataVoie-container');
     const mapEl = document.getElementById('map');
+    const mapContainer = document.getElementById('map-container');
     
     if (!next || current === next) return;
 
@@ -677,9 +700,9 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       dataADV.style.gridColumn = '1 / 3';
       dataADV.style.gridRow = '6 / 9';
       data_voie_container.style.gridRow = '1 / 11';
-      mapEl.style.display = 'none';
+      mapContainer.style.display = 'none';
       
-      // Laisser le style display à 'none' pour ce mode spécifique
+    
       dataADV.style.display = 'none'; 
       data_voie_container.style.display = 'flex'; 
       
@@ -692,19 +715,18 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       dataADV.style.gridColumn = '5 / 7';
       dataADV.style.gridRow = '1 / 4';
       data_voie_container.style.gridRow = '4 / 11';
-      mapEl.style.display = 'block';
-      
-      // FIX CRITIQUE: Réinitialiser les styles 'display' des conteneurs 
-      // pour permettre à la logique de classe (`active-adv-data`) de les masquer/afficher.
+      // mapEl.style.display = 'block';
       dataADV.style.display = ''; 
       data_voie_container.style.display = '';
 
       // On s'assure que la classe est là si un ADV est sélectionné
       if (isAdvSelected) {
+        mapContainer.style.display = 'block';
         dataADV.classList.add('active-adv-data');
         data_voie_container.classList.add('active-adv-data');
       } 
     }
+
     
     // Logique d'animation et de transition
     if (current) {
