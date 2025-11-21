@@ -39,27 +39,105 @@ const SELECT_OPTIONS = {
     ]
 };
 const DEMI_AIG_CONFIG = [
-    { label: "Bavures", type: 'select', options: SELECT_OPTIONS.bavures },
-    { label: "Ebrechure aiguille", type: 'select', options: SELECT_OPTIONS.ebrechureAiguille },
-    { label: "Contact fente", type: 'select', options: SELECT_OPTIONS.contactFente },
-    { label: "Longueur ébréchure sous fente repère", type: 'input_number' },
-    { label: "Longueur totale de la zone ébréchée", type: 'input_number' },
-    { label: "Ebrechure classement", type: 'select', options: SELECT_OPTIONS.classement },
-    { label: "Demi-Aiguillage entrebaillement", type: 'input_number' },
-    { label: "Demi-Aiguillage Etat butée", type: 'select', options: SELECT_OPTIONS.classement },
-    { label: "Usure LCA", type: 'select', options: SELECT_OPTIONS.usureLCA },
-    { label: "Usure LCA Calibre", type: 'select', options: SELECT_OPTIONS.calibrePige },
-    { label: "Usure LCA Pige", type: 'select', options: SELECT_OPTIONS.calibrePige },
-    { label: "Usure LCA Classement", type: 'select', options: SELECT_OPTIONS.classement },
-    { label: "Usure LA Pente", type: 'select', options: SELECT_OPTIONS.usureLAPente },
-    { label: "Usure LA Contact", type: 'select', options: SELECT_OPTIONS.usureLAContact },
-    { label: "Usure LA Classement", type: 'select', options: SELECT_OPTIONS.classement }
+    { label: "Bavures", type: 'select', options: SELECT_OPTIONS.bavures }, // 1
+    { label: "Ebrechure aiguille", type: 'select', options: SELECT_OPTIONS.ebrechureAiguille }, // 2
+    { label: "Contact fente", type: 'select', options: SELECT_OPTIONS.contactFente }, // 3
+    { label: "Longueur ébréchure sous fente repère", type: 'input_number' }, // 4
+    { label: "Longueur totale de la zone ébréchée", type: 'input_number' }, // 5
+    { label: "Ebrechure classement", type: 'select', options: SELECT_OPTIONS.classement }, // 6
+    { label: "Demi-Aiguillage entrebaillement", type: 'input_number' }, // 7
+    { label: "Demi-Aiguillage Etat butée", type: 'select', options: SELECT_OPTIONS.classement }, // 8
+    { label: "Usure LCA", type: 'select', options: SELECT_OPTIONS.usureLCA }, // 9
+    { label: "Usure LCA Calibre", type: 'select', options: SELECT_OPTIONS.calibrePige }, // 10
+    { label: "Usure LCA Pige", type: 'select', options: SELECT_OPTIONS.calibrePige }, // 11
+    { label: "Usure LCA Classement", type: 'select', options: SELECT_OPTIONS.classement }, // 12
+    { label: "Usure LA Pente", type: 'select', options: SELECT_OPTIONS.usureLAPente }, // 13
+    { label: "Usure LA Contact", type: 'select', options: SELECT_OPTIONS.usureLAContact }, // 14
+    { label: "Usure LA Classement", type: 'select', options: SELECT_OPTIONS.classement } // 15
 ];
+
+// --- Mappage entre Index de ligne (1-based) et Clé JSON ---
+const DEMI_AIG_FIELD_MAPPING = {
+    1: 'bavure', // Bavures
+    2: 'ebrechure_a', // Ebrechure aiguille
+    3: 'ctc_fente', // Contact fente
+    4: 'taille_ebrechure_fente', // Longueur ébréchure sous fente repère
+    5: 'taille_tot_ebrechure', // Longueur totale de la zone ébréchée
+    6: 'ebrechure_a_classement', // Ebrechure classement
+    7: 'application_da_entrebaillement', // Demi-Aiguillage entrebaillement
+    8: 'application_da_etat_bute', // Demi-Aiguillage Etat butée
+    9: 'usure_lca', // Usure LCA
+    10: 'usure_lca_calibre', // Usure LCA Calibre
+    11: 'usure_lca_pige', // Usure LCA Pige
+    12: 'usure_lca_classement', // Usure LCA Classement
+    14: 'usure_la_contact', // Usure LA Contact
+    13: 'usure_la_pente', // Usure LA Pente
+    15: 'usure_la_classement' // Usure LA Classement
+};
+
+// --- Ordre des clés pour l'affichage console (optionnel, mais garantit l'ordre pour le log) ---
+const DEMI_AIG_OUTPUT_ORDER = [
+    'adv',
+    'adv_type',
+    'bavure',
+    'usure_lca',
+    'usure_lca_classement',
+    'usure_lca_calibre',
+    'usure_lca_pige',
+    'usure_la_contact',
+    'usure_la_pente',
+    'usure_la_classement',
+    'ebrechure_a',
+    'application_da_etat_bute',
+    'application_da_entrebaillement',
+    'ebrechure_a_classement',
+    'ctc_fente',
+    'taille_ebrechure_fente',
+    'taille_tot_ebrechure'
+];
+
+// --- Mappage pour normaliser les valeurs des selects ---
+const DEMI_AIG_SELECT_VALUE_MAPPING = {
+    // Ligne 1: Bavures (valeurs génériques, le cas "aucune" est géré dans la fonction)
+    'eliminees': 'bavures éliminées par meulage',
+    'presence': 'Présence de bavures',
+    
+    // Ligne 3: Contact fente
+    'dessous_repere': 'dessous',
+    'dessus_repere': 'dessus',
+    
+    // Lignes 6, 8, 12, 15: Classement (Première lettre en majuscule si c'est 'bon')
+    'bon': 'Bon',
+    'va': 'VA',
+    'vr': 'VR',
+    'vi': 'VI',
+
+    // Ligne 9: Usure LCA (Format requis pour la chaîne de sortie)
+    'sup_3mm': '(j > 3mm)',
+    'inf_3mm': '(j < 3mm)',
+    '0mm': '0mm',
+    
+    // Ligne 10, 11: Calibre/Pige
+    'ne_passe_pas': 'ne passe pas',
+    'passe_apres_meulage': 'avec meulage',
+    'passe_avant_meulage': 'sans meulage',
+    
+    // Ligne 13: Usure LA Pente (Format requis)
+    'sup_60': '>=60°',
+    'inf_60': '<=60°',
+    
+    // Ligne 14: Usure LA Contact
+    'dessus_dessous': 'au dessus et au dessous',
+    'dessus': 'au dessus',
+    'dessous': 'en dessous'
+};
+
+
 const ADV_CONFIG = {
     BS: {
         ecartement: [
             "Ecartement 1", "Ecartement 2", "Ecartement 3",
-            "Ecartement 4", "Ecartement 5", "Ecartement 7",
+            "Ecartement 4", "Ecartement 5","Ecartement 6", "Ecartement 7",
             "Attaches efficaces 1", "Attaches inneficaces 1",
             "Attaches efficaces 2", "Attaches inneficaces 2",
             "Attaches efficaces 3", "Attaches inneficaces 3",
@@ -73,7 +151,7 @@ const ADV_CONFIG = {
         demiAiguillageCols: 2
     },
 
-    TJD: {
+    TJ: {
         ecartement: [
             "Ecartement 1", "Ecartement 2", "Ecartement 3",
             "Ecartement 4", "Ecartement 5", "Ecartement 6",
@@ -117,15 +195,18 @@ const ADV_CONFIG = {
     }
 };
 
+let ADV_CONFIG_NORMALIZED = {
+    BS: ADV_CONFIG.BS,
+    TJ: ADV_CONFIG.TJ,
+    TO: ADV_CONFIG.TO
+};
+
 /**
- * Génère un champ input positionné sur l'image d'écartement.
- * @param {string} labelText - Le texte exact du label (Ecartement N).
- * @param {number} index - L'index de l'écartement (1 à N).
- * @returns {string} Le HTML de l'input positionné.
+ * @param {string} labelText
+ * @param {number} index
+ * @returns {string}
  */
 function generateEcartementInput(labelText, index) {
-    // Le nom de l'input est basé sur le label dans ADV_CONFIG
-    // Ex: name="ecartement_1"
     const name = labelText.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     const id = `ecartement_input_${index}`;
 
@@ -134,21 +215,17 @@ function generateEcartementInput(labelText, index) {
                    id="${id}" 
                    name="${name}" 
                    title="${labelText}"
-                   step="0.1" 
+                   step="1" 
                    placeholder="${index}">`;
 }
 
 /**
- * Génère le corps (tbody) du tableau des attaches efficaces/inefficaces.
- * La saisie se fera directement dans les cellules éditables (via l'attribut contenteditable).
- * @param {string} advType - Le type d'ADV ('BS', 'TJD', 'TO').
- * @returns {string} Le HTML du tbody du tableau des attaches.
+ * @param {string} advType
+ * @returns {string}
  */
 function generateAttachesTableRows(advType) {
-    const config = ADV_CONFIG[advType];
+    const config = ADV_CONFIG_NORMALIZED[advType];
     let rowsHTML = '';
-    
-    // On filtre la liste des labels pour ne garder que ceux concernant les Attaches efficaces/inefficaces
     const zoneLabels = config.ecartement.filter(label => 
         label.startsWith('Attaches efficaces')
     ).map(label => {
@@ -174,11 +251,10 @@ function generateAttachesTableRows(advType) {
 
 
 /**
- * Génère le contenu d'une cellule de tableau (input ou select) pour le Demi-Aiguillage.
- * @param {Object} rowConfig - Configuration de la ligne (label, type, options).
- * @param {string} fieldName - Nom du champ (ex: demiAig_1_gauche).
- * @param {string} fieldId - ID unique du champ.
- * @returns {string} Le HTML de l'élément de formulaire.
+ * @param {Object} rowConfig
+ * @param {string} fieldName
+ * @param {string} fieldId
+ * @returns {string}
  */
 function generateTableField(rowConfig, fieldName, fieldId) {
     if (rowConfig.type === 'select' && rowConfig.options) {
@@ -201,13 +277,12 @@ function generateTableField(rowConfig, fieldName, fieldId) {
 
 
 /**
- * Génère le tableau de Demi-Aiguillage (BS ou TJD) en utilisant les libellés définis.
- * @param {string} advType - Le type d'ADV ('BS' ou 'TJD').
- * @returns {string} Le HTML du tableau.
+ * @param {string} advType
+ * @returns {string}
  */
 function generateDemiAiguillageTable(advType) {
-    const config = ADV_CONFIG[advType];
-    const labels = DEMI_AIG_CONFIG; // Utilise la configuration par objet
+    const config = ADV_CONFIG_NORMALIZED[advType];
+    const labels = DEMI_AIG_CONFIG;
     const cols = config.demiAiguillageCols;
 
     if (cols === 0) return '';
@@ -276,8 +351,10 @@ function generateDemiAiguillageTable(advType) {
 function updateForm() {
     const advType = document.getElementById('advType').value;
     const advForm = document.getElementById('advForm');
-    
-    // Onglets conditionnels
+    const generalTypeInput = document.getElementById('general_2');
+    if (generalTypeInput) {
+        generalTypeInput.value = advType; 
+    }
     const demiAiguillageTabBtn = document.querySelector('.tab-btn[data-tab="demiAiguillage"]');
     const demiAiguillageContent = document.getElementById('demi-aiguillage-content');
     const demiAiguillageTabPane = document.getElementById('tab-demiAiguillage');
@@ -285,12 +362,11 @@ function updateForm() {
     const ecartementTabBtn = document.querySelector('.tab-btn[data-tab="ecartement"]');
     const attachesTabBtn = document.querySelector('.tab-btn[data-tab="attaches"]');
     
-    // Conteneurs des onglets
     const ecartementMainContainer = document.getElementById('ecartement-main-container');
     const attachesMainContainer = document.getElementById('attaches-main-container');
 
     const specificEcartementSections = document.querySelectorAll('#tab-ecartement .ecartement-type-content');
-    const specificAttachesSections = document.querySelectorAll('#tab-attaches .attaches-type-content'); // Nouveau ciblage
+    const specificAttachesSections = document.querySelectorAll('#tab-attaches .attaches-type-content');
     
     const croisementContainer = document.querySelector('#tab-croisement .voie-type-container');
     const specificCroisementSections = document.querySelectorAll('.croisement-type-content[data-type]');
@@ -303,38 +379,30 @@ function updateForm() {
 
     advForm.classList.remove('hidden');
 
-    const config = ADV_CONFIG[advType];
+    const config = ADV_CONFIG_NORMALIZED[advType];
     const advTypeLower = advType.toLowerCase();
     
-    // GESTION DE L'ONGLET CROISEMENT
     specificCroisementSections.forEach(section => section.classList.add('hidden-adv-type'));
-    const targetCroisement = document.querySelector(`.croisement-type-content[data-type="${advTypeLower}"]`);
+    const targetCroisement = document.querySelector(`.croisement-type-content[data-type="${advTypeLower === 'tj' ? 'tj' : advTypeLower}"]`);
     if (targetCroisement) {
         targetCroisement.classList.remove('hidden-adv-type');
     }
     croisementContainer.setAttribute('data-type', advTypeLower);
 
-    // GESTION DE L'ONGLET ÉCARTEMENT (Image + Inputs)
     specificEcartementSections.forEach(section => section.classList.add('hidden-adv-type'));
     const targetEcartement = document.querySelector(`#tab-ecartement .ecartement-type-content[data-type="${advTypeLower}"]`);
     
-    // GESTION DE L'ONGLET ATTACHES (Tableau + Image)
     specificAttachesSections.forEach(section => section.classList.add('hidden-adv-type'));
     const targetAttaches = document.querySelector(`#tab-attaches .attaches-type-content[data-type="${advTypeLower}"]`);
 
     
     if (targetEcartement && targetAttaches) {
-        // Affichage des onglets Écartement et Attaches
         ecartementTabBtn.classList.remove('hidden');
         attachesTabBtn.classList.remove('hidden');
-
-        // Contenu Ecartement (Image + Inputs)
         targetEcartement.classList.remove('hidden-adv-type');
         ecartementMainContainer.setAttribute('data-type', advTypeLower);
 
         const ecartementInputsDiv = targetEcartement.querySelector(`.ecartement-img-${advTypeLower}`);
-        
-        // --- STRUCTURE FLEXBOX POUR ÉCARTEMENT ---
         let ecartementInputsHTML = `
             <div class="ecartement-visual">
                 ${ecartementInputsDiv.querySelector('img').outerHTML}
@@ -350,10 +418,6 @@ function updateForm() {
         
         ecartementInputsHTML += `</div>`;
         ecartementInputsDiv.innerHTML = ecartementInputsHTML; 
-        // ---------------------------------------------------
-
-
-        // Contenu Attaches (Tableau + Image)
         targetAttaches.classList.remove('hidden-adv-type');
         attachesMainContainer.setAttribute('data-type', advTypeLower);
 
@@ -365,27 +429,108 @@ function updateForm() {
         attachesTabBtn.classList.add('hidden');
     }
 
-    
-    // GESTION DE L'ONGLET DEMI-AIGUILLAGE
-    if (config.demiAiguillageCols > 0) { // BS ou TJD
+    if (config.demiAiguillageCols > 0) {
         demiAiguillageTabBtn.classList.remove('hidden');
         demiAiguillageTabPane.classList.remove('hidden');
         demiAiguillageContent.innerHTML = generateDemiAiguillageTable(advType);
-    } else { // TO
+    } else {
         demiAiguillageTabBtn.classList.add('hidden');
         demiAiguillageTabPane.classList.add('hidden');
-        
-        // Si l'onglet actif est un onglet qui vient d'être masqué (demiAiguillage, ecartement ou attaches), basculer sur 'general'
         const currentActiveTab = document.querySelector('.tab-btn.active').getAttribute('data-tab');
         if (currentActiveTab === 'demiAiguillage' || currentActiveTab === 'ecartement' || currentActiveTab === 'attaches') {
              switchTab('general');
         }
     }
 }
+let traversesChartInstance = null;
+let jointsChartInstance = null;
 
 /**
- * Gère le changement d'onglet (navigation).
- * @param {string} tabId - L'ID de l'onglet cible (ex: 'general').
+ * @returns {Chart} Instance du graphique.
+ */
+function initTraversesChart() {
+    const ctx = document.getElementById('traversesChart').getContext('2d');
+    return new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Bois en bon état', 'Bois à remplacer'],
+            datasets: [{
+                data: [0, 0],
+                backgroundColor: ['#28a745', '#dc3545'],
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            aspectRatio: 1.5,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+/**
+ * @returns {Chart}
+ */
+function initJointsChart() {
+    const ctx = document.getElementById('jointsChart').getContext('2d');
+    return new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Joints en bon état', 'Joints à remplacer', 'Joints à graisser'],
+            datasets: [{
+                label: 'Nombre de joints',
+                data: [0, 0, 0],
+                backgroundColor: ['#e2df13ff', '#eb7d16ff', '#e93f15ff'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            aspectRatio: 1.5,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                title: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+function updateCharts() {
+    const bonBois = parseFloat(document.getElementById('bois_1').value) || 0;
+    const aRemplacerBois = parseFloat(document.getElementById('bois_2').value) || 0;
+    const bonJoints = parseFloat(document.getElementById('bois_3').value) || 0;
+    const aRemplacerJoints = parseFloat(document.getElementById('bois_4').value) || 0;
+    const aGraisserJoints = parseFloat(document.getElementById('bois_5').value) || 0;
+
+    if (traversesChartInstance) {
+        traversesChartInstance.data.datasets[0].data = [bonBois, aRemplacerBois];
+        traversesChartInstance.update();
+    }
+    if (jointsChartInstance) {
+        jointsChartInstance.data.datasets[0].data = [bonJoints, aRemplacerJoints, aGraisserJoints];
+        jointsChartInstance.update();
+    }
+}
+
+
+/**
+ * @param {string} tabId
  */
 function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -412,26 +557,21 @@ function hideContextMenu() {
 }
 
 /**
- * Réinitialise la valeur d'un élément de formulaire à la valeur par défaut ("").
- * @param {HTMLInputElement|HTMLSelectElement} inputElement - L'élément à effacer.
+ * @param {HTMLInputElement|HTMLSelectElement} inputElement
  */
 function resetInputValue(inputElement) {
-    // Réinitialise la valeur pour input (text/number) et select
     inputElement.value = '';
     inputElement.dispatchEvent(new Event('change'));
 }
 
 /**
- * Fonction de réinitialisation principale du tableau.
- * @param {HTMLElement} table - L'élément <table> ciblé.
+ * @param {HTMLElement} table
  */
 function resetAllTableInputs(table) {
     if (!table) return;
-    // Cibler les inputs dans les selects et les inputs des demi-aiguillages
     table.querySelectorAll('.table-input').forEach(input => {
         resetInputValue(input);
     });
-    // Cibler les cellules contenteditable du tableau Attaches
     table.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
         cell.innerText = '';
         cell.dispatchEvent(new Event('change'));
@@ -439,16 +579,13 @@ function resetAllTableInputs(table) {
 }
 
 /**
- * Fonction de copie de colonne (Aig 1/Gauche vers les autres).
- * @param {HTMLElement} table - L'élément <table> ciblé.
- * @param {number} sourceColIndex - L'index de la colonne source à copier (ex: 1 pour Aig 1/Gauche).
+ * @param {HTMLElement} table
+ * @param {number} sourceColIndex 
  */
 function copyColumn(table, sourceColIndex) {
     table.querySelectorAll('tbody tr').forEach((row) => {
         const cells = row.querySelectorAll('td');
         if (cells.length > sourceColIndex) {
-            
-            // 1. Récupérer la valeur de la cellule source (peut être un input ou contenteditable)
             const sourceCell = cells[sourceColIndex];
             const sourceInput = sourceCell.querySelector('.table-input');
             let sourceValue;
@@ -460,11 +597,7 @@ function copyColumn(table, sourceColIndex) {
             } else {
                 return;
             }
-            
-            // 2. Parcourir toutes les colonnes de contenu (index 1 à max)
             cells.forEach((td, index) => {
-                // On s'assure d'être dans une colonne de contenu (index > 0)
-                // ET que ce n'est PAS la colonne source
                 if (index > 0 && index !== sourceColIndex) { 
                     const targetInput = td.querySelector('.table-input');
                     
@@ -480,11 +613,688 @@ function copyColumn(table, sourceColIndex) {
         }
     });
 }
-// --- Gestion des Événements ---
+
+
+/**
+ * @param {string} advType
+ * @returns {Object}
+ */
+function collectCroisementData(advType) {
+    const data = {};
+    const croisementContainer = document.querySelector(`.croisement-type-content[data-type="${advType.toLowerCase() === 'tj' ? 'tj' : advType.toLowerCase()}"]`);
+
+    if (!croisementContainer) return data;
+    const inputs = croisementContainer.querySelectorAll('input[name]');
+    const mappingBS = {
+        'croisement_1': 'p2p_g', 
+        'croisement_2': 'p2p_d', 
+        'croisement_3': 'ep_cr_g',
+        'croisement_4': 'ep_cr_d',
+        'croisement_5': 'ep_cal_g',
+        'croisement_6': 'ep_cal_d',
+        'croisement_7': 'nb_cales_g',
+        'croisement_8': 'nb_cales_d',
+        'croisement_9': 'coeur_num', 
+        'croisement_10': 'coeur_etat' 
+    };
+    const mappingTJ = {
+        'croisement_h_1': 'ep_cr_g_h',
+        'croisement_h_2': 'ep_cal_g_h',
+        'croisement_h_3': 'nb_cal_g_h',
+        'croisement_h_4': 'p2p_g_h',
+        'croisement_h_5': 'p2p_d_h',
+        'croisement_h_6': 'ep_cr_d_h',
+        'croisement_h_7': 'ep_cal_d_h',
+        'croisement_h_8': 'nb_cal_d_h',
+        'croisement_h_9': 'coeur2c_num_h',
+        // Cœur Bas (b)
+        'croisement_b_1': 'ep_cr_g_b',
+        'croisement_b_2': 'ep_cal_g_b',
+        'croisement_b_3': 'nb_cal_g_b',
+        'croisement_b_4': 'p2p_g_b',
+        'croisement_b_5': 'p2p_d_b',
+        'croisement_b_6': 'ep_cr_d_b',
+        'croisement_b_7': 'ep_cal_d_b',
+        'croisement_b_8': 'nb_cal_d_b',
+        'croisement_b_9': 'coeur2c_num_b',
+        // Cœur de Traversée (t)
+        'croisement_t_h_g': 'p2pt_h_g',
+        'croisement_t_h_d': 'p2pt_h_d',
+        'croisement_l_p_g': 'libre_passage_g',
+        'croisement_l_p_d': 'libre_passage_d',
+        'croisement_t_b_g': 'p2pt_b_g',
+        'croisement_t_b_d': 'p2pt_b_d',
+        'croisement_c_t_g': 'coeur2t_num_g',
+        'croisement_c_t_d': 'coeur2t_num_d'
+    };
+
+    const mappingTO = {
+        // Cœur Haut (h_t)
+        'croisement_h_t_1': 'p2p_g_h', 
+        'croisement_h_t_2': 'p2p_d_h',
+        'croisement_h_t_3': 'coeur2c_num_h',
+        // Cœur Bas (b_t)
+        'croisement_b_t_1': 'p2p_g_b', 
+        'croisement_b_t_2': 'p2p_d_b',
+        'croisement_b_t_3': 'coeur2c_num_b',
+        // Cœur de Traversée (t_t)
+        'croisement_t_t_h_g': 'p2pt_h_g', 
+        'croisement_t_t_h_d': 'p2pt_h_d', 
+        'croisement_t_l_p_g': 'libre_passage_g',
+        'croisement_t_l_p_d': 'libre_passage_d',
+        'croisement_t_t_b_g': 'p2pt_b_g', 
+        'croisement_t_t_b_d': 'p2pt_b_d', 
+        'croisement_t_c_t_g': 'coeur2t_num_g',
+        'croisement_t_c_t_d': 'coeur2t_num_d'
+    };
+
+    let currentMapping;
+    if (advType === 'BS') {
+        currentMapping = mappingBS;
+    } else if (advType === 'TJ') {
+        currentMapping = mappingTJ;
+    } else if (advType === 'TO') {
+        currentMapping = mappingTO;
+    } else {
+        return data;
+    }
+
+    inputs.forEach(input => {
+        const dbKey = currentMapping[input.name];
+        if (dbKey) {
+            let value = input.value.trim();
+            
+            if (dbKey !== 'coeur_etat' && value !== '') {
+                let parsedValue = parseInt(value, 10);
+                if (isNaN(parsedValue)) {
+                    parsedValue = parseFloat(value);
+                }
+                
+                if (!isNaN(parsedValue)) {
+                    value = parsedValue;
+                } else {
+                    value = null;
+                }
+            } else if (value === '') {
+                 if (dbKey !== 'coeur_etat') {
+                     value = null;
+                 }
+            }
+            
+            data[dbKey] = value;
+        }
+    });
+
+    return data;
+}
+
+/**
+ * @returns {Object}
+ */
+function collectEcartementData() {
+    const data = {};
+    const inputs = document.querySelectorAll('#tab-ecartement input[name^="ecartement_"]');
+
+    inputs.forEach(input => {
+        const indexMatch = input.name.match(/(\d+)$/);
+        if (indexMatch) {
+            const index = indexMatch[1];
+            const dbKey = `ecart_${index}`;
+            let value = input.value.trim();
+
+            if (value !== '') {
+                // Conversion numérique
+                let parsedValue = parseFloat(value);
+                if (!isNaN(parsedValue)) {
+                    // Les écartements sont souvent des entiers
+                    value = Math.round(parsedValue); 
+                } else {
+                    value = null; 
+                }
+            } else {
+                value = null;
+            }
+            
+            data[dbKey] = value;
+        }
+    });
+
+    // Nettoyage: supprimer les clés nulles
+    Object.keys(data).forEach(key => (data[key] === null) && delete data[key]);
+    
+    return data;
+}
+
+/**
+ * @returns {Object}
+ */
+function collectAttachesData() {
+    const data = {};
+    const cells = document.querySelectorAll('#tab-attaches td[contenteditable="true"]');
+
+    cells.forEach(cell => {
+        const name = cell.getAttribute('data-name'); // Ex: attaches_efficaces_1p
+        let value = cell.innerText.trim();
+
+        if (name && value !== '') {
+            const parts = name.split('_'); 
+            const zone = parts.pop(); // Ex: 1 ou 1p
+            const type = parts[1]; // efficaces ou inefficaces
+            
+            // La zone (ex: '1p') est déjà le nom de clé BDD sécurisé.
+            const safeZone = zone; 
+            let dbKey = '';
+            
+            if (type === 'efficaces') {
+                dbKey = `att_e_${safeZone}`; // Ex: att_e_1p
+            } else if (type === 'inefficaces') {
+                dbKey = `att_i_${safeZone}`; // Ex: att_i_1p
+            }
+            
+            if (dbKey) {
+                let parsedValue = parseInt(value, 10);
+                value = isNaN(parsedValue) ? null : parsedValue;
+
+                if (value !== null) {
+                    data[dbKey] = value;
+                }
+            }
+        }
+    });
+
+    return data;
+}
+
+/**
+ * @returns {Object}
+ */
+function collectBoisJointsData() {
+    const boisBon = parseFloat(document.getElementById('bois_1')?.value) || null;
+    const boisRemp = parseFloat(document.getElementById('bois_2')?.value) || null;
+    const jointsBon = parseFloat(document.getElementById('bois_3')?.value) || null;
+    const jointsRemp = parseFloat(document.getElementById('bois_4')?.value) || null;
+    const jointsGraisser = parseFloat(document.getElementById('bois_5')?.value) || null;
+    const etatRails = document.getElementById('bois_6')?.value || null;
+
+    const data = {
+        // Mappage basé sur les exemples JSON (/bs, /tj, /to)
+        bois_bon: boisBon, 
+        bois_a_remp: boisRemp,
+        joints_bon: jointsBon,
+        joints_a_repr: jointsRemp,
+        joints_a_graisser: jointsGraisser,
+        etat_rails: etatRails 
+    };
+    
+    // Nettoyage: supprimer les clés nulles ou vides
+    Object.keys(data).forEach(key => (data[key] === null || data[key] === '') && delete data[key]);
+
+    // Re-nettoyage pour l'état des rails si sélection par défaut 'bon' (non nécessaire dans la BD)
+    if (data.etat_rails === 'bon') delete data.etat_rails;
+
+    return data;
+}
+
+
+/**
+ * Collecte les données de demi-aiguillage et les structure au format JSON attendu (Array de JSONs).
+ * @param {string} advType - Le type d'ADV ('BS' ou 'TJ').
+ * @returns {Array<Object>} Un tableau d'objets, un par demi-aiguillage.
+ */
+function collectDemiAiguillageData(advType) {
+    const advName = document.getElementById('general_1').value || null;
+    const demiAigTable = document.querySelector('#tab-demiAiguillage table');
+    const demiAigRaw = [];
+    const demiAigData = [];
+    
+    if (!demiAigTable || ADV_CONFIG_NORMALIZED[advType].demiAiguillageCols === 0) {
+        return demiAigData;
+    }
+
+    const colCount = ADV_CONFIG_NORMALIZED[advType].demiAiguillageCols;
+    const colLabels = (advType === 'BS') ? ['D', 'G'] : Array.from({ length: 8 }, (_, i) => String(i + 1));
+    const isBS = advType === 'BS';
+
+    // 1. Collecte des données brutes par colonne
+    for (let j = 1; j <= colCount; j++) {
+        let aiguillageData = {
+            adv: advName,
+            adv_type: colLabels[j - 1], // D/G pour BS, 1-8 pour TJ
+        };
+        let hasData = false;
+
+        // On itère sur les 15 champs (lignes)
+        for (let i = 1; i <= 15; i++) {
+            const row = demiAigTable.querySelector(`tr[data-row-index="${i}"]`);
+            if (!row) continue;
+
+            const cell = row.querySelector(`td[data-col-index="${j}"]`);
+            if (!cell) continue;
+
+            const fieldName = DEMI_AIG_FIELD_MAPPING[i];
+            let value = null;
+
+            const input = cell.querySelector('.table-input');
+            if (input) {
+                if (input.tagName === 'SELECT') {
+                    const selectedOptionValue = input.value.trim();
+                    if (selectedOptionValue !== '') {
+                        
+                        // --- CAS SPÉCIAUX POUR LES CHAÎNES DE SORTIE (Lignes 1, 2, 6, 8, 12, 15) ---
+                        if (i === 1) { // Bavures
+                             // aucune bavure / bavures éliminées par meulage
+                             value = (selectedOptionValue === 'aucune') ? 'aucune bavure' : DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
+                        } else if (i === 2) { // Ebrechure aiguille
+                             // aucune ebrechure / grooose ebrechure (selon exemple)
+                             value = (selectedOptionValue === 'aucune') ? 'aucune ebrechure' : 'grooose ebrechure';
+                        } else if ([6, 8, 12, 15].includes(i)) { // Classements
+                             // Bon (majuscule) / VA / VR / VI
+                             value = DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
+                        } else {
+                            // Cas standard pour les autres selects (LCA, LA Pente, Contact Fente)
+                            value = DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
+                        }
+                    }
+                } else if (input.type === 'number' || input.type === 'text') {
+                    const inputValue = input.value.trim();
+                    if (inputValue !== '') {
+                        // Tenter la conversion en nombre
+                        let parsedValue = parseFloat(inputValue);
+                        value = (i === 7) ? parseInt(inputValue, 10) : parsedValue;
+                        value = isNaN(value) ? inputValue : value;
+                    }
+                }
+            }
+
+            // Exclure les champs spécifiques à BS pour les TJ
+            const isContactField = ['ctc_fente', 'taille_ebrechure_fente', 'taille_tot_ebrechure'].includes(fieldName);
+            if (!isBS && isContactField) {
+                 aiguillageData[fieldName] = null;
+            } else {
+                 aiguillageData[fieldName] = (value === '' || value === 'NaN') ? null : value;
+            }
+
+            // Si une valeur est présente (non null), on considère qu'il y a des données pour cet aiguillage
+            if (aiguillageData[fieldName] !== null) {
+                hasData = true;
+            }
+        }
+
+        // Ajouter uniquement les aiguillages avec au moins un champ renseigné (sauf adv et adv_type)
+        if (hasData) {
+             demiAigRaw.push(aiguillageData);
+        }
+    }
+    
+    // 2. Reconstruction des objets pour forcer l'ordre des clés (pour l'affichage console)
+    demiAigRaw.forEach(rawItem => {
+        const orderedItem = {};
+        DEMI_AIG_OUTPUT_ORDER.forEach(key => {
+            orderedItem[key] = rawItem[key] !== undefined ? rawItem[key] : null;
+        });
+        if (orderedItem.adv_type !== null) {
+             demiAigData.push(orderedItem);
+        }
+    });
+
+    return demiAigData;
+}
+
+
+/**
+ * @param {number} value
+ * @returns {string}
+ */
+const formatPercentage = (value) => {
+    if (typeof value !== 'number' || isNaN(value)) return "0.00";
+    return value.toFixed(2);
+}
+
+/**
+ * @param {Object} data
+ */
+function calculateSpecificDataPercentages(data) {
+    const attachZones = new Set();
+    Object.keys(data).forEach(key => {
+        // Capture les zones sécurisées (ex: 1, 2, 1p, 2p)
+        const match = key.match(/^att_[ei]_(.+)$/); 
+        if (match) attachZones.add(match[1]);
+    });
+
+    attachZones.forEach(zone => {
+        const keyE = `att_e_${zone}`;
+        const keyI = `att_i_${zone}`;
+        
+        const countE = data[keyE] || 0;
+        const countI = data[keyI] || 0;
+        const total = countE + countI;
+
+        if (total > 0) {
+            // Utilisation de la clé SANS apostrophe (ex: att_e_pct_1p)
+            data[`att_e_pct_${zone}`] = formatPercentage(countE / total); 
+            data[`att_i_pct_${zone}`] = formatPercentage(countI / total);
+        } else {
+            data[`att_e_pct_${zone}`] = "0.00"; 
+            data[`att_i_pct_${zone}`] = "0.00";
+        }
+    });
+    
+    // ... (Reste de la fonction pour bois/joints)
+    const boisBon = data.bois_bon || 0;
+    const boisRemp = data.bois_a_remp || 0;
+    const totalBois = boisBon + boisRemp;
+
+    if (totalBois > 0) {
+        data.bois_pct_remp = formatPercentage(boisRemp / totalBois);
+    } else {
+        data.bois_pct_remp = "0.00";
+    }
+    const jointsBon = data.joints_bon || 0;
+    const jointsRemp = data.joints_a_repr || 0;
+    const totalJoints = jointsBon + jointsRemp; 
+
+    if (totalJoints > 0) {
+        data.joints_pct_remp = formatPercentage(jointsRemp / totalJoints);
+    } else {
+        data.joints_pct_remp = "0.00";
+    }
+}
+
+
+/**
+ * @param {string} advType
+ * @returns {Object}
+ */
+function collectSpecificTechnicalData(advType) {
+    let specificData = {};
+
+    // 1. Croisement
+    const croisementData = collectCroisementData(advType);
+    specificData = { ...specificData, ...croisementData };
+    
+    // 2. Écartement
+    const ecartementData = collectEcartementData();
+    specificData = { ...specificData, ...ecartementData };
+    
+    // 3. Attaches
+    const attachesData = collectAttachesData();
+    specificData = { ...specificData, ...attachesData };
+    
+    // 4. Bois/Joints
+    const boisJointsData = collectBoisJointsData();
+    specificData = { ...specificData, ...boisJointsData };
+
+    // --- 5. Calcul des Pourcentages ---
+    calculateSpecificDataPercentages(specificData);
+
+    // 6. Normalisation et Ajout des clés ADV
+    // Normalisation du Type pour la base de données (TJ -> TJ)
+    specificData.type = (advType === 'TJ') ? 'TJ' : advType;
+    
+    // Ajout du nom ADV pour l'insertion
+    specificData.adv = document.getElementById('general_1').value;
+
+    return specificData;
+}
+
+
+/**
+ * @returns {{generalData: Object, specificData: Object, demiAiguillageData: Array<Object>}} Les données séparées.
+ */
+function splitFormData() {
+    const advType = document.getElementById('advType').value;
+    
+    if (!advType) {
+        console.warn("Aucun type d'ADV sélectionné.");
+        return { generalData: null, specificData: null, demiAiguillageData: null };
+    }
+    const advName = document.getElementById('general_1').value;
+    const tangente = document.getElementById('general_5').value;
+    const latitude = document.getElementById('general_3').value;
+    const longitude = document.getElementById('general_4').value;
+
+    const generalData = {
+        adv: advName, 
+        type: advType, 
+        lat: parseFloat(latitude) || null,
+        long: parseFloat(longitude) || null,
+        tangente: parseFloat(tangente) || null,
+        modele: document.getElementById('general_6').value,
+        plancher: document.getElementById('general_7').value,
+        pose: document.getElementById('general_8').value,
+        rails: document.getElementById('general_9').value,
+        type_attaches: document.getElementById('general_10').value,
+        sens_deviation: document.getElementById('general_11').value
+    };
+    // Données techniques spécifiques (Croisement, Ecartement, Attaches, Bois/Joints)
+    const specificData = collectSpecificTechnicalData(advType);
+    
+    // Données de Demi-Aiguillage
+    const demiAiguillageData = collectDemiAiguillageData(advType);
+
+    return { generalData, specificData, demiAiguillageData };
+}
+
+/**
+ * Envoie les données à la route API spécifiée via POST.
+ * @param {string} url - L'URL de l'API.
+ * @param {Object|Array} data - Les données à envoyer.
+ * @returns {Promise<Object>} La réponse JSON de l'API.
+ */
+async function postData(url, data) {
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Erreur HTTP ${response.status} sur ${url}: ${errorText}`);
+        }
+        return response.json();
+    } catch (error) {
+        console.error('Erreur lors de la soumission des données à ' + url + ':', error);
+        throw error; 
+    }
+}
+
+/**
+ * Orchestre la soumission de toutes les parties du formulaire aux routes backend.
+ */
+/**
+ * Orchestre la soumission de toutes les parties du formulaire aux routes backend 
+ * (basées sur les noms des tables de la BDD).
+ */
+async function sendFormData() {
+    const { generalData, specificData, demiAiguillageData } = splitFormData();
+    
+    // Si generalData n'est pas fourni, le type sera null, ce qui est géré.
+    const advType = generalData?.type.toLowerCase(); 
+
+    if (!generalData || !advType) {
+        console.error("Impossible de soumettre : Données générales manquantes ou type ADV invalide.");
+        return;
+    }
+    
+    console.log('--- Démarrage de la soumission de l\'ADV ---');
+
+    let success = true;
+
+    // 1. Soumission des Données Générales (Table: general_data)
+    try {
+        const generalUrl = '/api/general_data';
+        console.log(`POST ${generalUrl} avec:`, generalData);
+        await postData(generalUrl, generalData);
+        console.log('✅ Soumission Données Générales réussie.');
+    } catch (e) {
+        console.error('❌ Échec de la soumission des données générales.');
+        success = false;
+    }
+
+    // 2. Soumission des Données Spécifiques (Table: adv_bs, adv_tj, adv_to)
+    if (success) {
+        try {
+            const specificUrl = `/api/adv_${advType}`; // Construit /adv_bs, /adv_tj, ou /adv_to
+            console.log(`POST ${specificUrl} avec:`, specificData);
+            await postData(specificUrl, specificData);
+            console.log(`✅ Soumission Données Spécifiques (ADV_${advType.toUpperCase()}) réussie.`);
+        } catch (e) {
+            console.error('❌ Échec de la soumission des données spécifiques.');
+            success = false;
+        }
+    }
+
+    // 3. Soumission des Données de Demi-Aiguillage (Table: b2v_da)
+    if (success && (advType === 'bs' || advType === 'tj') && demiAiguillageData.length > 0) {
+        try {
+            const daUrl = '/api/b2v_da';
+            console.log(`POST ${daUrl} avec:`, demiAiguillageData);
+            // Soumission du tableau d'objets (chaque élément est un demi-aiguillage)
+            await postData(daUrl, demiAiguillageData); 
+            console.log('✅ Soumission Données Demi-Aiguillage (b2v_da) réussie.');
+        } catch (e) {
+            console.error('❌ Échec de la soumission des données de demi-aiguillage.');
+            success = false;
+        }
+    }
+    
+    if (success) {
+        console.log("🎉 Création de l'ADV complétée avec succès !");
+    } else {
+        console.error("🛑 La création de l'ADV a échoué.");
+    }
+}
+
+
+let map;
+let marker = null;
+let advMarkers;
+const latInputId = 'general_3';
+const lngInputId = 'general_4';
+// Définition de coordonnées initiales (ex: Paris)
+const initialLat = 48.8566;
+const initialLng = 2.3522;
+
+
+/**
+ * Initialise la carte Leaflet et attache les écouteurs.
+ */
+function initMap() {
+    // Vérifier si Leaflet est chargé et si l'élément map existe
+    if (typeof L === 'undefined' || !document.getElementById('map')) {
+        console.error("Leaflet ou l'élément 'map' n'est pas prêt.");
+        return;
+    }
+
+    // Initialisation de la carte sur la div 'map'
+    map = L.map('map').setView([initialLat, initialLng], 13); // Zoom par défaut sur Paris
+
+    advMarkers = L.layerGroup(); // Initialisation du groupe de marqueurs
+    
+    // Définition des couches de tuiles (Plan Standard et Satellite)
+    const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri'
+    });
+
+    // Ajouter la couche Satellite par défaut
+    satelliteLayer.addTo(map);
+
+    // Contrôle des couches
+    L.control.layers({
+        "Plan Standard": normalLayer,
+        "Satellite": satelliteLayer
+    }).addTo(map);
+
+    advMarkers.addTo(map); // Ajout du groupe de marqueurs à la carte
+    
+    // Attachement des écouteurs d'événements aux champs d'entrée
+    const latInput = document.getElementById(latInputId);
+    const lngInput = document.getElementById(lngInputId);
+    
+    // Écoute des événements 'input' pour une mise à jour immédiate
+    if (latInput && lngInput) {
+        latInput.addEventListener('input', handleCoordinateChange);
+        lngInput.addEventListener('input', handleCoordinateChange);
+
+        // Assurer l'initialisation des valeurs si l'HTML ne les a pas
+        if (!latInput.value) latInput.value = initialLat;
+        if (!lngInput.value) lngInput.value = initialLng;
+        
+        // --- CORRECTION: Déclenchement de la mise à jour initiale ---
+        // Simule le changement, forçant l'appel à updateMapMarker() qui contient map.invalidateSize()
+        handleCoordinateChange(); 
+    }
+}
+
+
+/**
+ * Gère les changements dans les inputs de coordonnées.
+ */
+function handleCoordinateChange() {
+    const lat = parseFloat(document.getElementById(latInputId).value);
+    const lng = parseFloat(document.getElementById(lngInputId).value);
+
+    // Vérification que les valeurs sont des nombres valides
+    if (map && !isNaN(lat) && lat >= -90 && lat <= 90 && !isNaN(lng) && lng >= -180 && lng <= 180) {
+        const advName = document.getElementById('general_1').value || 'Point de visualisation';
+        updateMapMarker(lat, lng, advName);
+    } else if (map) {
+         // Retirer le marqueur si les coordonnées sont invalides ou manquantes
+         if (marker) {
+            map.removeLayer(marker);
+            marker = null;
+        }
+    }
+}
+
+
+/**
+ * Met à jour la position du marqueur et l'affichage de la carte.
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @param {string} popupText - Texte à afficher dans la popup
+ */
+function updateMapMarker(lat, lng, popupText = 'Point de visualisation') {
+    if (!map) return; // S'assurer que la carte est initialisée
+
+    // S'assurer que le groupe de marqueurs est vide
+    advMarkers.clearLayers();
+
+    // Si un marqueur existait, le retirer de la carte
+    if (marker) {
+        map.removeLayer(marker);
+    }
+
+    // Créer et ajouter le nouveau marqueur au groupe et à la carte
+    const newLatLng = L.latLng(lat, lng);
+    marker = L.marker(newLatLng)
+        .bindPopup(`<b>${popupText}</b>`)
+        .openPopup();
+        
+    advMarkers.addLayer(marker);
+
+    // Centrer la carte sur le nouveau marqueur
+    map.setView(newLatLng, map.getZoom() < 13 ? 13 : map.getZoom()); 
+    
+    // Invalider la taille après un court délai pour assurer le bon rendu de la carte
+    // Ceci est crucial lorsque l'élément 'map' est initialement masqué (dans un onglet inactif).
+    setTimeout(() => {
+        map.invalidateSize();
+    }, 100);
+}
+
+// --- L'intégralité du code de gestion du DOM était ici ---
 
 document.addEventListener('DOMContentLoaded', () => {
-    
-    // Initialisation des onglets
+    initMap(); 
     document.querySelectorAll('.tabs-nav').forEach(nav => {
         nav.addEventListener('click', (event) => {
             if (event.target.classList.contains('tab-btn')) {
@@ -496,28 +1306,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('advForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        console.log('Récupération des données du formulaire...');
-        alert('Soumission du formulaire ADV : Données prêtes à être traitées.');
-    });
+        const { generalData, specificData, demiAiguillageData } = splitFormData(); 
+        
+        if (generalData) {
+            console.log('--- Aperçu des Données à Envoyer ---');
+            console.log('1. Générales:', generalData);
+            console.log(`2. Spécifiques (${generalData.type}):`, specificData);
+            if (demiAiguillageData && demiAiguillageData.length > 0) {
+                 console.log('3. Demi-Aiguillage:', demiAiguillageData);
+            } else if (generalData.type === 'BS' || generalData.type === 'TJ') {
+                 console.warn('3. Demi-Aiguillage : Aucune donnée de Demi-Aiguillage collectée.');
+            }
 
-    // Écouteur global pour les actions dynamiques du tableau (copie, clear)
+            // Appel de la fonction de soumission réelle
+            sendFormData();
+
+        } else {
+            console.error('Soumission annulée: Veuillez sélectionner un type d\'ADV.');
+        }
+    });
     document.getElementById('advForm').addEventListener('click', (e) => {
         const target = e.target;
         const table = target.closest('table');
         if (!table) return;
-
-        // 1. Reset Total (Case 0,0)
         if (target.id === 'reset-table-btn') {
             resetAllTableInputs(table);
             return;
         }
-
-        // 2. Clear Colonne (Icône TH)
         if (target.classList.contains('clear-col-btn')) {
             const header = target.closest('th');
             const columnIndex = parseInt(header.getAttribute('data-col-index'));
-            
-            // L'index de la TD correspond à columnIndex
             table.querySelectorAll('tbody tr').forEach((row) => {
                 const cells = row.querySelectorAll('td');
                 if (cells[columnIndex]) { 
@@ -622,7 +1440,7 @@ document.addEventListener('DOMContentLoaded', () => {
             contextMenu.style.top = `${rect.top - menuHeight}px`;
 
             applyRowBtn.classList.remove('hidden');
-            applyColBtn.classList.add('hidden'); // La copie de colonne n'est pas gérée dans ce menu
+            applyColBtn.classList.add('hidden');
         } else {
             hideContextMenu();
         }
@@ -631,133 +1449,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('click', () => {
         hideContextMenu();
     });
-});
-
-
-// Définition des variables globales pour stocker les instances de Chart
-let traversesChartInstance = null;
-let jointsChartInstance = null;
-
-/**
- * Initialise le graphique des traverses (Diagramme en Donut).
- * @returns {Chart} Instance du graphique.
- */
-function initTraversesChart() {
-    const ctx = document.getElementById('traversesChart').getContext('2d');
-    return new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Bois en bon état', 'Bois à remplacer'],
-            datasets: [{
-                data: [0, 0], // Données initiales
-                backgroundColor: ['#28a745', '#dc3545'], // Vert / Rouge
-                hoverOffset: 10
-            }]
-        },
-        options: {
-            responsive: true,
-            aspectRatio: 1.5,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                },
-                title: {
-                    display: false
-                }
-            }
-        }
-    });
-}
-
-/**
- * Initialise le graphique des joints (Diagramme à Barres).
- * @returns {Chart} Instance du graphique.
- */
-function initJointsChart() {
-    const ctx = document.getElementById('jointsChart').getContext('2d');
-    return new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: ['Joints en bon état', 'Joints à remplacer', 'Joints à graisser'],
-            datasets: [{
-                label: 'Nombre de joints',
-                data: [0, 0, 0],
-                backgroundColor: ['#e2df13ff', '#eb7d16ff', '#e93f15ff'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            aspectRatio: 1.5,
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false,
-                },
-                title: {
-                    display: false
-                }
-            }
-        }
-    });
-}
-
-/**
- * Met à jour les graphiques avec les données saisies par l'utilisateur.
- */
-function updateCharts() {
-    // 1. Récupération des données du Bois/Traverses
-    const bonBois = parseFloat(document.getElementById('bois_1').value) || 0;
-    const aRemplacerBois = parseFloat(document.getElementById('bois_2').value) || 0;
-    // L'état des rails (bois_6) est une donnée qualitative, non utilisée dans ce graphique de quantité.
-
-    // 2. Récupération des données des Joints
-    const bonJoints = parseFloat(document.getElementById('bois_3').value) || 0;
-    const aRemplacerJoints = parseFloat(document.getElementById('bois_4').value) || 0;
-    const aGraisserJoints = parseFloat(document.getElementById('bois_5').value) || 0;
-
-    // Mise à jour du graphique des traverses (Donut)
-    if (traversesChartInstance) {
-        traversesChartInstance.data.datasets[0].data = [bonBois, aRemplacerBois];
-        traversesChartInstance.update();
-    }
-
-    // Mise à jour du graphique des joints (Barres)
-    if (jointsChartInstance) {
-        jointsChartInstance.data.datasets[0].data = [bonJoints, aRemplacerJoints, aGraisserJoints];
-        jointsChartInstance.update();
-    }
-}
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    // ... (Logique existante du DOMContentLoaded) ...
-
-    // --- NOUVELLE LOGIQUE CHART.JS ---
     const tabBois = document.getElementById('tab-bois');
 
     if (tabBois) {
-        // 1. Initialisation des graphiques
-        traversesChartInstance = initTraversesChart();
-        jointsChartInstance = initJointsChart();
+        // Initialiser Chart.js ici si Chart est chargé
+        if (typeof Chart !== 'undefined') {
+            traversesChartInstance = initTraversesChart();
+            jointsChartInstance = initJointsChart();
+        } else {
+            console.error("Chart.js n'est pas chargé. Les graphiques ne fonctionneront pas.");
+        }
 
-        // 2. Ajout des écouteurs d'événements sur les inputs de la section "Bois"
         const inputsToListen = [
             document.getElementById('bois_1'),
             document.getElementById('bois_2'),
             document.getElementById('bois_3'),
             document.getElementById('bois_4'),
             document.getElementById('bois_5')
-            // 'bois_6' est qualitatif et n'affecte pas les graphiques de quantité
         ];
 
         inputsToListen.forEach(input => {
             if (input) {
-                // Écoute des événements 'input' (temps réel) et 'change'
                 input.addEventListener('input', updateCharts);
                 input.addEventListener('change', updateCharts);
             }

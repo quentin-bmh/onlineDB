@@ -124,6 +124,24 @@ body {
         border-radius: 4px;
         box-sizing: border-box; 
     }
+    .visualisation_co{
+        display: flex;
+        flex-direction: row !important;
+        gap: 10px;
+    }
+    .map-container {
+        flex: 1 1 30%;
+        justify-content: center;
+    }
+    #map {
+        height: 150px;
+        width: 100%;
+        border-radius: 6px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+
+
     .voie-type-container {
         font-family: Arial, sans-serif;
         padding: 10px;
@@ -158,7 +176,7 @@ body {
         position: relative;
         max-width: 750px;
     }
-    .croisement-type-content[data-type="tjd"],
+    .croisement-type-content[data-type="tj"],
     .croisement-type-content[data-type="to"] {
         display: flex;
         flex-direction: row;
@@ -169,16 +187,16 @@ body {
         max-width: 100%;
         overflow-x: auto;
     }
-    .croisement-type-content[data-type="tjd"] .croisement-img,
+    .croisement-type-content[data-type="tj"] .croisement-img,
     .croisement-type-content[data-type="to"] .croisement-img {
         max-width: 550px;
     }
-    .croisement-type-content[data-type="tjd"] .traverse-img,
+    .croisement-type-content[data-type="tj"] .traverse-img,
     .croisement-type-content[data-type="to"] .traverse-img {
         max-width: 550px;
     }
     
-    .croisement-type-content[data-type="tjd"] .croisement-img {
+    .croisement-type-content[data-type="tj"] .croisement-img {
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -238,7 +256,7 @@ body {
     .croisement-img-bs .coeur2c_num_h { top: 79%; left: 40%; width: 21%; height: 14%; }
     .croisement-img-bs .coeur_etat { top: 65%; left: 75%; width: 17%; height: 14%; }
     
-    /* Inputs TJD (Cœur haut/bas) */
+    /* Inputs TJ (Cœur haut/bas) */
     .container_coeur2c_h .ep_cr_g, .container_coeur2c_b .ep_cr_g { top: 4%; left: 16.87%; width: 7.9%; height: 11%; }
     .container_coeur2c_h .ep_cal_g, .container_coeur2c_b .ep_cal_g { top: 16%; left: 16.87%; width: 7.9%; height: 11%; }
     .container_coeur2c_h .nb_cal_g, .container_coeur2c_b .nb_cal_g { top: 29%; left: 16.87%; width: 7.9%; height: 11%; }
@@ -257,7 +275,7 @@ body {
     .container_coeur2c_h_t .p2p_d_h, .container_coeur2c_b_t .p2p_d_b { top: 29%; left: 62%; width: 23%; height: 11%; }
     .container_coeur2c_h_t .coeur2c_num_h_t, .container_coeur2c_b_t .coeur2c_num_b_t { top: 79%; left: 31%; width: 39%; height: 14%; }
     
-    /* Inputs Cœur de Traversée (coeur2t) pour TJD et TO */
+    /* Inputs Cœur de Traversée (coeur2t) pour TJ et TO */
     .traverse-img {
         position: relative;
     }
@@ -453,7 +471,6 @@ body {
         padding: 0;
     }
     
-    /* Styles pour la nouvelle section Écartement */
     #tab-ecartement .voie-type-container {
         padding: 20px 0;
     }
@@ -461,20 +478,19 @@ body {
         display: flex;
         justify-content: space-between;
         align-items: flex-start; 
-        gap: 15px; /* Réduit l'espace pour faire tenir les 3 éléments */
+        gap: 15px;
         padding: 10px 0;
     }
 
     .ecartement-inputs-container {
-        flex: 1 1 35%; /* L'image Écartement prend ~35% */
+        flex: 1 1 35%;
         display: flex;
         flex-direction: column;
         align-items: center;
     }
 
-    /* Style Flexbox pour aligner l'image et la liste d'inputs côte à côte */
     .ecartement-img-bs,
-    .ecartement-img-tjd,
+    .ecartement-img-tj,
     .ecartement-img-to {
         position: relative;
         max-width: 100%;
@@ -486,7 +502,7 @@ body {
     }
 
     .ecartement-visual {
-        flex: 0 0 50%; /* L'image visuelle prend 50% de l'espace disponible */
+        flex: 0 0 70%;
         position: relative; 
     }
 
@@ -500,7 +516,7 @@ body {
     }
 
     .ecartement-inputs-list {
-        flex: 0 0 45%; /* La liste d'inputs prend 45% de l'espace disponible */
+        flex: 0 0 25%;
         display: flex;
         flex-direction: column;
         gap: 8px;
@@ -509,7 +525,6 @@ body {
 
     .ecartement-inputs-list > div {
         display: flex;
-        justify-content: space-between;
         align-items: center;
         gap: 10px;
     }
@@ -517,7 +532,7 @@ body {
     .ecartement-inputs-list label {
         font-weight: normal;
         white-space: nowrap;
-        margin-right: auto;
+        margin-right: 5%;
     }
 
     .ecartement-inputs-list input[type="number"] {
@@ -529,10 +544,10 @@ body {
 
     /* Annuler les anciens styles d'image qui fixaient une largeur trop petite */
     .ecartement-img-bs img,
-    .ecartement-img-tjd img,
+    .ecartement-img-tj img,
     .ecartement-img-to img {
         width: 100%; /* La largeur est gérée par .ecartement-visual */
-        max-height: 500px;
+        max-height: 700px;
         height: auto;
         border: 1px solid #ccc;
         border-radius: 8px;

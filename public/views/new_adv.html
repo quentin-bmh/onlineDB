@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Création d'Appareil de Voie (ADV)</title>
     <link rel="stylesheet" href="/css/new_adv.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
-
     <div class="dashboard-container">
         <h1>Ajout d'ADV</h1>
 
@@ -16,7 +16,7 @@
             <select id="advType" onchange="updateForm()">
                 <option value="">-- Choisir un type --</option>
                 <option value="BS">BS</option>
-                <option value="TJD">TJD</option>
+                <option value="TJ">TJ</option>
                 <option value="TO">TO</option>
             </select>
         </section>
@@ -41,10 +41,18 @@
                             <div class="fieldset-grid"> 
                                 <div><label for="general_1">Nom ADV:</label><input type="text" id="general_1" name="general_1"></div>
                                 <div><label for="general_2">Type:</label><input type="text" id="general_2" name="general_2"></div>
-                                <div><label for="general_5">Tangente:</label><input type="number" id="general_5" name="general_5"></div>
+                                <div><label for="general_5">Tangente:</label><input type="number" step="0.001" id="general_5" name="general_5"></div>
                                 <div><label for="general_6">Modèle:</label><input type="text" id="general_6" name="general_6"></div>
-                                <div><label for="general_3">Latitude:</label><input type="number" id="general_3" name="general_3"></div>
-                                <div><label for="general_4">Longitude:</label><input type="number" id="general_4" name="general_4"></div>
+                                <div class="visualisation_co">
+                                    <div class="coordinates">
+                                        <div><label for="general_3">Latitude:</label><input type="number" step="0.000001" id="general_3" name="general_3"></div>
+                                        <div><label for="general_4">Longitude:</label><input type="number" step="0.000001" id="general_4" name="general_4"></div>
+                                    </div>
+                                    <div class="map-container">
+                                        <div id="map"></div>
+                                    </div>
+                                </div>
+                                
                             </div>
                         </fieldset>
 
@@ -80,10 +88,10 @@
                             </div>
                         </div>
 
-                        <div class="croisement-type-content hidden-adv-type" data-type="tjd">
+                        <div class="croisement-type-content hidden-adv-type" data-type="tj">
                             <div class="croisement-img">
                                 <div class="container_coeur2c_h">
-                                    <img src="../assets/coeur2c_h.png" alt="Cœur haut TJD" />
+                                    <img src="../assets/coeur2c_h.png" alt="Cœur haut TJ" />
                                     <input class="ep_cr_g" name="croisement_h_1" title="Epaisseur contre-rail haut Gauche" />
                                     <input class="ep_cal_g" name="croisement_h_2" title="Epaisseur calage haut Gauche" />
                                     <input class="nb_cal_g" name="croisement_h_3" title="Nombre cales haut Gauche" />
@@ -96,7 +104,7 @@
                                 </div>
 
                                 <div class="container_coeur2c_b">
-                                    <img src="../assets/coeur2c_b.png" alt="Cœur bas TJD" />
+                                    <img src="../assets/coeur2c_b.png" alt="Cœur bas TJ" />
                                     <input class="ep_cr_g" name="croisement_b_1" title="Epaisseur contre-rail bas Gauche" />
                                     <input class="ep_cal_g" name="croisement_b_2" title="Epaisseur calage bas Gauche" />
                                     <input class="nb_cal_g" name="croisement_b_3" title="Nombre cales bas Gauche" />
@@ -109,7 +117,7 @@
                                 </div>
                             </div>
                             <div class="traverse-img">
-                                <img src="../assets/coeur2t.png" alt="Cœur de traversée TJD" class="croisement-image" />
+                                <img src="../assets/coeur2t.png" alt="Cœur de traversée TJ" class="croisement-image" />
                                 <input class="p2pt_g_h" name="croisement_t_h_g" title="Protection de pointe Traversée haut Gauche" />
                                 <input class="p2pt_d_h" name="croisement_t_h_d" title="Protection de pointe Traversée haut Droite" />
                                 <input class="libre_passage_g" name="croisement_l_p_g" title="Libre passage Gauche" />
@@ -165,11 +173,11 @@
                             </div>
                         </div>
 
-                        <div class="ecartement-type-content hidden-adv-type" data-type="tjd">
+                        <div class="ecartement-type-content hidden-adv-type" data-type="tj">
                             <div class="ecartement-inputs-container">
-                                <div class="ecartement-img-tjd" id="ecartement-inputs-tjd">
-                                    <!-- <img src="../assets/eca_tj_new_adv.png" alt="Emplacements Écartements TJD" /> -->
-                                    <img src="../assets/tj_ecartements.jpg" alt="Emplacements Écartements TJD" />
+                                <div class="ecartement-img-tj" id="ecartement-inputs-tj">
+                                    <!-- <img src="../assets/eca_tj_new_adv.png" alt="Emplacements Écartements TJ" /> -->
+                                    <img src="../assets/tj_ecartements.jpg" alt="Emplacements Écartements TJ" />
                                 </div>
                             </div>
                         </div>
@@ -207,10 +215,10 @@
                             </div>
                         </div>
 
-                        <div class="attaches-type-content hidden-adv-type" data-type="tjd">
+                        <div class="attaches-type-content hidden-adv-type" data-type="tj">
                             <div class="attaches-section">
                                 <div class="table-wrapper">
-                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="tjd">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="tj">
                                         <thead>
                                             <tr>
                                                 <th>Zone</th>
@@ -222,7 +230,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                <img src="../assets/tj_attaches.png" alt="Zones Attaches TJD" class="attaches-img" />
+                                <img src="../assets/tj_attaches.png" alt="Zones Attaches TJ" class="attaches-img" />
                             </div>
                         </div>
 
@@ -317,6 +325,7 @@
         <li id="apply-col">Appliquer à la colonne</li>
     </ul>
     <script src="/js/new_adv.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>

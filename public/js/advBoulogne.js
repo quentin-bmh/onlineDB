@@ -6,12 +6,6 @@ let advMarkers = L.layerGroup();
 let currentType = '';
 let summaryData = [];
 
-// --- Fonctions factices (supposées exister) ---
-function getAdvDetails(adv) { /* ... */ }
-function getAdvData(data) { /* ... */ }
-function setupToggleMenu() { /* ... */ }
-function initCharts() { /* ... */ }
-// ---------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap();
@@ -19,8 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupToggleMenu();
     initCharts();
 });
- 
-// ------------------- GESTION DE LA CARTE (LEAFLET) -------------------
+
 
 function initMap() {
     map = L.map('map').setView([46.5, 2.5], 7);
@@ -136,7 +129,6 @@ function displayAdvMarkers(advList) {
     }, 200);
 }
 
-// ------------------- GESTION DES BOUTONS DE TYPE ET DE LA TABLE -------------------
 //partie où là ça fonctionne ok 
 function loadTypeButtons() {
     fetch('/api/adv_types')
@@ -220,24 +212,17 @@ function loadTypeButtons() {
 function createTable(data) {
     const tbody = document.querySelector("#advTable tbody");
     tbody.innerHTML = '';
-    
-    // Récupération des conteneurs pour manipulation
     const dataVoieContainer = document.getElementById('dataVoie-container');
     const dataContainer = document.getElementById('data');
-    const mapContainer = document.getElementById('map-container'); // NOUVEAU: Récupération du conteneur de la carte
-    
-    // Règle 1: Masquer les conteneurs de données et ajuster la carte (Réinitialisation)
+    const mapContainer = document.getElementById('map-container');
+  
     if (dataVoieContainer && dataContainer && mapContainer) {
         dataVoieContainer.classList.remove('active-adv-data');
         dataContainer.classList.remove('active-adv-data'); 
         
         dataContainer.style.display = '';
         dataVoieContainer.style.display = '';
-        
-        // NOUVEAU: Étendre la carte quand aucun ADV n'est sélectionné
         mapContainer.classList.add('map-no-adv-selected');
-        
-        // Invalider la taille de la carte après changement de conteneur
         if (map) map.invalidateSize();
     }
     
@@ -273,11 +258,7 @@ function createTable(data) {
                 return;
             }
         }
-        
-        // --- Logique de sélection standard ---
-        
         if (dataVoieContainer && dataContainer && mapContainer) {
-            // NOUVEAU: Réduire la carte et afficher les conteneurs de données
             mapContainer.classList.remove('map-no-adv-selected');
             
             dataVoieContainer.style.display = '';
@@ -285,8 +266,6 @@ function createTable(data) {
 
             dataVoieContainer.classList.add('active-adv-data');
             dataContainer.classList.add('active-adv-data');
-            
-            // Invalider la taille de la carte après changement de conteneur
             if (map) map.invalidateSize();
         }
         
@@ -329,8 +308,6 @@ const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public";
 function createDocumentButton(advName) {
     const hub = document.getElementById('hub');
     if (!hub) return;
-
-    // Suppression de l'ancien bouton
     const oldButton = document.getElementById('document-btn');
     if (oldButton) oldButton.remove();
 
@@ -350,8 +327,6 @@ function createDocumentButton(advName) {
     button.onclick = () => {
         window.open(documentUrl, '_blank'); 
     };
-    
-    // Insérer le bouton dans le hub
     hub.appendChild(button);
 }
 
@@ -435,7 +410,7 @@ function displayAdvDetails(adv) {
     plancher:       { label: 'Plancher',          key: 'plancher' },
     pose:           { label: 'Pose',              key: 'pose' },
     rail:           { label: 'Rail',              key: 'rails' },
-    sensDerivation: { label: 'Sens dérivation',   key: 'sens_deviation' },
+    sensDeviation: { label: 'Sens déviation',   key: 'sens_deviation' },
     typeAttaches:   { label: "Type d'attaches",   key: 'type_attaches' },
   };
 
@@ -681,7 +656,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
     const img_ag_tj = document.getElementById('tj_aiguille_img');
     const left_sidebar = document.getElementById('left-sidebar');
     const data_section = document.querySelector('.data-actions');
-    const dataADV = document.getElementById('data'); // Le conteneur #data
+    const dataADV = document.getElementById('data');
     const data_voie_container = document.getElementById('dataVoie-container');
     const mapEl = document.getElementById('map');
     const mapContainer = document.getElementById('map-container');
@@ -689,8 +664,6 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
     if (!next || current === next) return;
 
     const isAdvSelected = data_voie_container && data_voie_container.classList.contains('active-adv-data');
-    
-    // Logique de mise en page CSS/Grid
     if (targetId === 'voie-aiguillage') {
       infoContainer.style.display = 'none';
       img_ag_tj.style.display = 'flex';
@@ -718,17 +691,12 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       // mapEl.style.display = 'block';
       dataADV.style.display = ''; 
       data_voie_container.style.display = '';
-
-      // On s'assure que la classe est là si un ADV est sélectionné
       if (isAdvSelected) {
         mapContainer.style.display = 'block';
         dataADV.classList.add('active-adv-data');
         data_voie_container.classList.add('active-adv-data');
       } 
     }
-
-    
-    // Logique d'animation et de transition
     if (current) {
       current.classList.remove('active');
       current.style.animationName = 'slideOutDown';
@@ -755,7 +723,6 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
           const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
             .find(c => c.style.display !== 'none');
           const type = visibleType ? visibleType.dataset.type : '';
-          // showOrHideDataForAiguillage(type);
         } else {
           if (map) map.invalidateSize(); 
         }
@@ -1434,22 +1401,29 @@ function updateAttaches(adv, type) {
   const rows = targetContainer.querySelectorAll('table.attaches-table tbody tr');
 
   rows.forEach(row => {
-    const zoneCell = row.cells[0];
-    const effCell = row.cells[1];
-    const ineffCell = row.cells[2];
+        const zoneCell = row.cells[0];
+        const effCell = row.cells[1];
+        const ineffCell = row.cells[2];
 
-    if (!zoneCell || !effCell || !ineffCell) return;
+        if (!zoneCell || !effCell || !ineffCell) return;
 
-    const zone = zoneCell.textContent.trim(); // ex: "1", "2'", etc.
+        let zone = zoneCell.textContent.trim();
+        const zoneKey = zone.replace("'", 'p');
+        const keyEffCount = `att_e_${zoneKey}`;
+        const keyIneffCount = `att_i_${zoneKey}`;
+        const keyEffPct = `att_e_pct_${zoneKey}`;
+        const keyIneffPct = `att_i_pct_${zoneKey}`;
 
-    const keyEff = `att_e_pct_${zone}`;
-    const keyIneff = `att_i_pct_${zone}`;
-
-    const valEff = adv[keyEff];
-    const valIneff = adv[keyIneff];
-
-    effCell.textContent = valEff != null ? `${(parseFloat(valEff) * 100).toFixed(0)}%` : '-';
-    ineffCell.textContent = valIneff != null ? `${(parseFloat(valIneff) * 100).toFixed(0)}%` : '-';
+        const valEffCount = adv[keyEffCount];
+        const valIneffCount = adv[keyIneffCount];
+        effCell.textContent = (valEffCount != null && valEffCount !== '') ? valEffCount : '-';
+        ineffCell.textContent = (valIneffCount != null && valIneffCount !== '') ? valIneffCount : '-';
+        effCell.setAttribute('contenteditable', 'true');
+        ineffCell.setAttribute('contenteditable', 'true');
+        const valEffPct = adv[keyEffPct];
+        const valIneffPct = adv[keyIneffPct];
+        effCell.textContent = (valEffPct != null) ? `${(parseFloat(valEffPct) * 100).toFixed(0)}%` : '-';
+        ineffCell.textContent = (valIneffPct != null) ? `${(parseFloat(valIneffPct) * 100).toFixed(0)}%` : '-';
   });
 }
 

@@ -34,6 +34,14 @@ const savePermissionsButton = document.getElementById('savePermissionsButton');
 const permissionsStatusMessage = document.getElementById('permissionsStatusMessage');
 const permissionsPlaceholder = document.getElementById('permissionsPlaceholder');
 
+// NOUVELLES CONSTANTES ADV
+const tabAdv = document.getElementById('tabAdv');
+const advSection = document.getElementById('adv-section');
+const advTableBody = document.getElementById('advTableBody');
+const advLoadingIndicator = document.getElementById('advLoadingIndicator');
+const advContainer = document.getElementById('advContainer');
+const advErrorMessage = document.getElementById('advErrorMessage');
+
 
 const API_ENDPOINT = '/admin/users';
 const API_PENDING_REQUESTS = '/admin/pending-requests'; 
@@ -41,17 +49,20 @@ const API_APPROVE_REQUEST = '/admin/approve-request';
 const API_URL_LOGOUT = '/auth/logout';
 const API_CREATE_USER = '/admin/create-user';
 const API_DELETE_USER = '/admin/user';
-// NOUVEAUX ENDPOINTS POUR LA GESTION DES PERMISSIONS
 const API_PERMISSIONS_BASE = '/api/permissions';
+// NOUVEAUX ENDPOINTS ADV
+const API_ADV_LIST = '/api/general_data'; // Route GET qui renvoie tous les ADVs si pas de query param
+const API_ADV_DELETE = '/api/adv'; // Base URL pour DELETE /api/adv/:advName
 
 let allUsersData = [];
 let allPendingRequests = []; 
+let allAdvData = []; // Nouveau tableau pour les données ADV
 let sortState = { key: 'last_login', direction: 'desc' }; 
 let currentSearchTerm = '';
 let currentView = 'users';
-let currentSelectedUserPermissions = []; // Stocke l'état actuel des permissions de l'utilisateur sélectionné
-let currentSelectedUserId = null; // Stocke l'ID de l'utilisateur actuellement sélectionné
-let isCurrentUserAdmin = false; // Indicateur pour savoir si l'utilisateur sélectionné est admin
+let currentSelectedUserPermissions = []; 
+let currentSelectedUserId = null; 
+let isCurrentUserAdmin = false; 
 
 
 function displayConnectedUser() {
@@ -592,24 +603,144 @@ async function handleSelection(id) {
     }
 }
 
+// NOUVELLES FONCTIONS ADV
 
-// admin_dashboard.js (Extraction de la partie corrigée)
+/**
+ * Récupère la liste de tous les ADVs.
+ */
+async function fetchAdvData() {
+    advErrorMessage.classList.add('hidden');
+    
+    try {
+        advLoadingIndicator.classList.remove('hidden');
+        advContainer.classList.add('hidden');
+
+        // Utilisation de la route GET /api/general_data pour obtenir tous les ADV
+        const response = await fetch(API_ADV_LIST, { method: 'GET' });
+        advLoadingIndicator.classList.add('hidden');
+
+        if (!response.ok) {
+            const error = await response.json();
+            advErrorMessage.textContent = `Échec de récupération des ADVs. Code ${response.status}: ${error.message}`;
+            advErrorMessage.classList.remove('hidden');
+            return;
+        }
+
+        allAdvData = await response.json();
+        
+        renderAdvTable(allAdvData); 
+        advContainer.classList.remove('hidden');
+
+    } catch (error) {
+        console.error("Erreur de récupération des données ADV:", error);
+        advLoadingIndicator.classList.add('hidden');
+        advErrorMessage.textContent = `Erreur de connexion serveur: ${error.message}`;
+        advErrorMessage.classList.remove('hidden');
+    }
+}
+
+/**
+ * Affiche la table des ADVs.
+ * @param {Array<Object>} advs Liste des objets ADV (general_data).
+ */
+function renderAdvTable(advs) {
+    advTableBody.innerHTML = '';
+
+    if (advs.length === 0) {
+        advTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Aucun ADV enregistré.</td></tr>`;
+        return;
+    }
+
+    advs.forEach(adv => {
+        const row = advTableBody.insertRow();
+        row.className = 'hover:bg-gray-700 transition duration-150';
+        
+        const deleteButton = `
+            <button class="delete-adv-btn bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
+                    data-adv-name="${adv.adv}">
+                <span class="text-sm">🗑️</span>
+            </button>`;
+
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">${adv.adv}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.type || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.modele || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.lat || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.long || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">${deleteButton}</td> 
+        `;
+    });
+
+    document.querySelectorAll('.delete-adv-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const advName = e.currentTarget.dataset.advName;
+            handleDeleteAdv(advName, e.currentTarget);
+        });
+    });
+}
+
+/**
+ * Gère la suppression d'un ADV.
+ * @param {string} advName Le nom de l'ADV à supprimer.
+ * @param {HTMLButtonElement} buttonElement L'élément bouton pour la gestion de l'UI.
+ */
+async function handleDeleteAdv(advName, buttonElement) {
+    if (!confirm(`ATTENTION: Êtes-vous sûr de vouloir SUPPRIMER l'ADV "${advName}" ainsi que toutes ses données associées (spécifiques, demi-aiguillage) ? Cette action est irréversible.`)) {
+        return;
+    }
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = '...';
+    buttonElement.classList.remove('bg-red-600', 'hover:bg-red-700');
+    buttonElement.classList.add('bg-gray-500');
+
+    try {
+        // DELETE /api/adv/:advName
+        const response = await fetch(`${API_ADV_DELETE}/${advName}`, {
+            method: 'DELETE', 
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+            alert(`Succès : ${data.message}`);
+            fetchAdvData(); // Recharger la liste
+        } else {
+            alert(`Échec de la suppression de l'ADV "${advName}": ${data.error || data.message || 'Erreur inconnue'}`);
+        }
+
+    } catch (error) {
+        console.error("Erreur réseau lors de la suppression de l'ADV:", error);
+        alert(`Erreur de connexion serveur lors de la suppression de l'ADV "${advName}".`);
+    } finally {
+        buttonElement.disabled = false;
+        buttonElement.innerHTML = '🗑️';
+        buttonElement.classList.remove('bg-gray-500');
+        buttonElement.classList.add('bg-red-600', 'hover:bg-red-700');
+    }
+}
+
 
 function switchTab(targetSection) {
     currentView = targetSection === 'users-section' ? 'users' : 
                   targetSection === 'requests-section' ? 'requests' : 
                   targetSection === 'create-section' ? 'create' :
-                  'permissions';
+                  targetSection === 'permissions-section' ? 'permissions' :
+                  'adv'; // Nouveau cas
+    
     usersSection.classList.add('hidden');
     requestsSection.classList.add('hidden');
     createSection.classList.add('hidden'); 
     permissionsSection.classList.add('hidden');
+    advSection.classList.add('hidden'); // Masquer la nouvelle section
+    
     document.getElementById(targetSection).classList.remove('hidden');
 
     tabUsers.classList.remove('active');
     tabRequests.classList.remove('active');
     tabCreate.classList.remove('active');
     tabPermissions.classList.remove('active');
+    tabAdv.classList.remove('active'); // Nouvelle désactivation
+    
     if (targetSection === 'users-section') {
         tabUsers.classList.add('active'); 
         searchBar.classList.remove('hidden');
@@ -625,8 +756,6 @@ function switchTab(targetSection) {
         tabPermissions.classList.add('active');
         searchBar.classList.add('hidden'); 
         
-        // CORRECTION 1 : Retirer l'appel récursif à loadPermissionsSection.
-        // On assure uniquement que la liste des utilisateurs pour le SELECT est chargée.
         if (allUsersData.length === 0) {
             fetchUsersData().then(() => {
                 populateUserSelect();
@@ -634,11 +763,17 @@ function switchTab(targetSection) {
         } else {
              populateUserSelect();
         }
+    } else if (targetSection === 'adv-section') { // Nouveau cas ADV
+        tabAdv.classList.add('active'); 
+        searchBar.classList.add('hidden'); 
+        fetchAdvData(); // Charger les données ADV
     }
+    
     errorMessage.classList.add('hidden');
     requestsErrorMessage.classList.add('hidden');
     createStatusMessage.classList.add('hidden');
     permissionsStatusMessage.classList.add('hidden');
+    advErrorMessage.classList.add('hidden'); // Nouveau masquage d'erreur
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -649,16 +784,15 @@ document.addEventListener('DOMContentLoaded', () => {
     tabRequests.addEventListener('click', () => switchTab('requests-section'));
     tabCreate.addEventListener('click', () => switchTab('create-section'));
     
-    // CORRECTION 2 : Lors du clic sur l'onglet, on appelle loadPermissionsSection() 
-    // qui va d'abord appeler switchTab, puis charger les données (une seule boucle).
     tabPermissions.addEventListener('click', () => loadPermissionsSection()); 
+    // NOUVEL ÉCOUTEUR ADV
+    tabAdv.addEventListener('click', () => switchTab('adv-section'));
     
     permissionUserSelect.addEventListener('change', (e) => {
         const userId = parseInt(e.target.value, 10);
         handleSelection(userId);
     });
     
-    // NOUVEAU: Écouteur pour la sauvegarde
     savePermissionsButton.addEventListener('click', handleSavePermissions);
 
     searchBar.addEventListener('input', (e) => {
@@ -678,6 +812,5 @@ document.addEventListener('DOMContentLoaded', () => {
         logoutButton.addEventListener('click', handleLogout);
     }
     
-    // Initialiser les icônes de tri
     document.querySelector(`th[data-sort-key="${sortState.key}"]`).classList.add(`sorted-${sortState.direction}`);
 });
