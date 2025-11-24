@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modification d'Appareil de Voie (ADV)</title>
+    <link rel="stylesheet" href="/css/new_adv.css"> 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="dashboard-container">
+        <h1>Modification d'Appareil de Voie</h1>
+
+        <section id="adv-selection">
+            <label for="advSelect">Sélectionner l'ADV :</label>
+            <select id="advSelect" onchange="loadAdvData()">
+                <option value="">-- Charger un ADV --</option>
+                </select>
+            <button type="button" id="advTypeDisplay" disabled class="type-display-btn" title="Type de l'ADV sélectionné">
+                Type: N/A
+            </button>
+        </section>
+
+        <form id="advForm" class="hidden">
+            <input type="hidden" id="advType" value="">
+            
+            <nav class="tabs-nav">
+                <button type="button" class="tab-btn active" data-tab="general">Infos Générales</button>
+                <button type="button" class="tab-btn" data-tab="croisement">Croisement</button>
+                <button type="button" class="tab-btn" data-tab="ecartement">Écartement</button>
+                <button type="button" class="tab-btn" data-tab="attaches">Attaches</button>
+                <button type="button" class="tab-btn" data-tab="bois">Bois</button>
+                <button type="button" class="tab-btn" data-tab="joints">Joints</button>
+                <button type="button" class="tab-btn conditional-tab" data-tab="demiAiguillage">Demi-Aiguillage</button>
+            </nav>
+
+            <div class="tabs-content">
+                
+                <div id="tab-general" class="tab-pane active">
+                     <div class="form-grid">
+                        <fieldset>
+                            <legend>Identification & Localisation</legend>
+                            <div class="fieldset-grid"> 
+                                <div><label for="general_1">Nom ADV:</label><input type="text" id="general_1" name="general_1" disabled></div>
+                                <div><label for="general_2">Type:</label><input type="text" id="general_2" name="general_2" disabled></div>
+                                <div><label for="general_5">Tangente:</label><input type="number" step="0.001" id="general_5" name="general_5" disabled></div>
+                                <div><label for="general_6">Modèle:</label><input type="text" id="general_6" name="general_6" disabled></div>
+                                <div class="visualisation_co">
+                                    <div class="coordinates">
+                                        <div><label for="general_3">Latitude:</label><input type="number" step="0.000001" id="general_3" name="general_3" disabled></div>
+                                        <div><label for="general_4">Longitude:</label><input type="number" step="0.000001" id="general_4" name="general_4" disabled></div>
+                                    </div>
+                                    <div class="map-container">
+                                        <div id="map"></div>
+                                    </div>
+                                </div>
+                                
+                            </div>
+                        </fieldset>
+
+                        <fieldset>
+                            <legend>Caractéristiques Techniques</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="general_7">Plancher:</label><input type="text" id="general_7" name="general_7" disabled></div>
+                                <div><label for="general_8">Pose:</label><input type="text" id="general_8" name="general_8" disabled></div>
+                                <div><label for="general_9">Rails:</label><input type="text" id="general_9" name="general_9" disabled></div>
+                                <div><label for="general_10">Type d'attaches:</label><input type="text" id="general_10" name="general_10" disabled></div>
+                                <div><label for="general_11">Sens de déviation:</label><input type="text" id="general_11" name="general_11" disabled></div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+
+                <div id="tab-croisement" class="tab-pane">
+                    <div class="voie-type-container">
+                        
+                        <div class="croisement-type-content hidden-adv-type" data-type="bs">
+                            <div class="croisement-img-bs">
+                                <img src="../assets/coeur2c_h_bs.png" alt="Cœur de croisement BS" />
+                                <input class="p2p_g" name="croisement_1" title="Protection de pointe Gauche" />
+                                <input class="p2p_d" name="croisement_2" title="Protection de pointe Droite" />
+                                <input class="ep_cr_g" name="croisement_3" title="Épaisseur contre-rail Gauche" />
+                                <input class="ep_cr_d" name="croisement_4" title="Épaisseur contre-rail Droite" />
+                                <input class="ep_cal_g" name="croisement_5" title="Épaisseur de calage Gauche" />
+                                <input class="ep_cal_d" name="croisement_6" title="Épaisseur de calage Droite" />
+                                <input class="nb_cal_g" name="croisement_7" title="Nombre de cales Gauche" />
+                                <input class="nb_cal_d" name="croisement_8" title="Nombre de cales Droite" />
+                                <input class="coeur2c_num_h" name="croisement_9" title="N° Cœur de croisement" />
+                                <input class="coeur_etat" name="croisement_10" title="État Cœur" />
+                            </div>
+                        </div>
+
+                        <div class="croisement-type-content hidden-adv-type" data-type="tj">
+                            <div class="croisement-img">
+                                <div class="container_coeur2c_h">
+                                    <img src="../assets/coeur2c_h.png" alt="Cœur haut TJ" />
+                                    <input class="ep_cr_g" name="croisement_h_1" title="Epaisseur contre-rail haut Gauche" />
+                                    <input class="ep_cal_g" name="croisement_h_2" title="Epaisseur calage haut Gauche" />
+                                    <input class="nb_cal_g" name="croisement_h_3" title="Nombre cales haut Gauche" />
+                                    <input class="p2p_g_h" name="croisement_h_4" title="Protection de pointe Croisement haut Gauche" />
+                                    <input class="p2p_d_h" name="croisement_h_5" title="Protection de pointe Croisement haut Droite" />
+                                    <input class="ep_cr_d" name="croisement_h_6" title="Epaisseur contre-rail haut Droite" />
+                                    <input class="ep_cal_d" name="croisement_h_7" title="Epaisseur calage haut Droite" />
+                                    <input class="nb_cal_d" name="croisement_h_8" title="Nombre cales haut Droite" />
+                                    <input class="coeur2c_num_h" name="croisement_h_9" title="Coeur de croisement haut n°" />
+                                </div>
+
+                                <div class="container_coeur2c_b">
+                                    <img src="../assets/coeur2c_b.png" alt="Cœur bas TJ" />
+                                    <input class="ep_cr_g" name="croisement_b_1" title="Epaisseur contre-rail bas Gauche" />
+                                    <input class="ep_cal_g" name="croisement_b_2" title="Epaisseur calage bas Gauche" />
+                                    <input class="nb_cal_g" name="croisement_b_3" title="Nombre cales bas Gauche" />
+                                    <input class="p2p_g_b" name="croisement_b_4" title="Protection de pointe Croisement bas Gauche" />
+                                    <input class="p2p_d_b" name="croisement_b_5" title="Protection de pointe Croisement bas Droite" />
+                                    <input class="ep_cr_d" name="croisement_b_6" title="Epaisseur contre-rail bas Droite" />
+                                    <input class="ep_cal_d" name="croisement_b_7" title="Epaisseur calage bas Droite" />
+                                    <input class="nb_cal_d" name="croisement_b_8" title="Nombre cales bas Droite" />
+                                    <input class="coeur2c_num_b" name="croisement_b_9" title="Coeur de croisement bas n°" />
+                                </div>
+                            </div>
+                            <div class="traverse-img">
+                                <img src="../assets/coeur2t.png" alt="Cœur de traversée TJ" class="croisement-image" />
+                                <input class="p2pt_g_h" name="croisement_t_h_g" title="Protection de pointe Traversée haut Gauche" />
+                                <input class="p2pt_d_h" name="croisement_t_h_d" title="Protection de pointe Traversée haut Droite" />
+                                <input class="libre_passage_g" name="croisement_l_p_g" title="Libre passage Gauche" />
+                                <input class="libre_passage_d" name="croisement_l_p_d" title="Libre passage Droite" />
+                                <input class="p2pt_g_b" name="croisement_t_b_g" title="Protection de pointe Traversée bas Gauche" />
+                                <input class="p2pt_d_b" name="croisement_t_b_d" title="Protection de pointe Traversée bas Droite" />
+                                <input class="coeur2t_num_g" name="croisement_c_t_g" title="Coeur de traversée gauche n°" />
+                                <input class="coeur2t_num_d" name="croisement_c_t_d" title="Coeur de traversée droite n°" />
+                            </div>
+                        </div>
+
+                        <div class="croisement-type-content hidden-adv-type" data-type="to">
+                            <div class="croisement-img">
+                                <div class="container_coeur2c_h_t">
+                                    <img src="../assets/coeur2c_h_t.png" alt="Cœur haut TO" />
+                                    <input class="p2p_g_h" name="croisement_h_t_1" title="Protection de pointe haut Gauche" />
+                                    <input class="p2p_d_h" name="croisement_h_t_2" title="Protection de pointe haut Droite" />
+                                    <input class="coeur2c_num_h_t" name="croisement_h_t_3" title="Coeur de croisement haut n°" />
+                                </div>
+
+                                <div class="container_coeur2c_b_t">
+                                    <img src="../assets/coeur2c_b_t.png" alt="Cœur bas TO" />
+                                    <input class="p2p_g_b" name="croisement_b_t_1" title="Protection de pointe bas Gauche" />
+                                    <input class="p2p_d_b" name="croisement_b_t_2" title="Protection de pointe bas Droite" />
+                                    <input class="coeur2c_num_b_t" name="croisement_b_t_3" title="Coeur de croisement bas n°" />
+                                </div>
+                            </div>
+                            <div class="traverse-img">
+                                <img src="../assets/coeur2t.png" alt="Cœur de traversée TO" class="croisement-image" />
+                                <input class="p2pt_g_h" name="croisement_t_t_h_g" title="Protection de pointe T haut Gauche" />
+                                <input class="p2pt_d_h" name="croisement_t_t_h_d" title="Protection de pointe T haut Droite" />
+                                <input class="libre_passage_g" name="croisement_t_l_p_g" title="Libre passage Gauche" />
+                                <input class="libre_passage_d" name="croisement_t_l_p_d" title="Libre passage Droite" />
+                                <input class="p2pt_g_b" name="croisement_t_t_b_g" title="Protection de pointe T bas Gauche" />
+                                <input class="p2pt_d_b" name="croisement_t_t_b_d" title="Protection de pointe T bas Droite" />
+                                <input class="coeur2t_num_g" name="croisement_t_c_t_g" title="Coeur de traversée gauche n°" />
+                                <input class="coeur2t_num_d" name="croisement_t_c_t_d" title="Coeur de traversée droite n°" />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div id="tab-ecartement" class="tab-pane">
+                     <div class="voie-type-container" id="ecartement-main-container"> 
+                        
+                        <div class="ecartement-type-content hidden-adv-type" data-type="bs">
+                            <div class="ecartement-inputs-container">
+                                <div class="ecartement-img-bs" id="ecartement-inputs-bs">
+                                    <img src="../assets/ecartements.png" alt="Emplacements Écartements BS" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ecartement-type-content hidden-adv-type" data-type="tj">
+                            <div class="ecartement-inputs-container">
+                                <div class="ecartement-img-tj" id="ecartement-inputs-tj">
+                                    <img src="../assets/tj_ecartements.jpg" alt="Emplacements Écartements TJ" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ecartement-type-content hidden-adv-type" data-type="to">
+                            <div class="ecartement-inputs-container">
+                                <div class="ecartement-img-to" id="ecartement-inputs-to">
+                                    <img src="../assets/tj_ecartements.jpg" alt="Emplacements Écartements TO" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-attaches" class="tab-pane">
+                     <div class="voie-type-container" id="attaches-main-container"> 
+                        
+                        <div class="attaches-type-content hidden-adv-type" data-type="bs">
+                            <div class="attaches-section">
+                                <div class="table-wrapper">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="bs">
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Nbr Attaches efficaces</th>
+                                                <th>Nbr Attaches inefficaces</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <img src="../assets/attaches_new_adv.png" alt="Zones Attaches BS" class="attaches-img" />
+                            </div>
+                        </div>
+
+                        <div class="attaches-type-content hidden-adv-type" data-type="tj">
+                            <div class="attaches-section">
+                                <div class="table-wrapper">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="tj">
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Nbr Attaches efficaces</th>
+                                                <th>Nbr Attaches inefficaces</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <img src="../assets/tj_attaches.png" alt="Zones Attaches TJ" class="attaches-img" />
+                            </div>
+                        </div>
+
+                        <div class="attaches-type-content hidden-adv-type" data-type="to">
+                            <div class="attaches-section">
+                                <div class="table-wrapper">
+                                    <table class="attaches-table" data-editable="true" data-lock="first-row first-col" data-type="to">
+                                        <thead>
+                                            <tr>
+                                                <th>Zone</th>
+                                                <th>Nbr Attaches efficaces</th>
+                                                <th>Nbr Attaches inefficaces</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <img src="../assets/to_attaches.png" alt="Zones Attaches TO" class="attaches-img" />
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                
+                <div id="tab-bois" class="tab-pane">
+                    <div class="bois-layout">
+
+                        <fieldset id="fieldset-traverses">
+                            <legend>Traverses</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="bois_1">Bois en bon état:</label><input type="number" id="bois_1" name="bois_1"></div>
+                                <div><label for="bois_2">Bois à remplacer:</label><input type="number" id="bois_2" name="bois_2"></div>
+                            </div>
+                        </fieldset>
+                        
+                        <div class="chart-item">
+                            <h4>Traverses</h4>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="traversesChart"></canvas>
+                            </div>
+                        </div>
+                        <fieldset>
+                            <legend>Rails</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="bois_6">Etat des rails:</label>
+                                    <select id="bois_6" name="bois_6">
+                                        <option value="bon">Bon État</option>
+                                        <option value="moyen">Moyen</option>
+                                        <option value="remplacer">À Remplacer</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+                
+                <div id="tab-joints" class="tab-pane">
+                    <div class="bois-layout">
+                        <fieldset id="fieldset-joints">
+                            <legend>État des Joints</legend>
+                            <div class="fieldset-grid">
+                                <div><label for="bois_3">Joints en bon état:</label><input type="number" id="bois_3" name="bois_3"></div>
+                                <div><label for="bois_4">Joints à remplacer:</label><input type="number" id="bois_4" name="bois_4"></div>
+                                <div><label for="bois_5">Joints à graisser:</label><input type="number" id="bois_5" name="bois_5"></div>
+                            </div>
+                        </fieldset>
+
+                        <div class="chart-item">
+                            <h4>Joints</h4>
+                            <div class="chart-canvas-wrapper">
+                                <canvas id="jointsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-demiAiguillage" class="tab-pane">
+                    <div id="demi-aiguillage-content">
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">⬆️ Mettre à Jour l'ADV</button>
+            </div>
+        </form>
+    </div>
+    <ul id="custom-context-menu" class="context-menu">
+        <li id="apply-row">Appliquer à la ligne</li>
+        <li id="apply-col">Appliquer à la colonne</li>
+    </ul>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/edit_adv.js"></script>
+</body>
+</html>

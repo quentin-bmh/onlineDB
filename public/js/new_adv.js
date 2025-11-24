@@ -487,7 +487,7 @@ function initJointsChart() {
             datasets: [{
                 label: 'Nombre de joints',
                 data: [0, 0, 0],
-                backgroundColor: ['#e2df13ff', '#eb7d16ff', '#e93f15ff'],
+                backgroundColor: ['#259116ff', '#eb1616ff', '#f3ef1dff'],
                 borderWidth: 1
             }]
         },

@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.get('/advBoulogne', async (req, res) => {
   try {
-    const result = await pool.query('SELECT DISTINCT "ADV", "Latitude", "Longitude"  FROM adv ORDER BY "ADV";');
+    const result = await pool.query('SELECT DISTINCT "ADV", "Latitude", "Longitude" FROM adv ORDER BY "ADV";');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -241,40 +241,34 @@ router.delete('/adv/:advName', async (req, res) => {
 
   let client = null; 
   let advType = null;
-  const advNameLower = advName.toLowerCase();
   
   try {
     client = await pool.getClient(); 
     await client.query('BEGIN');
 
-    // 2. Récupérer le type d'ADV nécessaire pour cibler la table spécifique
     const typeResult = await client.query('SELECT type FROM general_data WHERE adv = $1', [advName]);
     
     if (typeResult.rows.length === 0) {
-      // Si l'ADV n'existe pas, on annule et répond 404
       await client.query('ROLLBACK');
       return res.status(404).json({ error: `ADV "${advName}" non trouvé dans general_data.` });
     }
     
     advType = typeResult.rows[0].type.toLowerCase();
     
-    // 3. Suppression dans la table spécifique (adv_bs, adv_tj, ou adv_to)
     const specificTableName = `adv_${advType}`;
     
     await client.query(`DELETE FROM ${specificTableName} WHERE adv = $1`, [advName]);
     console.log(`[DELETE] Supprimé de ${specificTableName}`);
 
-    // 4. Suppression conditionnelle dans b2v_da (pour BS et TJ uniquement)
     if (advType === 'bs' || advType === 'tj') {
       await client.query('DELETE FROM b2v_da WHERE adv = $1', [advName]);
       console.log('[DELETE] Supprimé de b2v_da (Demi-Aiguillage)');
     }
 
-    // 5. Suppression dans la table générale (DOIT ÊTRE FAIT EN DERNIER)
     await client.query('DELETE FROM general_data WHERE adv = $1', [advName]);
     console.log('[DELETE] Supprimé de general_data');
 
-    await client.query('COMMIT'); // Validation si toutes les étapes ont réussi
+    await client.query('COMMIT'); 
     
     res.status(200).json({ 
         message: `L'ADV "${advName}" (${advType.toUpperCase()}) et toutes ses dépendances ont été supprimés.`,
@@ -293,5 +287,164 @@ router.delete('/adv/:advName', async (req, res) => {
     }
   }
 });
+router.get('/b2v_da/:advName', async (req, res) => {
+    const advName = req.params.advName; 
+    try {
+        const result = await pool.query('SELECT * FROM b2v_da WHERE adv = $1', [advName]);
+        res.json(result.rows); // Si vide, retourne [] (200 OK)
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+router.get('/adv_list', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT adv, type FROM general_data ORDER BY adv;');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+router.post('/adv_historic/:type', async (req, res) => {
+  const { type } = req.params;
+  const tableName = `adv_${type}_historic`;
+  const data = req.body;
+  
+  if (type !== 'bs' && type !== 'tj' && type !== 'to') {
+    return res.status(400).json({ error: 'Type ADV non supporté pour l\'insertion.' });
+  }
+
+  if (!data.snapshot_adv || !data.snapshot_date) {
+    return res.status(400).json({ error: 'Données historiques (snapshot_adv ou snapshot_date) manquantes.' });
+  }
+
+  const fields = Object.keys(data);
+  const values = Object.values(data);
+  const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
+  const query = `INSERT INTO ${tableName} (${fields.join(', ')}) VALUES (${placeholders}) RETURNING *;`;
+
+  try {
+    const result = await pool.query(query, values);
+    res.status(201).json({ message: `${tableName} historical data recorded`, data: result.rows[0] });
+  } catch (err) {
+    console.error(`Erreur insertion historique ${tableName}:`, err.message);
+    res.status(500).json({ error: `Erreur serveur lors de l'insertion dans ${tableName}: ${err.message}` });
+  }
+});
+
+router.post('/b2v_da_historic', async (req, res) => {
+  const dataArray = req.body;
+  const tableName = 'b2v_da_historic';
+
+  if (!Array.isArray(dataArray) || dataArray.length === 0) {
+    return res.status(400).json({ error: 'Le corps doit être un tableau non vide avec des données historiques.' });
+  }
+  
+  let client = null;
+  try {
+    client = await pool.getClient(); 
+    await client.query('BEGIN');
+    
+    const firstData = dataArray[0];
+    const fields = Object.keys(firstData).filter(key => firstData[key] !== undefined);
+    const fieldsString = fields.join(', ');
+    
+    for (const data of dataArray) {
+        if (!data.snapshot_adv || !data.snapshot_date) continue; 
+        
+        const values = fields.map(field => data[field] !== undefined ? data[field] : null);
+        const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+        const query = `INSERT INTO ${tableName} (${fieldsString}) VALUES (${placeholders});`;
+        
+        await client.query(query, values);
+    }
+
+    await client.query('COMMIT');
+    res.status(201).json({ message: `${dataArray.length} demi-aiguillages historiques enregistrés.` });
+    
+  } catch (err) {
+    if (client) {
+      await client.query('ROLLBACK');
+    }
+    console.error(`Erreur insertion historique ${tableName} (Transaction annulée):`, err.message);
+    res.status(500).json({ error: `Erreur serveur lors de l'insertion historique: ${err.message}` });
+  } finally {
+    if (client) {
+      client.release(); 
+    }
+  }
+});
+
+router.put('/adv_update_transaction/:advName', async (req, res) => {
+    const advName = req.params.advName;
+    const { generalData, specificData, demiAiguillageData, advType } = req.body;
+    
+    const advTypeLower = advType.toLowerCase();
+    const specificTableName = `adv_${advTypeLower}`;
+
+    if (!advName || !advType || generalData.adv !== advName || specificData.adv !== advName) {
+        return res.status(400).json({ error: 'Données ADV, Type, ou Nom de l\'ADV incohérents.' });
+    }
+
+    let client = null;
+    
+    try {
+        client = await pool.getClient(); 
+        await client.query('BEGIN'); // DÉBUT DE LA TRANSACTION
+
+        // 1. Mise à jour des Données Générales (PATCH-like)
+        const generalFields = Object.keys(generalData).filter(f => f !== 'adv' && f !== 'type');
+        const generalValues = generalFields.map(field => generalData[field]);
+        const generalSetClauses = generalFields.map((field, i) => `${field} = $${i + 2}`).join(', ');
+        
+        if (generalFields.length > 0) {
+            const generalQuery = `UPDATE general_data SET ${generalSetClauses} WHERE adv = $1;`;
+            await client.query(generalQuery, [advName, ...generalValues]);
+        }
+
+        // 2. Remplacement des Données Spécifiques (PUT/DELETE+INSERT)
+        await client.query(`DELETE FROM ${specificTableName} WHERE adv = $1`, [advName]);
+        
+        const specificFields = Object.keys(specificData);
+        const specificValues = Object.values(specificData);
+        const specificPlaceholders = specificValues.map((_, i) => `$${i + 1}`).join(', ');
+        const specificInsertQuery = `INSERT INTO ${specificTableName} (${specificFields.join(', ')}) VALUES (${specificPlaceholders});`;
+        await client.query(specificInsertQuery, specificValues);
+
+
+        // 3. Remplacement des Demi-Aiguillages (si applicable)
+        if (advTypeLower === 'bs' || advTypeLower === 'tj') {
+            await client.query('DELETE FROM b2v_da WHERE adv = $1', [advName]);
+            
+            if (demiAiguillageData.length > 0) {
+                for (const dataItem of demiAiguillageData) {
+                    const daFields = Object.keys(dataItem).filter(key => dataItem[key] !== null);
+                    const daValues = daFields.map(key => dataItem[key]);
+                    const daPlaceholders = daValues.map((_, i) => `$${i + 1}`).join(', ');
+                    const daQuery = `INSERT INTO b2v_da (${daFields.join(', ')}) VALUES (${daPlaceholders});`;
+                    
+                    await client.query(daQuery, daValues);
+                }
+            }
+        }
+        
+        await client.query('COMMIT'); // Validation si tout a réussi
+        res.json({ message: 'Transaction de mise à jour complète réussie.' });
+
+    } catch (err) {
+        if (client) {
+            await client.query('ROLLBACK'); // Annulation si une erreur survient
+        }
+        console.error('Erreur transactionnelle de mise à jour ADV:', err.message);
+        res.status(500).json({ error: `Erreur serveur lors de la mise à jour transactionnelle: ${err.message}` });
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+});
+
 
 module.exports = router;

@@ -59,7 +59,7 @@ function updateMap(adv) {
       map.invalidateSize();
     }, 200);
 }
-
+//à partir d'ici le code fonctionne presque parfaitement il y a juste la sélection de l'adv depuis "ALL" qui ne fonctionne pas parfait
 function displayAdvMarkers(advList) {
     if (marker) map.removeLayer(marker); 
     marker = null;
@@ -461,43 +461,7 @@ function setupToggleMenu() {
     toggleMenu.style.display = 'block';
   }
 }
-function initCharts() {
-  const boisCtx = document.getElementById('boisChart')?.getContext('2d');
-  if (boisCtx) {
-    boisChartInstance = new Chart(boisCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Bon état', 'À remplacer'],
-        datasets: [{
-          data: [0, 0], // données initiales vides
-          backgroundColor: ['#4caf50', '#f44336']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
 
-  const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
-  if (jointsCtx) {
-    jointsChartInstance = new Chart(jointsCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Bon état', 'À reprendre'],
-        datasets: [{
-          data: [0, 0],
-          backgroundColor: ['#4caf50', '#f44336']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
-}
 
 
 
@@ -1298,18 +1262,23 @@ function updateUsureLaTable(data) {
 
 //page Plancher/bois
 
+// advBoulogne.js - Remplacement de la fonction updateBois
+
 function updateBois(adv) {
   if (!adv || typeof adv !== 'object') return;
-  // console.log('adv',adv);
+  
   // === JOINTS ===
   const jointsBon = Number(adv['joints_bon']) || 0;
   const jointsRepr = Number(adv['joints_a_repr']) || 0;
   const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
   const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
 
+  // CORRECTION: Total des joints (ceux qui existent physiquement, qu'ils soient bons ou à reprendre)
+  const totalJoints = jointsBon + jointsRepr;
+
   const jointsCountEl = document.getElementById('jointsCount');
   if (jointsCountEl) {
-    jointsCountEl.textContent = jointsBon + jointsRepr;
+    jointsCountEl.textContent = totalJoints;
   }
 
   const jointsRow = document.querySelector('#plancher-joints .plancher-table tbody tr');
@@ -1319,7 +1288,7 @@ function updateBois(adv) {
       cells[0].textContent = jointsPct;       // % joints à remplacer
       cells[1].textContent = jointsBon;       // joints bon état
       cells[2].textContent = jointsRepr;      // joints à reprendre
-      cells[3].textContent = jointsGraisser;  // joints à graisser
+      cells[3].textContent = jointsGraisser;  // joints à graisser (catégorie distincte)
     }
   }
 
@@ -1342,17 +1311,85 @@ function updateBois(adv) {
       cells[2].textContent = boisBon;      // bois bon état
     }
   }
+  
+  // Appel à updateCharts avec les trois valeurs distinctes
+  updateCharts(adv);
+}
+// advBoulogne.js - Remplacement de la fonction updateCharts
+function initCharts() {
+  const boisCtx = document.getElementById('boisChart')?.getContext('2d');
+  if (boisCtx) {
+    boisChartInstance = new Chart(boisCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bon état', 'À remplacer', 'À graisser'],
+        datasets: [{
+          data: [0, 0], // données initiales vides
+          backgroundColor: ['#4caf50', '#f44336', '#e2df13ff']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        responsive: true,
+        // scales: {
+        //     y: {
+        //         beginAtZero: true
+        //     }
+        // },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
+  if (jointsCtx) {
+    // Graphique à barres pour les 3 états
+    jointsChartInstance = new Chart(jointsCtx, {
+      type: 'doughnut', 
+      data: {
+        labels: ['Bon état', 'À reprendre', 'À graisser'], // Labels clairs pour les 3 catégories
+        datasets: [{
+          label: 'Nombre de joints',
+          data: [0, 0, 0], 
+          backgroundColor: ['#4caf50', '#f44336', '#e2df13ff'], 
+          borderWidth: 1
+        }]
+      },
+      options: {
+        cutout: '70%',
+        responsive: true,
+        // scales: {
+        //     y: {
+        //         beginAtZero: true
+        //     }
+        // },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 }
 function updateCharts(adv) {
-  // console.log('data:', adv);
+  if (!adv || typeof adv !== 'object') {
+      console.warn("Données ADV invalides reçues par updateCharts.");
+      return;
+  }
 
-  if (boisChartInstance && adv.bois_bon != null && adv.bois_a_remp != null) {
-    boisChartInstance.data.datasets[0].data = [adv.bois_bon, adv.bois_a_remp];
+  const boisBon = Number(adv['bois_bon']) || 0;
+  const boisRemp = Number(adv['bois_a_remp']) || 0;
+  
+  const jointsBon = Number(adv['joints_bon']) || 0;
+  const jointsRemp = Number(adv['joints_a_repr']) || 0;
+  const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
+  
+  // Mise à jour Bois (Doughnut)
+  if (boisChartInstance) {
+    boisChartInstance.data.datasets[0].data = [boisBon, boisRemp];
     boisChartInstance.update();
   }
 
-  if (jointsChartInstance && adv.joints_bon != null && adv.joints_a_repr != null) {
-    jointsChartInstance.data.datasets[0].data = [adv.joints_bon, adv.joints_a_repr];
+  // Mise à jour Joints (Graphique à Barres) : 3 catégories distinctes
+  if (jointsChartInstance) {
+    jointsChartInstance.data.datasets[0].data = [jointsBon, jointsRemp, jointsGraisser];
     jointsChartInstance.update();
   }
 }
