@@ -15,8 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+// advBoulogne.js - Dans la fonction initMap()
+
 function initMap() {
-    map = L.map('map').setView([46.5, 2.5], 7);
+    map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([46.5, 2.5], 7);
 
     const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
@@ -25,12 +30,15 @@ function initMap() {
     const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       attribution: 'Tiles &copy; Esri'
     });
-
+    const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
+        attribution: '&copy; CartoDB'
+    });
     satelliteLayer.addTo(map);
 
     L.control.layers({
       "Plan Standard": normalLayer,
-      "Satellite": satelliteLayer
+      "Satellite": satelliteLayer,
+      "Fond Sombre (Neutre)": darkLayer
     }).addTo(map);
 
     advMarkers.addTo(map);
@@ -59,7 +67,7 @@ function updateMap(adv) {
       map.invalidateSize();
     }, 200);
 }
-//à partir d'ici le code fonctionne presque parfaitement il y a juste la sélection de l'adv depuis "ALL" qui ne fonctionne pas parfait
+
 function displayAdvMarkers(advList) {
     if (marker) map.removeLayer(marker); 
     marker = null;
@@ -69,49 +77,51 @@ function displayAdvMarkers(advList) {
 
     advList.forEach(adv => {
         const name = adv["adv"];
-        const type = adv["type"]; // Type de l'ADV (BS, TJ, etc.)
+        const type = adv["type"];
         const lat = parseFloat(adv["lat"] ?? adv["Latitude"]);
         const lng = parseFloat(adv["long"] ?? adv["Longitude"]);
+        
+        const advName = name ?? adv["ADV"] ?? "ADV";
 
         if (lat && lng) {
             const newMarker = L.marker([lat, lng])
-              .bindPopup(`<b>${name ?? "ADV"}</b><br>Type: ${type ?? ""}`);
-              
-            // --- Logique de bascule au clic sur le marqueur ---
+                .bindPopup(`<b>${advName}</b><br>Type: ${type ?? ""}`)
+                .bindTooltip(advName, { 
+                    permanent: true,       
+                    direction: 'top',      
+                    className: 'adv-permanent-tooltip' 
+                });
+            newMarker.on('mouseover', function() {
+                const tooltipElement = newMarker.getTooltip()._container;
+                if (tooltipElement) {
+                    tooltipElement.classList.add('adv-tooltip-hover-focus');
+                }
+            });
+            newMarker.on('mouseout', function() {
+                const tooltipElement = newMarker.getTooltip()._container;
+                if (tooltipElement) {
+                    tooltipElement.classList.remove('adv-tooltip-hover-focus');
+                }
+            });
             newMarker.on('click', function(e) {
                 const rowId = `adv-row-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                const targetRow = document.getElementById(rowId);
                 
-                // 1. Vérifier si on est en mode ALL et si le type est connu
                 if (currentType === 'all' && type) {
                     const targetButton = document.querySelector(`.data-btn[data-type="${type}"]`);
                     if (targetButton) {
-                        // 2. Simuler le clic sur le bouton de type
-                        targetButton.click(); 
-                        
-                        const advNameToSelect = name;
-                        
-                        // 3. Attendre que la nouvelle table soit chargée par le clic du bouton
-                        setTimeout(() => {
-                             const targetRow = document.getElementById(`adv-row-${advNameToSelect.replace(/[^a-zA-Z0-9]/g, '-')}`);
-                             if (targetRow) {
-                                 // 4. Simuler le clic sur la ligne de la nouvelle table pour la sélection finale
-                                 targetRow.click();
-                             }
-                        }, 100); 
-                        return; // Arrêter l'exécution, le reste est géré par la simulation ci-dessus.
+                        targetButton.dispatchEvent(new CustomEvent('advClick', { detail: { advName: name } }));
+                        return;
                     }
                 }
                 
-                // Logique de sélection standard (si non 'ALL' ou bascule non nécessaire)
-                const targetRow = document.getElementById(rowId);
                 if (targetRow) {
-                    targetRow.click();
+                    targetRow.querySelector('.adv-name-cell').click(); 
                     targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 } else {
-                    console.warn(`Ligne de tableau non trouvée pour l'ADV : ${name}`);
+                    console.warn(`Ligne de tableau non trouvée pour l'ADV : ${name} (Filtre actuel: ${currentType})`);
                 }
             });
-            // --- Fin de Logique ---
 
             advMarkers.addLayer(newMarker);
             bounds.push([lat, lng]);
@@ -128,8 +138,50 @@ function displayAdvMarkers(advList) {
       map.invalidateSize();
     }, 200);
 }
+function handleTypeButtonClick(type, advToSelect) {
+    const activeVoie = document.querySelector('.voie-content.active');
+    const hubButton = document.querySelector('.toggle-menu button[data-target="hub"]');
+    
+    if (activeVoie && activeVoie.id !== 'hub' && hubButton) {
+        hubButton.click();
+    }
 
-//partie où là ça fonctionne ok 
+    document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
+    const currentButton = document.querySelector(`.data-btn[data-type="${type}"]`);
+    if (currentButton) currentButton.classList.add('active-type');
+    
+    currentType = type.toLowerCase();
+    
+    document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
+      boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
+    });
+    
+    const fetchUrl = (type === 'ALL') 
+      ? '/api/adv_coordinates'
+      : `/api/adv_coordinates/${encodeURIComponent(type)}`;
+      
+    const mapContainer = document.getElementById('map-container');
+    const mapEl = document.getElementById('map');
+    
+    if (mapContainer && mapEl) {
+      mapContainer.style.display = 'block';
+      mapContainer.classList.remove('map-no-adv-selected');
+      mapEl.style.display = 'block'; 
+    }
+    if (map) map.invalidateSize();
+
+    fetch(fetchUrl)
+      .then(res => res.json())
+      .then(data => {
+        summaryData = data;
+        createTable(data, advToSelect); 
+        displayAdvMarkers(data);
+
+      })
+      .catch(err => {
+        console.error("Erreur lors du chargement des ADV par type:", err);
+      });
+}
 function loadTypeButtons() {
     fetch('/api/adv_types')
       .then(res => res.json())
@@ -148,54 +200,13 @@ function loadTypeButtons() {
           button.textContent = type;
           button.classList.add('data-btn');
           button.setAttribute('data-type', type);
-
-          button.addEventListener('click', () => {
-            
-            // --- NOUVELLE LOGIQUE DE REDIRECTION SYSTÉMATIQUE VERS HUB ---
-            const activeVoie = document.querySelector('.voie-content.active');
-            const hubButton = document.querySelector('.toggle-menu button[data-target="hub"]');
-            
-            // Si la voie active n'est pas le Hub, simuler le clic sur le bouton Hub
-            if (activeVoie && activeVoie.id !== 'hub' && hubButton) {
-                hubButton.click();
-            }
-            // -----------------------------------------------------------
-
-
-            document.querySelectorAll('.data-btn').forEach(btn => btn.classList.remove('active-type'));
-            button.classList.add('active-type');
-            currentType = type.toLowerCase();
-            
-            document.querySelectorAll('button[data-target="voie-aiguillage"]').forEach(boutonAiguillage => {
-              boutonAiguillage.style.display = (type === 'BS' || type === 'TJ') ? 'inline-block' : 'none';
-            });
-            
-            const fetchUrl = (type === 'ALL') 
-              ? '/api/adv_coordinates'
-              : `/api/adv_coordinates/${encodeURIComponent(type)}`;
-              
-            const mapContainer = document.getElementById('map-container');
-            const mapEl = document.getElementById('map');
-            
-            if (mapContainer && mapEl) {
-              mapContainer.style.display = 'block';
-              mapContainer.classList.remove('map-no-adv-selected');
-              mapEl.style.display = 'block'; 
-            }
-            if (map) map.invalidateSize();
-
-            // console.log("appel de fetch pour le type :", type);
-            fetch(fetchUrl)
-              .then(res => res.json())
-              .then(data => {
-                summaryData = data;
-                createTable(data);
-                displayAdvMarkers(data);
-
-              })
-              .catch(err => {
-                console.error("Erreur lors du chargement des ADV par type:", err);
-              });
+          button.addEventListener('click', (event) => {
+            if (event.detail && event.detail.advName) return; 
+            handleTypeButtonClick(type, null); 
+          });
+          button.addEventListener('advClick', (event) => {
+            const advToSelect = event.detail.advName;
+            handleTypeButtonClick(type, advToSelect);
           });
 
           advSection.appendChild(button);
@@ -208,18 +219,132 @@ function loadTypeButtons() {
         console.error('Erreur lors du chargement des types ADV :', err);
       });
 }
+async function getSpecificSnapshotData(advType, advName, snapshotDate) {
+    const url = `/api/historic_from/${advType.toLowerCase()}`; 
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        const data = await response.json();
+        const targetAdvData = data.find(item => 
+            item.adv === advName && item.snapshot_date === snapshotDate
+        );
 
-function createTable(data) {
+        return targetAdvData || {};
+    } catch (e) {
+        console.error(`Échec du chargement de la snapshot ${snapshotDate}:`, e);
+        return {};
+    }
+}
+async function getDaSnapshotData(advName, snapshotDate) {
+    const url = `/api/b2v_da_historic_from/${encodeURIComponent(advName)}`; 
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        const data = await response.json();
+        const filteredDaData = data.filter(item => 
+            item.snapshot_adv === advName && item.snapshot_date === snapshotDate
+        );
+
+        return filteredDaData;
+    } catch (e) {
+        console.error(`Échec du chargement de la snapshot DA ${snapshotDate}:`, e);
+        return [];
+    }
+}
+
+function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
+  const name = (adv["adv"] || adv["ADV"] || '').trim();
+  const type = (adv["type"] || currentType).toLowerCase();
+
+  if (!name || !type) {
+    console.warn("ADV ou Type non défini. Données détaillées ADV non chargées.");
+    return;
+  }
+  
+  if (isSnapshot && snapshotDate) {
+      console.log(`Chargement de la SNAPSHOT: ${name} (${snapshotDate})`);
+      getSpecificSnapshotData(type, name, snapshotDate)
+          .then(advData => {
+              if (Object.keys(advData).length === 0) {
+                  console.warn("Aucune donnée spécifique trouvée pour cette snapshot.");
+                  return;
+              }
+              switchVoieTypeContent(type, 'voie-croisement');
+              switchVoieTypeContent(type, 'voie-ecartement');
+              updateCroisement(advData)
+              updateEcartementAttaches(advData, type)
+              updatePlancherBois(advData);
+          });
+      if (type === 'bs' || type === 'tj') {
+          getDaSnapshotData(name, snapshotDate)
+              .then(data => {
+                  if (data.length > 0) {
+                      switchVoieTypeContent(type, 'voie-aiguillage');
+                      updateDA(data, type);
+                  }
+              });
+      }
+      
+  } else {
+      console.log(`Chargement des données COURANTES: ${name}`);
+      const encodedName = encodeURIComponent(name);
+      
+      fetch(`/api/${type}/${encodedName}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`Erreur ${res.status}`);
+          return res.json();
+        })
+        .then(advData => {
+          advData = Array.isArray(advData) ? advData[0] : advData;
+          if (!advData) return;
+          switchVoieTypeContent(type, 'voie-croisement');
+          switchVoieTypeContent(type, 'voie-ecartement');
+          updateCroisement(advData)
+          updateEcartementAttaches(advData, type)
+          updatePlancherBois(advData);
+        })
+        .catch(err => console.error("Erreur chargement ADV détails:", err));
+        
+      fetch(`/api/da?adv=${encodedName}`)
+        .then(res => {
+          if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
+          return res.json();
+        })
+        .then(data => {
+          if (!Array.isArray(data) || data.length === 0) return;
+          switchVoieTypeContent(type, 'voie-aiguillage');
+          updateDA(data, type);
+        })
+        .catch(err => console.error("Erreur chargement bavure ADV:", err));
+  }
+}
+async function getSnapshotList(type) {
+    const url = `/api/list_historic_for/${type.toLowerCase()}`;
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+    } catch (e) {
+        if (e.message && e.message.includes('404')) {
+             console.warn(`[Historique] Route ou ressource non trouvée pour ${type}.`);
+             return [];
+        }
+        console.error(`Échec du chargement des snapshots pour ${type}:`, e);
+        return [];
+    }
+}
+
+async function createTable(data, advToSelect = null) {
     const tbody = document.querySelector("#advTable tbody");
     tbody.innerHTML = '';
     const dataVoieContainer = document.getElementById('dataVoie-container');
     const dataContainer = document.getElementById('data');
     const mapContainer = document.getElementById('map-container');
-  
+    const currentAdvType = currentType.toUpperCase();
     if (dataVoieContainer && dataContainer && mapContainer) {
         dataVoieContainer.classList.remove('active-adv-data');
         dataContainer.classList.remove('active-adv-data'); 
-        
         dataContainer.style.display = '';
         dataVoieContainer.style.display = '';
         mapContainer.classList.add('map-no-adv-selected');
@@ -227,109 +352,137 @@ function createTable(data) {
     }
     
     if (data.length === 0) {
-        console.log(`Aucun ADV trouvé pour le type: ${currentType.toUpperCase()}`);
-    } else {
-        // console.log("Aucun ADV sélectionné"); 
+        console.log(`Aucun ADV trouvé pour le type: ${currentAdvType}`);
+        return;
     }
-    
-    data.forEach((adv, index) => {
-      const name = adv["adv"];
-      const advType = adv["type"] ?? currentType.toUpperCase();
-      
-      const row = document.createElement("tr");
-      row.setAttribute('id', `adv-row-${name.replace(/[^a-zA-Z0-9]/g, '-')}`);
-      row.innerHTML = `<td>${name}</td>`;
-
-      row.addEventListener("click", () => {
-        if (currentType === 'all' && advType) {
-            const targetButton = document.querySelector(`.data-btn[data-type="${advType}"]`);
-            if (targetButton) {
-                targetButton.click();
-                
-                const advNameToSelect = name;
-                setTimeout(() => {
-                    const newRowId = `adv-row-${advNameToSelect.replace(/[^a-zA-Z0-9]/g, '-')}`;
-                    const newTargetRow = document.getElementById(newRowId);
-                    
-                    if (newTargetRow) {
-                        newTargetRow.click();
-                    }
-                }, 100);
-                return;
+    let snapshotMap = new Map();
+    if (currentAdvType !== 'ALL') {
+        const allSnapshots = await getSnapshotList(currentAdvType);
+        
+        allSnapshots.forEach(snap => {
+            if (!snapshotMap.has(snap.snapshot_adv)) {
+                snapshotMap.set(snap.snapshot_adv, []);
             }
-        }
-        if (dataVoieContainer && dataContainer && mapContainer) {
-            mapContainer.classList.remove('map-no-adv-selected');
+            snapshotMap.get(snap.snapshot_adv).push(snap.snapshot_date);
+        });
+    }
+    for (const adv of data) {
+        const name = adv["adv"];
+        const advType = adv["type"] ?? currentAdvType;
+        const rowId = `adv-row-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        
+        const snapshots = snapshotMap.get(name) || [];
+        const hasSnapshots = snapshots.length > 0;
+        const row = document.createElement("tr");
+        row.setAttribute('id', rowId);
+        
+        row.innerHTML = `
+            <td class="adv-name-cell">${name}</td>
+            <td class="snapshot-toggle-cell" data-adv="${name}">
+                ${hasSnapshots ? `<span class="toggle-icon">▶</span>` : ''}
+            </td>
+        `;
+        row.querySelector('.adv-name-cell').addEventListener("click", () => {
+            if (currentType === 'all' && advType) {
+                const targetButton = document.querySelector(`.data-btn[data-type="${advType}"]`);
+                if (targetButton) {
+                    targetButton.dispatchEvent(new CustomEvent('advClick', { detail: { advName: name } }));
+                    return;
+                }
+            }
+            if (dataVoieContainer && dataContainer && mapContainer) {
+                mapContainer.classList.remove('map-no-adv-selected');
+                dataVoieContainer.classList.add('active-adv-data');
+                dataContainer.classList.add('active-adv-data');
+                if (map) map.invalidateSize();
+            }
+
+            document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv", "active-snapshot", "active-snapshot-item"));
+            row.classList.add("active-adv");
+            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            getAdvDetails(adv);
+            getAdvDataHub(adv, false);
+            updateMap(adv);
+        });
+
+        tbody.appendChild(row);
+        const snapshotRows = [];
+
+        if (hasSnapshots) {
+            const toggleCell = row.querySelector('.snapshot-toggle-cell');
+            const icon = toggleCell.querySelector('.toggle-icon');
             
-            dataVoieContainer.style.display = '';
-            dataContainer.style.display = '';
+            snapshots.sort((a, b) => new Date(b) - new Date(a));
+            
+            snapshots.forEach(dateStr => {
+                const date = new Date(dateStr);
+                
+                const displayDate = date.toLocaleDateString('fr-FR', {
+                    year: 'numeric', month: '2-digit', day: '2-digit'
+                });
+                
+                // CRÉATION DE LA LIGNE DE SNAPSHOT (TR)
+                const itemRow = document.createElement('tr');
+                itemRow.classList.add('snapshot-item-row', 'hidden'); 
+                
+                itemRow.innerHTML = `
+                    <td colspan="2" class="snapshot-item-cell" data-date="${dateStr}">
+                        Mise à jour le
+                        ${displayDate}
+                    </td>
+                `;
+                
+                // Clic sur une snapshot spécifique
+                itemRow.addEventListener('click', () => {
+                    // 1. Mise en évidence
+                    document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv", "active-snapshot", "active-snapshot-item"));
+                    row.classList.add("active-adv", "active-snapshot"); 
+                    itemRow.classList.add("active-snapshot-item"); 
+                    
+                    // Logique d'affichage
+                    if (dataVoieContainer && dataContainer && mapContainer) {
+                        mapContainer.classList.remove('map-no-adv-selected');
+                        dataVoieContainer.classList.add('active-adv-data');
+                        dataContainer.classList.add('active-adv-data');
+                        if (map) map.invalidateSize();
+                    }
 
-            dataVoieContainer.classList.add('active-adv-data');
-            dataContainer.classList.add('active-adv-data');
-            if (map) map.invalidateSize();
-        }
-        
-        console.log(`ADV sélectionné: ${name}`);
-        
-        updateMap(adv); 
+                    // 2. Charger les données HISTORIQUES et METTRE À JOUR LA CARTE
+                    getAdvDetails(adv); 
+                    getAdvDataHub(adv, true, dateStr); 
+                    updateMap(adv); // ✅ CORRECTION: Appel à la mise à jour de la carte (utilise l'ADV parent pour les coordonnées)
+                });
 
-        document.querySelectorAll("#advTable tbody tr").forEach(r => r.classList.remove("active-adv"));
-        row.classList.add("active-adv");
-        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        
-        getAdvDetails(adv);
-        
-        if (advType && name) {
-          const lowerType = advType.toLowerCase();
-          fetch(`/api/${lowerType}/${encodeURIComponent(name)}`) 
-            .then(res => {
-              if (!res.ok) throw new Error(`Erreur ${res.status}`);
-              return res.json();
-            })
-            .then(data => {
-              const advData = Array.isArray(data) ? data[0] : data;
-              console.log(`Données ADV récupérées pour ${name}:`, advData);
-              getAdvData(advData);
-            })
-            .catch(err => {
-              console.error("Erreur lors de la récupération des données ADV détaillées:", err);
+                snapshotRows.push(itemRow);
+                tbody.appendChild(itemRow); 
             });
-        } else {
-          console.warn("Type ou nom ADV manquant:", { type: advType, name });
+            
+            // Événement de bascule du dépliant
+            toggleCell.addEventListener('click', () => {
+                const isCurrentlyHidden = snapshotRows.length > 0 && snapshotRows[0].classList.contains('hidden');
+
+                // Basculer l'état de visibilité de toutes les lignes de snapshots
+                snapshotRows.forEach(sr => sr.classList.toggle('hidden'));
+                
+                // Mettre à jour l'icône (▼ si ouvert, ▶ si fermé)
+                icon.textContent = isCurrentlyHidden ? '▼' : '▶';
+            });
         }
-      });
+    } // Fin boucle for...of (data)
 
-      tbody.appendChild(row);
-    });
+    // --- Gestion du Clic Forcé (ALL -> Type) ---
+    if (advToSelect) {
+        const targetRowId = `adv-row-${advToSelect.replace(/[^a-zA-Z0-9]/g, '-')}`;
+        const targetRow = document.getElementById(targetRowId);
+
+        if (targetRow) {
+            // Déclencher le clic sur la cellule du nom de l'ADV (qui charge les données courantes)
+            // L'appel au `.click()` déclenchera l'écouteur, qui contient maintenant `updateMap(adv)`.
+            targetRow.querySelector('.adv-name-cell').click(); 
+        }
+    }
 }
-
-const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public";
-
-function createDocumentButton(advName) {
-    const hub = document.getElementById('hub');
-    if (!hub) return;
-    const oldButton = document.getElementById('document-btn');
-    if (oldButton) oldButton.remove();
-
-    if (!advName || advName === '') return;
-
-    const button = document.createElement('button');
-    button.id = 'document-btn';
-    button.textContent = `Plan de l'appareil`;
-    button.classList.add('data-btn-document'); 
-    const fullFilename = advName + '.pdf';
-    const webdavFullPath = `${WEBDAV_TARGET_DIR}/${fullFilename}`; 
-    // console.log("Chemin WebDAV complet pour le document :", webdavFullPath);
-    const encodedPath = encodeURIComponent(webdavFullPath);
-    // console.log("Chemin WebDAV encodé pour le document :", encodedPath);
-    const documentUrl = `/api/webdav/open/${encodedPath}`; 
-
-    button.onclick = () => {
-        window.open(documentUrl, '_blank'); 
-    };
-    hub.appendChild(button);
-}
-
+// Le reste des fonctions (getAdvDetails, updateCroisement, etc.) suit ici...
 
 function getAdvDetails(adv) {
   const advName = adv["ADV"] || adv["adv"];
@@ -338,6 +491,8 @@ function getAdvDetails(adv) {
     return;
   }
   createDocumentButton(advName);
+  
+  // CORRECTION: Utilisation de encodeURIComponent pour le chemin query string
   fetch(`/api/general_data?adv=${encodeURIComponent(advName)}`)
     .then(res => {
       if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
@@ -353,52 +508,71 @@ function getAdvDetails(adv) {
 }
 
 
+// document.getElementById("new-measure-btn").addEventListener("click", () => {
+//   const activeVoie = document.querySelector(".voie-content.active");
+//   if (!activeVoie) {
+//     console.warn("Aucune voie active trouvée !");
+//     return;
+//   }
+
+//   const visibleContainers = Array.from(
+//     activeVoie.querySelectorAll(".voie-type-container")
+//   ).filter(c => c.style.display !== "none");
+
+//   visibleContainers.forEach(container => {
+//     const elements = container.querySelectorAll(
+//       "input, textarea, select, table, [data-value], [data-editable], .ecartement-card"
+//     );
+
+//     elements.forEach(el => {
+//       let identifier =
+//         el.id ||
+//         el.getAttribute("name") ||
+//         (el.className ? "." + el.className.split(" ").join(".") : "(sans id/classe)");
+//       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+//         el.disabled = false;
+//       } else if (el.tagName === "TABLE") {
+//       } else if (el.classList.contains("ecartement-card")) {
+//         el.contentEditable = true;
+//         el.style.cursor = "text";
+//       }
+//       let value = "";
+//       if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
+//         value = el.value;
+//       } else if (el.tagName === "TABLE") {
+//         value = el.innerText.trim();
+//       } else {
+//         value = el.getAttribute("data-value") || el.innerText.trim();
+//       }
+//       console.log(identifier,`Valeur ${value}`);
+//     });
+//   });
+// });
 
 
-document.getElementById("new-measure-btn").addEventListener("click", () => {
-  const activeVoie = document.querySelector(".voie-content.active");
-  if (!activeVoie) {
-    console.warn("Aucune voie active trouvée !");
-    return;
-  }
+function createDocumentButton(advName) {
+    const hub = document.getElementById('hub');
+    if (!hub) return;
+    const oldButton = document.getElementById('document-btn');
+    if (oldButton) oldButton.remove();
 
-  const visibleContainers = Array.from(
-    activeVoie.querySelectorAll(".voie-type-container")
-  ).filter(c => c.style.display !== "none");
+    if (!advName || advName === '') return;
 
-  visibleContainers.forEach(container => {
-    const elements = container.querySelectorAll(
-      "input, textarea, select, table, [data-value], [data-editable], .ecartement-card"
-    );
+    const button = document.createElement('button');
+    button.id = 'document-btn';
+    button.textContent = `Plan de l'appareil`;
+    button.classList.add('data-btn-document'); 
+    const fullFilename = advName + '.pdf';
+    const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public"; // Assurez-vous que cette constante est définie
+    const webdavFullPath = `${WEBDAV_TARGET_DIR}/${fullFilename}`; 
+    const encodedPath = encodeURIComponent(webdavFullPath);
+    const documentUrl = `/api/webdav/open/${encodedPath}`; 
 
-    elements.forEach(el => {
-      let identifier =
-        el.id ||
-        el.getAttribute("name") ||
-        (el.className ? "." + el.className.split(" ").join(".") : "(sans id/classe)");
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
-        el.disabled = false;
-      } else if (el.tagName === "TABLE") {
-      } else if (el.classList.contains("ecartement-card")) {
-        el.contentEditable = true;
-        el.style.cursor = "text";
-      }
-      let value = "";
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT") {
-        value = el.value;
-      } else if (el.tagName === "TABLE") {
-        value = el.innerText.trim();
-      } else {
-        value = el.getAttribute("data-value") || el.innerText.trim();
-      }
-      console.log(identifier,`Valeur ${value}`);
-    });
-  });
-});
-
-
-
-
+    button.onclick = () => {
+        window.open(documentUrl, '_blank'); 
+    };
+    hub.appendChild(button);
+}
 
 
 function displayAdvDetails(adv) {
@@ -469,58 +643,15 @@ function getAdvData(adv) {
   const name = (adv["adv"] || adv["ADV"] || '').trim();
   const type = (adv["type"] || '').toLowerCase();
   
-  // Gérer le cas où l'ADV est null/undefined/vide, ce qui signifie qu'on a cliqué
-  // sur le type, mais pas encore sur un ADV spécifique, ou que les données sont vides.
   if (!name || !type) {
     if (currentType !== 'all') {
-      // Si on est en mode type spécifique et qu'on reçoit des données vides,
-      // on suppose que l'ADV sélectionné dans la table latérale est le seul
-      // connu pour le moment, mais qu'il n'y a pas de données détaillées.
-      // Le log 'Aucun ADV sélectionné' a déjà été fait dans createTable.
       console.warn("ADV ou Type non défini. Données détaillées ADV non chargées.");
     }
     return;
   }
   
-  // console.log(`/api/${type}/${encodeURIComponent(name)}`);
-  fetch(`/api/${type}/${encodeURIComponent(name)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP: ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      const advData = Array.isArray(data) ? data[0] : data;
-      if (!advData) {
-        // Le log a été fait dans createTable avant l'appel à getAdvData
-        return;
-      }
-      switchVoieTypeContent(type, 'voie-croisement');
-      switchVoieTypeContent(type, 'voie-ecartement');
-      updateCroisement(advData)
-      updateEcartementAttaches(advData, type)
-      updatePlancherBois(advData);
-      // checkIfAiguillageActive();
-    })
-    .catch(err => {
-      console.error("Erreur en chargeant les détails ADV:", err);
-    });
-    // console.log(`/api/da?adv=${encodeURIComponent(name)}`);
-  fetch(`/api/da?adv=${encodeURIComponent(name)}`)
-    .then(res => {
-      if (!res.ok) throw new Error(`Erreur HTTP (bavure): ${res.status}`);
-      return res.json();
-    })
-    .then(data => {
-      if (!Array.isArray(data) || data.length === 0) {
-        return;
-      }
-      switchVoieTypeContent(type, 'voie-aiguillage');
-      updateDA(data, type);
-      // console.log("data: " , data);
-    })
-    .catch(err => {
-      console.error("Erreur en chargeant la bavure ADV:", err);
-    });
+  // Utiliser la fonction hub pour le chargement courant
+  getAdvDataHub(adv, false);
 }
 
 function updateCroisement(adv){
@@ -600,15 +731,13 @@ function showOrHideDataForAiguillage(type) {
 }
 
 function updateToButtonVisibility() {
-  const voieAiguillage = document.getElementById('voie-aiguillage');
-  const toButton = document.querySelector('button[data-type="TO"]');
-  const allButton = document.querySelector('button[data-type="ALL"]');
-  if (!toButton) return;
+  const voieAiguillage = document.querySelector('#voie-aiguillage.voie-content.active');
+  const toggleContainer = document.querySelector('.toggle-summary-detail');
+  if (!toggleContainer) return;
   
   const isAiguillageActive = voieAiguillage && voieAiguillage.classList.contains('active');
   
-  // toButton.style.display = isAiguillageActive ? 'none' : 'inline-block';
-  // allButton.style.display = isAiguillageActive ? 'none' : 'inline-block';
+  // toggleContainer.style.display = isAiguillageActive ? 'none' : 'inline-flex';
   updateButtons();
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
@@ -635,7 +764,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
       data_section.style.gridRow = '4 / 6';
       data_section.style.gridColumn = '1 / 3';
       dataADV.style.gridColumn = '1 / 3';
-      dataADV.style.gridRow = '6 / 9';
+      dataADV.style.gridRow = '6 / 8';
       data_voie_container.style.gridRow = '1 / 11';
       mapContainer.style.display = 'none';
       
@@ -646,7 +775,7 @@ document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => 
     } else {
       infoContainer.style.display = 'flex';
       img_ag_tj.style.display = 'none';
-      left_sidebar.style.gridRow = '1 / 9';
+      left_sidebar.style.gridRow = '1 / 8';
       data_section.style.gridRow = '1 / 4';
       data_section.style.gridColumn = '3 / 5';
       dataADV.style.gridColumn = '5 / 7';
@@ -871,86 +1000,27 @@ function renderSummaryTable(type, data) {
   });
 }
 
-function whereImI(){
-  const current = document.querySelector('.voie-content.active');
-  if(current){
-    return "Nouvelles mesures pour " + current.id;
-  }else{
-    return "Aucune voie-content active.";
-  }
-}
-const btn = document.getElementById("new-measure-btn");
-const tooltip = document.getElementById("tooltip");
-
-// Affichage au survol
-btn.addEventListener("mouseenter", () => {
-  tooltip.textContent = whereImI();
-  tooltip.classList.add("show");
-});
-
-// Masquage quand on sort
-btn.addEventListener("mouseleave", () => {
-  tooltip.classList.remove("show");
-});
-
-// // === Gestion du toggle Admin / Technicien ===
-// const toggle = document.getElementById("toggleButton");
-// const dataVoieContainer = document.getElementById("dataVoie-container");
-
-// function setInputsDisabled(disabled) {
-//   if (!dataVoieContainer) {
-//     console.warn("⚠️ .dataVoie-Container introuvable !");
-//     return;
+// function whereImI(){
+//   const current = document.querySelector('.voie-content.active');
+//   if(current){
+//     return "Nouvelles mesures pour " + current.id;
+//   }else{
+//     return "Aucune voie-content active.";
 //   }
-
-//   // Champs classiques
-//   const elements = dataVoieContainer.querySelectorAll("input, select, textarea");
-//   elements.forEach(el => {
-//     el.disabled = disabled;
-//   });
-
-//   // Tables éditables
-//   const tables = dataVoieContainer.querySelectorAll("table[data-editable='true']");
-//   tables.forEach(table => {
-//     table.querySelectorAll("tbody td").forEach(td => {
-//       td.contentEditable = disabled ? "false" : "true";
-//     });
-//   });
-
-//   // Cards éditables
-//   const cards = dataVoieContainer.querySelectorAll(".ecartement-card[data-editable='true']");
-//   cards.forEach(card => {
-//     card.contentEditable = disabled ? "false" : "true";
-//     card.style.cursor = disabled ? "default" : "text";
-//   });
 // }
+// const btn = document.getElementById("new-measure-btn");
+// const tooltip = document.getElementById("tooltip");
 
-// toggle.addEventListener("click", () => {
-//   toggle.classList.toggle("on");
-
-//   const isAdmin = toggle.classList.contains("on");
-//   // console.log("🔄 Toggle cliqué → rôle =", isAdmin ? "Admin" : "Technicien");
-
-//   if (isAdmin) {
-//     setInputsDisabled(false);
-//   } else {
-//     setInputsDisabled(true);
-//   }
+// // Affichage au survol
+// btn.addEventListener("mouseenter", () => {
+//   tooltip.textContent = whereImI();
+//   tooltip.classList.add("show");
 // });
 
-
-
-
-
-
-
-
-
-
-
-
-
-//page demi-Aiguillage
+// // Masquage quand on sort
+// btn.addEventListener("mouseleave", () => {
+//   tooltip.classList.remove("show");
+// });
 
 function updateBavuresTable(data) {
   const mappingBavure = {
@@ -1262,8 +1332,6 @@ function updateUsureLaTable(data) {
 
 //page Plancher/bois
 
-// advBoulogne.js - Remplacement de la fonction updateBois
-
 function updateBois(adv) {
   if (!adv || typeof adv !== 'object') return;
   
@@ -1315,58 +1383,59 @@ function updateBois(adv) {
   // Appel à updateCharts avec les trois valeurs distinctes
   updateCharts(adv);
 }
-// advBoulogne.js - Remplacement de la fonction updateCharts
-function initCharts() {
-  const boisCtx = document.getElementById('boisChart')?.getContext('2d');
-  if (boisCtx) {
-    boisChartInstance = new Chart(boisCtx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Bon état', 'À remplacer', 'À graisser'],
-        datasets: [{
-          data: [0, 0], // données initiales vides
-          backgroundColor: ['#4caf50', '#f44336', '#e2df13ff']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        responsive: true,
-        // scales: {
-        //     y: {
-        //         beginAtZero: true
-        //     }
-        // },
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
 
-  const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
-  if (jointsCtx) {
-    // Graphique à barres pour les 3 états
-    jointsChartInstance = new Chart(jointsCtx, {
-      type: 'doughnut', 
-      data: {
-        labels: ['Bon état', 'À reprendre', 'À graisser'], // Labels clairs pour les 3 catégories
-        datasets: [{
-          label: 'Nombre de joints',
-          data: [0, 0, 0], 
-          backgroundColor: ['#4caf50', '#f44336', '#e2df13ff'], 
-          borderWidth: 1
-        }]
-      },
-      options: {
-        cutout: '70%',
-        responsive: true,
-        // scales: {
-        //     y: {
-        //         beginAtZero: true
-        //     }
-        // },
-        plugins: { legend: { display: false } }
-      }
-    });
-  }
+function initCharts() {
+    const boisCtx = document.getElementById('boisChart')?.getContext('2d');
+    if (boisCtx) {
+        boisChartInstance = new Chart(boisCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Bon état', 'À remplacer'],
+                datasets: [{
+                    data: [0, 0],
+                    backgroundColor: ['#4caf50', '#f44336']
+                }]
+            },
+            options: {
+                cutout: '70%',
+                responsive: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    const jointsCtx = document.getElementById('jointsChart')?.getContext('2d');
+    if (jointsCtx) {
+        jointsChartInstance = new Chart(jointsCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Bon état', 'À reprendre', 'À graisser'],
+                datasets: [{
+                    label: 'Nombre de joints',
+                    data: [0, 0, 0],
+                    backgroundColor: ['#4caf50', '#f44336', '#e2df13ff'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#000000ff'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#000000ff'
+                        }
+                    }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
 }
 function updateCharts(adv) {
   if (!adv || typeof adv !== 'object') {

@@ -1,4 +1,9 @@
-/* Structure générale */
+:root {
+    --primary-orange: #FF8C00;
+    --dark-blue: rgba(0, 42, 85, 0.9);
+    --modal-bg-color: rgba(30, 30, 30, 0.6);
+    --header-transition-duration: 1.5s;
+}
 body {
     margin: 0;
     padding: 0;
@@ -33,11 +38,11 @@ body {
 .voies {
     grid-column: 1 / 3;
     grid-row: 1 / 5;
-    overflow-y: auto;
-    border-right: 1px solid #ccc;
     background-color: #f7f7f7;
+    border-radius: 5px;
+    border-right: 1px solid #ccc;
+    overflow-y: auto;
     padding: 10px;
-    box-sizing: border-box;
 }
 
 .voies h2 {
@@ -105,7 +110,7 @@ body {
   grid-row: 6 / 7;
   top: 10px;
   right: 10px;
-  background-color: #f44336;
+  /* background-color: #f44336; */
   color: white;
   border: none;
   padding: 10px;
@@ -168,4 +173,52 @@ body {
 .anomalies-table tr:hover {
     background-color: #e0e0e0;
     cursor: pointer;
+}
+
+.choice-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* top: 10px;    
+    right: 10px;   */
+    /* background-color: #f44336; */
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    z-index: 3;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 8px;
+    background-color: var(--primary-orange); 
+    color: white;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    
+    max-height: 76px;
+    min-height: 76px;
+}
+
+.choice-button:hover {
+    background-color: #e67e00;
+    transform: translateY(-2px);
+}
+
+.choice-button img {
+    width: 60px;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+.accueil-button{
+    grid-column: 1 / 3;
+    grid-row: 6 / 7;
+}
+.armement-button{
+    grid-column: 1 / 3;
+    grid-row: 5 / 6;
+    text-align: center;
 }

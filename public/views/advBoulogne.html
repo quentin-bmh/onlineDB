@@ -751,18 +751,17 @@
             <div class="chart-container">
               <canvas id="boisChart"></canvas>
               <div class="chart-center-text" id="boisCount">35</div>
-              <div class="chart-subtext">Bon état / À remplacer</div>
             </div>
             <table class="plancher-table" data-editable="true" data-lock="first-row" >
               <thead>
                 <tr>
-                  <th>% bois à remplacer</th>
+                  <th hidden>% bois à remplacer</th>
                   <th>bois à remplacer</th>
                   <th>bois bon état</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>10%</td><td>5</td><td>35</td></tr>
+                <tr><td hidden>10%</td><td>5</td><td>35</td></tr>
               </tbody>
             </table>
           </div>
@@ -771,19 +770,18 @@
             <div class="chart-container">
               <canvas id="jointsChart"></canvas>
               <div class="chart-center-text" id="jointsCount">42</div>
-              <div class="chart-subtext">Bon état / À reprendre</div>
             </div>
             <table class="plancher-table" data-editable="true" data-lock="first-row">
               <thead>
                 <tr>
-                  <th>% Joints à remplacer</th>
+                  <th hidden>% Joints à remplacer</th>
                   <th>Joints bon état</th>
                   <th>Joints à reprendre</th>
                   <th>Joints à graisser</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>15%</td><td>40</td><td>5</td><td>3</td></tr>
+                <tr><td hidden>15%</td><td>40</td><td>5</td><td>3</td></tr>
               </tbody>
             </table>
           </div>
@@ -806,10 +804,10 @@
             <button id="show-summary">Résumé</button>
             <button id="show-detail" class="active" style="display: none;">Détail</button>
           </div>
-          <div class="nouv-mesure-container">
+          <!-- <div class="nouv-mesure-container">
             <button id="new-measure-btn">Nouvelles mesures</button>
             <div id="tooltip" class="tooltip"></div>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -825,14 +823,6 @@
         <a href="/edit_adv" class=" modify_adv choice-button voies-button">
                     Modifier l'ADV
     </a>
-    <!-- <button class="edit-data"><a href="/b2v">Nouvelles mesures</a></button> -->
-     <!-- <div class="section-role">
-       <div class="toggle-container" id="toggleButton">
-         <div class="text-left">Admin</div>
-         <div class="text-right">Tech</div>
-         <div class="circle"></div>
-       </div>
-     </div> -->
   </div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

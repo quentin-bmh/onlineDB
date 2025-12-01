@@ -1324,7 +1324,7 @@ async function loadAdvList() {
              advList.forEach(adv => {
                 const option = document.createElement('option');
                 option.value = adv.adv;
-                option.textContent = `${adv.adv} (${adv.type})`;
+                option.textContent = `${adv.adv}`;
                 option.setAttribute('data-type', adv.type);
                 advSelect.appendChild(option);
             });

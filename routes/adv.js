@@ -30,7 +30,7 @@ router.get('/general_data', async (req, res) => {
 
 router.get('/adv_coordinates', async (req, res) => {
   try {
-    const result = await pool.query('SELECT "adv","type", "lat", "long" FROM general_data;');
+    const result = await pool.query('SELECT "adv","type", "lat", "long" FROM general_data order by adv;');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -39,7 +39,7 @@ router.get('/adv_coordinates', async (req, res) => {
 router.get('/adv_coordinates/:type', async (req, res) => {
   const type = req.params.type;
   try {
-    const result = await pool.query('SELECT "adv", "lat", "long" FROM general_data WHERE type = $1;', [type]);
+    const result = await pool.query('SELECT "adv", "lat", "long" FROM general_data WHERE type = $1 order by "adv";', [type]);
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -446,5 +446,43 @@ router.put('/adv_update_transaction/:advName', async (req, res) => {
     }
 });
 
+router.get('/historic_from/:type', async (req, res) => {
+  const type = req.params.type;
+  try {
+    const tableName = `adv_${type}_historic`;
+    const result = await pool.query(`SELECT * FROM ${tableName} ORDER BY snapshot_date, historic_id DESC;`);
+    res.json(result.rows);
+  }
+  catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+router.get('/b2v_da_historic_from/:advName', async (req, res) => {
+  const advName = req.params.advName;
+  try {
+    const result = await pool.query('SELECT * FROM b2v_da_historic WHERE snapshot_adv = $1 ORDER BY historic_id, snapshot_date DESC;', [advName]);
+    res.json(result.rows);
+  }
+  catch (err) {
+    res.status(500).json({ error: err.message });
+  } 
+});
+router.get('/list_historic_for/:type', async (req, res) => {
+  const type = req.params.type;
+  if (type !== 'bs' && type !== 'tj' && type !== 'to') {
+    return res.status(400).json({ error: 'Type ADV non supporté.' });
+  }
+
+  try {
+    const tableName = `adv_${type}_historic`;
+    // Sélectionne les dates et les ADV distincts dans la table historique
+    const result = await pool.query(`SELECT DISTINCT snapshot_date, snapshot_adv FROM ${tableName} ORDER BY snapshot_date DESC;`);
+    res.json(result.rows);
+  }
+  catch (err) {
+    // Si la table n'existe pas, cela renverra une erreur 500.
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
