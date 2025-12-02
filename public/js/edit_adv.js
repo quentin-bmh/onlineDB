@@ -19,21 +19,21 @@ const SELECT_OPTIONS = {
         { value: 'vi', label: 'VI' }
     ],
     usureLCA: [
-        { value: 'sup_3mm', label: '> 3mm' },
-        { value: 'inf_3mm', label: '< 3mm' },
-        { value: '0mm', label: '0mm' }
+        { value: 'sup_3mm', label: '(j > 3mm)' },
+        { value: 'inf_3mm', label: '(j < 3mm)' },
+        { value: '0mm', label: '(j = 0)' }
     ],
     calibrePige: [
         { value: 'ne_passe_pas', label: 'ne passe pas' },
-        { value: 'passe_apres_meulage', label: 'passe après meulage' },
-        { value: 'passe_avant_meulage', label: 'passe avant meulage' }
+        { value: 'apres_meulage', label: 'après meulage' },
+        { value: 'sans_meulage', label: 'sans meulage' }   
     ],
     usureLAPente: [
         { value: 'sup_60', label: '≥ 60°' },
         { value: 'inf_60', label: '≤ 60°' }
     ],
     usureLAContact: [
-        { value: 'dessus_dessous', label: 'au dessus et au dessous' },
+        { value: 'dessus_dessous', label: 'au dessus et en dessous' },
         { value: 'dessus', label: 'au dessus' },
         { value: 'dessous', label: 'en dessous' }
     ]
@@ -106,10 +106,10 @@ const DEMI_AIG_SELECT_VALUE_MAPPING = {
     'vi': 'VI',
     'sup_3mm': '(j > 3mm)',
     'inf_3mm': '(j < 3mm)',
-    '0mm': '0mm',
+    '0mm': '(j = 0)',
     'ne_passe_pas': 'ne passe pas',
-    'passe_apres_meulage': 'avec meulage',
-    'passe_avant_meulage': 'sans meulage',
+    'apres_meulage': 'après meulage',
+    'sans_meulage': 'sans meulage',
     'sup_60': '>=60°',
     'inf_60': '<=60°',
     'dessus_dessous': 'au dessus et au dessous',
@@ -489,7 +489,7 @@ function initJointsChart() {
             datasets: [{
                 label: 'Nombre de joints',
                 data: [0, 0, 0],
-                backgroundColor: ['#e2df13ff', '#eb7d16ff', '#e93f15ff'],
+                backgroundColor: ['#259116ff', '#eb1616ff', '#f3ef1dff'],
                 borderWidth: 1
             }]
         },
@@ -939,7 +939,7 @@ function collectBoisJointsData() {
     
     Object.keys(data).forEach(key => (data[key] === null || data[key] === '') && delete data[key]);
 
-    if (data.etat_rails === 'bon') delete data.etat_rails;
+    // if (data.etat_rails === 'bon') delete data.etat_rails;
 
     return data;
 }
@@ -1074,7 +1074,7 @@ function collectDemiAiguillageData(advType) {
                         if (i === 1) { 
                              value = (selectedOptionValue === 'aucune') ? 'aucune bavure' : DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
                         } else if (i === 2) { 
-                             value = (selectedOptionValue === 'aucune') ? 'aucune ebrechure' : 'grooose ebrechure';
+                             value = (selectedOptionValue === 'aucune') ? 'aucune ebrechure' : 'présence ébrechure';
                         } else if (i === 3) {
                             value = (selectedOptionValue === 'dessous_repere') ? 'dessous' : 'dessus';
                         } else {
@@ -1500,7 +1500,7 @@ function fillDemiAiguillageData(data, advType) {
                             finalValue = 'aucune';
                         } else if (dbKey === 'ebrechure_a' && valueToSet === 'aucune ebrechure') {
                             finalValue = 'aucune';
-                        } else if (dbKey === 'ebrechure_a' && valueToSet === 'grooose ebrechure') {
+                        } else if (dbKey === 'ebrechure_a' && valueToSet === 'présence ébrechure') {
                             finalValue = 'presence'; 
                         } else if (reverseSelectMapping[valueToSet]) {
                             finalValue = reverseSelectMapping[valueToSet];

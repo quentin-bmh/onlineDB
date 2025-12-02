@@ -7,6 +7,7 @@ require('dotenv').config();
 require('./config/db'); 
 
 const AuthMiddleware = require('./middleware/authMiddleware');
+const AdminMiddleware = require('./middleware/adminMiddleware');
 
 const voiesRoutes = require('./routes/voies');
 const advRoutes = require('./routes/adv');
@@ -49,6 +50,15 @@ app.get('/signup', (req, res) => {
 });
 
 app.get('/:page', (req, res, next) => {
+  if (req.params.page === 'new_adv') {
+    AdminMiddleware.authorizeAdmin(req, res, () => {
+      const filePath = path.join(__dirname, 'public/views', `${req.params.page}.html`);
+      res.sendFile(filePath, err => {
+        if (err) next(); 
+      });
+    });
+    return;
+  }
   if (req.params.page.startsWith('api') || req.params.page === 'auth' || req.params.page === 'admin') {
           return next(); 
       }      

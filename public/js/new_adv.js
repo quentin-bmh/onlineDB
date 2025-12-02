@@ -19,21 +19,21 @@ const SELECT_OPTIONS = {
         { value: 'vi', label: 'VI' }
     ],
     usureLCA: [
-        { value: 'sup_3mm', label: '> 3mm' },
-        { value: 'inf_3mm', label: '< 3mm' },
-        { value: '0mm', label: '0mm' }
+        { value: 'sup_3mm', label: '(j > 3mm)' },
+        { value: 'inf_3mm', label: '(j < 3mm)' },
+        { value: '0mm', label: '(j = 0)' }
     ],
     calibrePige: [
         { value: 'ne_passe_pas', label: 'ne passe pas' },
-        { value: 'passe_apres_meulage', label: 'passe après meulage' },
-        { value: 'passe_avant_meulage', label: 'passe avant meulage' }
+        { value: 'apres_meulage', label: 'après meulage' },
+        { value: 'sans_meulage', label: 'sans meulage' }   
     ],
     usureLAPente: [
         { value: 'sup_60', label: '≥ 60°' },
         { value: 'inf_60', label: '≤ 60°' }
     ],
     usureLAContact: [
-        { value: 'dessus_dessous', label: 'au dessus et au dessous' },
+        { value: 'dessus_dessous', label: 'au dessus et en dessous' },
         { value: 'dessus', label: 'au dessus' },
         { value: 'dessous', label: 'en dessous' }
     ]
@@ -96,41 +96,28 @@ const DEMI_AIG_OUTPUT_ORDER = [
     'taille_tot_ebrechure'
 ];
 
-// --- Mappage pour normaliser les valeurs des selects ---
 const DEMI_AIG_SELECT_VALUE_MAPPING = {
-    // Ligne 1: Bavures (valeurs génériques, le cas "aucune" est géré dans la fonction)
     'eliminees': 'bavures éliminées par meulage',
     'presence': 'Présence de bavures',
-    
-    // Ligne 3: Contact fente
     'dessous_repere': 'dessous',
     'dessus_repere': 'dessus',
-    
-    // Lignes 6, 8, 12, 15: Classement (Première lettre en majuscule si c'est 'bon')
     'bon': 'Bon',
     'va': 'VA',
     'vr': 'VR',
     'vi': 'VI',
-
-    // Ligne 9: Usure LCA (Format requis pour la chaîne de sortie)
     'sup_3mm': '(j > 3mm)',
     'inf_3mm': '(j < 3mm)',
-    '0mm': '0mm',
-    
-    // Ligne 10, 11: Calibre/Pige
+    '0mm': '(j = 0)',
     'ne_passe_pas': 'ne passe pas',
-    'passe_apres_meulage': 'avec meulage',
-    'passe_avant_meulage': 'sans meulage',
-    
-    // Ligne 13: Usure LA Pente (Format requis)
+    'apres_meulage': 'après meulage',
+    'sans_meulage': 'sans meulage',
     'sup_60': '>=60°',
     'inf_60': '<=60°',
-    
-    // Ligne 14: Usure LA Contact
     'dessus_dessous': 'au dessus et au dessous',
     'dessus': 'au dessus',
     'dessous': 'en dessous'
 };
+
 
 
 const ADV_CONFIG = {

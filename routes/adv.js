@@ -256,6 +256,10 @@ router.delete('/adv/:advName', async (req, res) => {
     advType = typeResult.rows[0].type.toLowerCase();
     
     const specificTableName = `adv_${advType}`;
+    const specificHistoricTableName = `adv_${advType}_historic`;
+
+    await client.query(`DELETE FROM ${specificHistoricTableName} WHERE snapshot_adv = $1`, [advName]);
+    console.log(`[DELETE] Supprimé de ${specificHistoricTableName} (Historique)`);
     
     await client.query(`DELETE FROM ${specificTableName} WHERE adv = $1`, [advName]);
     console.log(`[DELETE] Supprimé de ${specificTableName}`);
@@ -263,6 +267,9 @@ router.delete('/adv/:advName', async (req, res) => {
     if (advType === 'bs' || advType === 'tj') {
       await client.query('DELETE FROM b2v_da WHERE adv = $1', [advName]);
       console.log('[DELETE] Supprimé de b2v_da (Demi-Aiguillage)');
+      await client.query('DELETE FROM b2v_da_historic WHERE snapshot_adv = $1', [advName]);
+      console.log('[DELETE] Supprimé de b2v_da_historic (Historique Demi-Aiguillage)');
+
     }
 
     await client.query('DELETE FROM general_data WHERE adv = $1', [advName]);

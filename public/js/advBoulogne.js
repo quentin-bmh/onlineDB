@@ -6,8 +6,46 @@ let advMarkers = L.layerGroup();
 let currentType = '';
 let summaryData = [];
 
+const API_URL_PROFILE = '/auth/profile';
+window.isAdmin = false;
+
+async function manageAdminFeatures() {
+    const newAdvButton = document.querySelector('.new_adv');
+    const left_sidebar = document.getElementById('left-sidebar');
+    
+    // Masquer le bouton par défaut (sécurité visuelle en attendant l'API)
+    if (newAdvButton) {
+        newAdvButton.style.display = 'none';
+        left_sidebar.style.gridRow = '1 / 9';
+    }
+
+    try {
+        const response = await fetch(API_URL_PROFILE);
+        
+        if (!response.ok) {
+             // Non-authentifié (déjà géré par le middleware, mais double vérification)
+             throw new Error(`Échec du chargement du profil: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const user = data.user; 
+
+        if (user && user.is_admin === true) {
+            // Utilisateur est ADMIN : Afficher le bouton
+            window.isAdmin = true;
+            if (newAdvButton) {
+                newAdvButton.style.display = 'inline-flex';
+                left_sidebar.style.gridRow = '1 / 8';
+            }
+        }
+    } catch (error) {
+        // En cas d'erreur ou non-authentifié, le bouton reste masqué ('none')
+        console.warn("Échec de la récupération du profil utilisateur sur advBoulogne.js.", error);
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
+    manageAdminFeatures();
     initMap();
     loadTypeButtons();
     setupToggleMenu();
@@ -228,7 +266,7 @@ async function getSpecificSnapshotData(advType, advName, snapshotDate) {
         const targetAdvData = data.find(item => 
             item.adv === advName && item.snapshot_date === snapshotDate
         );
-
+        // console.log('Données de la snapshot récupérées:', targetAdvData);
         return targetAdvData || {};
     } catch (e) {
         console.error(`Échec du chargement de la snapshot ${snapshotDate}:`, e);
@@ -244,7 +282,7 @@ async function getDaSnapshotData(advName, snapshotDate) {
         const filteredDaData = data.filter(item => 
             item.snapshot_adv === advName && item.snapshot_date === snapshotDate
         );
-
+        console.log('Données DA de la snapshot récupérées:', filteredDaData);
         return filteredDaData;
     } catch (e) {
         console.error(`Échec du chargement de la snapshot DA ${snapshotDate}:`, e);
@@ -297,6 +335,7 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
         .then(advData => {
           advData = Array.isArray(advData) ? advData[0] : advData;
           if (!advData) return;
+          console.log("Données ADV reçues:", advData);
           switchVoieTypeContent(type, 'voie-croisement');
           switchVoieTypeContent(type, 'voie-ecartement');
           updateCroisement(advData)
@@ -311,6 +350,7 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
           return res.json();
         })
         .then(data => {
+          console.log("Données DA reçues:", data);
           if (!Array.isArray(data) || data.length === 0) return;
           switchVoieTypeContent(type, 'voie-aiguillage');
           updateDA(data, type);
@@ -710,24 +750,30 @@ function switchVoieTypeContent(type, voieId) {
   parent.querySelectorAll('.voie-type-container').forEach(container => {
     container.style.display = (container.dataset.type === type) ? 'flex' : 'none';
   });
-  showOrHideDataForAiguillage(type);
+  // showOrHideDataForAiguillage(type);
   updateButtons();
 }
 
-
+//ici on affiche ou non L'image dans #data
+/**
+ * @param {string} type - Le type d'aiguillage actif ('bs', 'autre', etc.).
+ */
 function showOrHideDataForAiguillage(type) {
-  const voieAiguillage = document.getElementById('voie-aiguillage');
-  const dataSection = document.getElementById('data');
-  if (!voieAiguillage || !dataSection) return;
-  if (voieAiguillage.classList.contains('active')) {
-    if (type === 'bs') {
-      dataSection.style.display = 'none';
-    } else {
-      dataSection.style.display = 'flex';
+    const dataSection = document.getElementById('data');
+
+    if (!dataSection) {
+        console.error("Élément #data introuvable.");
+        return;
     }
-  } else {
-    dataSection.style.display = 'flex';
-  }
+
+    const normalizedType = (type || '').toLowerCase();
+
+    // Masquer si le type est 'bs', sinon afficher 'flex' (comportement par défaut)
+    if (normalizedType === 'bs') {
+        dataSection.style.display = 'none';
+    } else {
+        dataSection.style.display = 'flex';
+    }
 }
 
 function updateToButtonVisibility() {
@@ -741,111 +787,149 @@ function updateToButtonVisibility() {
   updateButtons();
 }
 document.querySelectorAll('.toggle-menu button, #hub button').forEach(button => {
-  button.addEventListener('click', () => {
-    const targetId = button.getAttribute('data-target');
-    const current = document.querySelector('.voie-content.active');
-    const next = document.getElementById(targetId);
-    const infoContainer = document.getElementById('info-container'); 
-    const img_ag_tj = document.getElementById('tj_aiguille_img');
-    const left_sidebar = document.getElementById('left-sidebar');
-    const data_section = document.querySelector('.data-actions');
-    const dataADV = document.getElementById('data');
-    const data_voie_container = document.getElementById('dataVoie-container');
-    const mapEl = document.getElementById('map');
-    const mapContainer = document.getElementById('map-container');
-    
-    if (!next || current === next) return;
+    button.addEventListener('click', () => {
+        const targetId = button.getAttribute('data-target');
+        const current = document.querySelector('.voie-content.active');
+        const next = document.getElementById(targetId);
+        const infoContainer = document.getElementById('info-container');
+        const img_ag_tj = document.getElementById('tj_aiguille_img');
+        const left_sidebar = document.getElementById('left-sidebar');
+        const data_section = document.querySelector('.data-actions');
+        const dataADV = document.getElementById('data'); // C'est #data
+        const data_voie_container = document.getElementById('dataVoie-container');
+        const mapEl = document.getElementById('map');
+        const mapContainer = document.getElementById('map-container');
 
-    const isAdvSelected = data_voie_container && data_voie_container.classList.contains('active-adv-data');
-    if (targetId === 'voie-aiguillage') {
-      infoContainer.style.display = 'none';
-      img_ag_tj.style.display = 'flex';
-      left_sidebar.style.gridRow = '1 / 4';
-      data_section.style.gridRow = '4 / 6';
-      data_section.style.gridColumn = '1 / 3';
-      dataADV.style.gridColumn = '1 / 3';
-      dataADV.style.gridRow = '6 / 8';
-      data_voie_container.style.gridRow = '1 / 11';
-      mapContainer.style.display = 'none';
-      
-    
-      dataADV.style.display = 'none'; 
-      data_voie_container.style.display = 'flex'; 
-      
-    } else {
-      infoContainer.style.display = 'flex';
-      img_ag_tj.style.display = 'none';
-      left_sidebar.style.gridRow = '1 / 8';
-      data_section.style.gridRow = '1 / 4';
-      data_section.style.gridColumn = '3 / 5';
-      dataADV.style.gridColumn = '5 / 7';
-      dataADV.style.gridRow = '1 / 4';
-      data_voie_container.style.gridRow = '4 / 11';
-      // mapEl.style.display = 'block';
-      dataADV.style.display = ''; 
-      data_voie_container.style.display = '';
-      if (isAdvSelected) {
-        mapContainer.style.display = 'block';
-        dataADV.classList.add('active-adv-data');
-        data_voie_container.classList.add('active-adv-data');
-      } 
-    }
-    if (current) {
-      current.classList.remove('active');
-      current.style.animationName = 'slideOutDown';
+        if (!next || current === next) return;
 
-      setTimeout(() => {
-        current.style.display = 'none';
-        current.style.visibility = 'hidden';
+        const isAdvSelected = data_voie_container && data_voie_container.classList.contains('active-adv-data');
+        
+        // Définition des styles en fonction du rôle
+        const adminGridRows = {
+            sidebar: '1 / 4',
+            data_section: '4 / 6',
+            dataADV: '6 / 8',
+            data_voie_container: '1 / 11', // Total, car ADV et Map sont masqués
+            // Cas BS spécifique à l'admin
+            bs_data_section: '6 / 8',
+            bs_left_sidebar: '1 / 6'
+        };
 
-        next.classList.add('active');
-        next.style.display = 'flex';
-        next.style.visibility = 'visible';
-        next.style.animationName = 'slideInUp';
+        const nonAdminGridRows = {
+            sidebar: '1 / 5', // Nouvelle valeur pour le cas non-admin (TJ)
+            data_section: '5 / 7', 
+            dataADV: '7 / 9', 
+            data_voie_container: '1 / 11', 
+            // Cas BS spécifique au non-admin
+            bs_data_section: '7 / 9', // dataADV masqué, donc data_section prend la place
+            bs_left_sidebar: '1 / 7' // Valeur non-admin spécifique
+        };
 
-        const toggleMenu = document.querySelector('.voie-toggle');
-        if (next.id === 'hub') {
-          toggleMenu.style.display = 'none';
+        const currentSettings = window.isAdmin ? adminGridRows : nonAdminGridRows;
+
+        // --- LOGIQUE VOIE-AIGUILLAGE ---
+        if (targetId === 'voie-aiguillage') {
+            infoContainer.style.display = 'none';
+            img_ag_tj.style.display = 'flex';
+            
+            // Styles communs à l'aiguillage
+            left_sidebar.style.gridRow = currentSettings.sidebar; // Valeur par défaut avant BS/TJ
+            data_section.style.gridColumn = '1 / 3';
+            dataADV.style.gridColumn = '1 / 3';
+            data_voie_container.style.gridRow = currentSettings.data_voie_container;
+            mapContainer.style.display = 'none';
+            data_voie_container.style.display = 'flex';
+            
+            if (currentType.toLowerCase() === 'bs') {
+                // CAS AIGUILLAGE BS
+                dataADV.style.display = 'none';
+                data_section.style.gridRow = currentSettings.bs_data_section;
+                left_sidebar.style.gridRow = currentSettings.bs_left_sidebar;
+            } else {
+                // CAS AIGUILLAGE TJ
+                dataADV.style.display = 'flex';
+                dataADV.style.gridRow = currentSettings.dataADV;
+                data_section.style.gridRow = currentSettings.data_section;
+                left_sidebar.style.gridRow = currentSettings.sidebar; // Réinitialisation au style TJ
+            }
+            
+        // --- LOGIQUE AUTRES VUES ---
         } else {
-          toggleMenu.style.display = 'block';
+            // Logique générale pour toutes les autres voies (où #data est toujours visible)
+            infoContainer.style.display = 'flex';
+            img_ag_tj.style.display = 'none';
+            
+            // Styles généraux pour les autres vues
+            left_sidebar.style.gridRow = window.isAdmin ? '1 / 8' : '1 / 9'; // <-- CORRECTION DEMANDÉE
+            data_section.style.gridRow = '1 / 4';
+            data_section.style.gridColumn = '3 / 5';
+            dataADV.style.gridColumn = '5 / 7';
+            dataADV.style.gridRow = '1 / 4';
+            data_voie_container.style.gridRow = '4 / 11';
+            
+            // Assurer que #data est toujours visible dans les autres vues.
+            dataADV.style.display = 'flex'; 
+            
+            data_voie_container.style.display = '';
+            if (isAdvSelected) {
+                mapContainer.style.display = 'block';
+                dataADV.classList.add('active-adv-data');
+                data_voie_container.classList.add('active-adv-data');
+            } else {
+                mapContainer.style.display = 'none';
+            }
         }
+        
+        // Suite de la logique de transition... (inchangée)
+        if (current) {
+            current.classList.remove('active');
+            current.style.animationName = 'slideOutDown';
 
-        updateToButtonVisibility();
+            setTimeout(() => {
+                current.style.display = 'none';
+                current.style.visibility = 'hidden';
 
-        if (next.id === 'voie-aiguillage') {
-          const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
-            .find(c => c.style.display !== 'none');
-          const type = visibleType ? visibleType.dataset.type : '';
+                next.classList.add('active');
+                next.style.display = 'flex';
+                next.style.visibility = 'visible';
+                next.style.animationName = 'slideInUp';
+
+                const toggleMenu = document.querySelector('.voie-toggle');
+                if (next.id === 'hub') {
+                    toggleMenu.style.display = 'none';
+                } else {
+                    toggleMenu.style.display = 'block';
+                }
+
+                updateToButtonVisibility();
+
+                if (next.id === 'voie-aiguillage') {
+                    // La logique de layout est gérée plus haut
+                } else {
+                    if (map) map.invalidateSize();
+                }
+            }, 500);
         } else {
-          if (map) map.invalidateSize(); 
+            next.classList.add('active');
+            next.style.display = 'flex';
+            next.style.visibility = 'visible';
+            next.style.animationName = 'slideInUp';
+
+            const toggleMenu = document.querySelector('.voie-toggle');
+            if (next.id === 'hub') {
+                toggleMenu.style.display = 'none';
+            } else {
+                toggleMenu.style.display = 'block';
+            }
+            updateToButtonVisibility();
+
+            if (next.id === 'voie-aiguillage') {
+            } else {
+                if (map) map.invalidateSize();
+            }
         }
-      }, 500);
-    } else {
-      next.classList.add('active');
-      next.style.display = 'flex';
-      next.style.visibility = 'visible';
-      next.style.animationName = 'slideInUp';
-
-      const toggleMenu = document.querySelector('.voie-toggle');
-      if (next.id === 'hub') {
-        toggleMenu.style.display = 'none';
-      } else {
-        toggleMenu.style.display = 'block';
-      }
-      updateToButtonVisibility();
-
-      if (next.id === 'voie-aiguillage') {
-        const visibleType = Array.from(next.querySelectorAll('.voie-type-container'))
-          .find(c => c.style.display !== 'none');
-        const type = visibleType ? visibleType.dataset.type : '';
-        showOrHideDataForAiguillage(type);
-      } else {
-        if (map) map.invalidateSize();
-      }
-    }
-  });
+    });
 });
-
 
 
 
@@ -927,6 +1011,7 @@ function renderSummaryTable(type, data) {
   // Hide both summary tables first
   const bsTable = document.getElementById('summary-table_bs');
   const tjTable = document.getElementById('summary-table_tj');
+  const dataAdv = document.getElementById('data');
   if (bsTable) bsTable.style.display = 'none';
   if (tjTable) tjTable.style.display = 'none';
 
@@ -934,9 +1019,11 @@ function renderSummaryTable(type, data) {
   let table = null;
   if (type === 'bs') {
     table = bsTable;
+    // dataAdv.style.display = 'none';
     // console.log('Showing summary-table_bs');
   } else if (type === 'tj') {
     table = tjTable;
+    // dataAdv.style.display = 'block';
     // console.log('Showing summary-table_tj');
   } else {
     // console.warn('Unknown type for summary:', type);
@@ -1000,27 +1087,8 @@ function renderSummaryTable(type, data) {
   });
 }
 
-// function whereImI(){
-//   const current = document.querySelector('.voie-content.active');
-//   if(current){
-//     return "Nouvelles mesures pour " + current.id;
-//   }else{
-//     return "Aucune voie-content active.";
-//   }
-// }
-// const btn = document.getElementById("new-measure-btn");
-// const tooltip = document.getElementById("tooltip");
 
-// // Affichage au survol
-// btn.addEventListener("mouseenter", () => {
-//   tooltip.textContent = whereImI();
-//   tooltip.classList.add("show");
-// });
-
-// // Masquage quand on sort
-// btn.addEventListener("mouseleave", () => {
-//   tooltip.classList.remove("show");
-// });
+//page demi-aiguillage
 
 function updateBavuresTable(data) {
   const mappingBavure = {
@@ -1061,8 +1129,8 @@ function updateBavuresTable(data) {
 
       if (type === "bs") {
         // For BS, columns: 1 = G, 2 = D
-        if (advType === "G" && row.cells[1]) row.cells[1].textContent = "✗";
-        if (advType === "D" && row.cells[2]) row.cells[2].textContent = "✗";
+        if (advType === "D" && row.cells[1]) row.cells[1].textContent = "✗";
+        if (advType === "G" && row.cells[2]) row.cells[2].textContent = "✗";
       } else if (type === "tj") {
         // For TJ, columns: 1..8 = 1..8
         const colIndex = parseInt(advType, 10);
@@ -1094,8 +1162,8 @@ function updateEbrechureTable(data) {
       // Determine column index for this adv_type
       let colIndex = null;
       if (type === "bs") {
-        if (advType === "G") colIndex = 1;
-        if (advType === "D") colIndex = 2;
+        if (advType === "D") colIndex = 1;
+        if (advType === "G") colIndex = 2;
       } else if (type === "tj") {
         const idx = parseInt(advType, 10);
         if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
@@ -1165,8 +1233,8 @@ function updateAppDM(data) {
       // Determine column index for this adv_type
       let colIndex = null;
       if (type === "bs") {
-        if (advType === "G") colIndex = 1;
-        if (advType === "D") colIndex = 2;
+        if (advType === "D") colIndex = 1;
+        if (advType === "G") colIndex = 2;
       } else if (type === "tj") {
         const idx = parseInt(advType, 10);
         if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
@@ -1207,8 +1275,8 @@ function updateUsureLcaTable(data) {
       // Determine column index for this adv_type
       let colIndex = null;
       if (type === "bs") {
-        if (advType === "G") colIndex = 1;
-        if (advType === "D") colIndex = 2;
+        if (advType === "D") colIndex = 1;
+        if (advType === "G") colIndex = 2;
       } else if (type === "tj") {
         const idx = parseInt(advType, 10);
         if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
@@ -1285,8 +1353,8 @@ function updateUsureLaTable(data) {
       // Détermine l'index de colonne pour ce adv_type
       let colIndex = null;
       if (type === "bs") {
-        if (advType === "G") colIndex = 1;
-        if (advType === "D") colIndex = 2;
+        if (advType === "D") colIndex = 1;
+        if (advType === "G") colIndex = 2;
       } else if (type === "tj") {
         const idx = parseInt(advType, 10);
         if (!isNaN(idx) && idx >= 1 && idx <= 8) colIndex = idx;
@@ -1296,13 +1364,13 @@ function updateUsureLaTable(data) {
       // usure_la_contact
       if (item.usure_la_contact) {
         const val = item.usure_la_contact.toLowerCase();
-        if (val.includes("au dessus et au dessous")) {
+        if (val.includes("au dessus et en dessous")) {
           const row = table.querySelector('tr[data-type="contact_haut_bas"]');
           if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
         } else if (val.includes("au dessus")) {
           const row = table.querySelector('tr[data-type="contact_haut"]');
           if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
-        } else if (val.includes("au dessous")) {
+        } else if (val.includes("en dessous")) {
           const row = table.querySelector('tr[data-type="contact_bas"]');
           if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
         }
@@ -1333,55 +1401,69 @@ function updateUsureLaTable(data) {
 //page Plancher/bois
 
 function updateBois(adv) {
-  if (!adv || typeof adv !== 'object') return;
-  
-  // === JOINTS ===
-  const jointsBon = Number(adv['joints_bon']) || 0;
-  const jointsRepr = Number(adv['joints_a_repr']) || 0;
-  const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
-  const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
+    if (!adv || typeof adv !== 'object') return;
 
-  // CORRECTION: Total des joints (ceux qui existent physiquement, qu'ils soient bons ou à reprendre)
-  const totalJoints = jointsBon + jointsRepr;
+    // === JOINTS ===
+    const jointsBon = Number(adv['joints_bon']) || 0;
+    const jointsRepr = Number(adv['joints_a_repr']) || 0;
+    const jointsGraisser = Number(adv['joints_a_graisser']) || 0;
+    const jointsPct = adv['joints_pct_remp'] !== undefined ? adv['joints_pct_remp'] + '%' : '-';
 
-  const jointsCountEl = document.getElementById('jointsCount');
-  if (jointsCountEl) {
-    jointsCountEl.textContent = totalJoints;
-  }
+    // Calcul du total des joints (ceux qui existent physiquement)
+    const totalJoints = jointsBon + jointsRepr;
 
-  const jointsRow = document.querySelector('#plancher-joints .plancher-table tbody tr');
-  if (jointsRow) {
-    const cells = jointsRow.querySelectorAll('td');
-    if (cells.length >= 4) {
-      cells[0].textContent = jointsPct;       // % joints à remplacer
-      cells[1].textContent = jointsBon;       // joints bon état
-      cells[2].textContent = jointsRepr;      // joints à reprendre
-      cells[3].textContent = jointsGraisser;  // joints à graisser (catégorie distincte)
+    const jointsCountEl = document.getElementById('jointsCount');
+    if (jointsCountEl) {
+        jointsCountEl.textContent = totalJoints;
     }
-  }
 
-  // === BOIS ===
-  const boisBon = Number(adv['bois_bon']) || 0;
-  const boisRemp = Number(adv['bois_a_remp']) || 0;
-  const boisPct = adv['bois_pct_remp'] !== undefined ? adv['bois_pct_remp'] + '%' : '-';
-
-  const boisCountEl = document.getElementById('boisCount');
-  if (boisCountEl) {
-    boisCountEl.textContent = boisBon + boisRemp;
-  }
-
-  const boisRow = document.querySelector('#plancher-bois .plancher-table tbody tr');
-  if (boisRow) {
-    const cells = boisRow.querySelectorAll('td');
-    if (cells.length >= 3) {
-      cells[0].textContent = boisPct;      // % bois à remplacer
-      cells[1].textContent = boisRemp;     // bois à remplacer
-      cells[2].textContent = boisBon;      // bois bon état
+    const jointsRow = document.querySelector('#plancher-joints .plancher-table tbody tr');
+    if (jointsRow) {
+        const cells = jointsRow.querySelectorAll('td');
+        if (cells.length >= 4) {
+            cells[0].textContent = jointsPct;       // % joints à remplacer (masqué)
+            cells[1].textContent = jointsBon;       // joints bon état
+            cells[2].textContent = jointsRepr;      // joints à reprendre
+            cells[3].textContent = jointsGraisser;  // joints à graisser (catégorie distincte)
+        }
     }
-  }
-  
-  // Appel à updateCharts avec les trois valeurs distinctes
-  updateCharts(adv);
+
+    // === BOIS ===
+    const boisBon = Number(adv['bois_bon']) || 0;
+    const boisRemp = Number(adv['bois_a_remp']) || 0;
+    const boisPct = adv['bois_pct_remp'] !== undefined ? adv['bois_pct_remp'] + '%' : '-';
+
+    const boisCountEl = document.getElementById('boisCount');
+    if (boisCountEl) {
+        boisCountEl.textContent = boisBon + boisRemp;
+    }
+
+    const boisRow = document.querySelector('#plancher-bois .plancher-table tbody tr');
+    if (boisRow) {
+        const cells = boisRow.querySelectorAll('td');
+        if (cells.length >= 3) {
+            cells[0].textContent = boisPct;     // % bois à remplacer (masqué)
+            cells[1].textContent = boisRemp;    // bois à remplacer
+            cells[2].textContent = boisBon;     // bois bon état
+        }
+    }
+
+    // === ÉTAT DES RAILS ===
+    // Récupère l'état des rails depuis les données de l'ADV, avec un fallback.
+    const etatRails = adv['etat_rails'] || 'Non renseigné'; 
+
+    // Cible la mini-table 'Etat des rails' qui est un enfant direct de .bois_container
+    const etatRailsTable = document.querySelector('.bois_container > .mini-table');
+
+    if (etatRailsTable) {
+        const railCell = etatRailsTable.querySelector('tbody td');
+        if (railCell) {
+            railCell.textContent = etatRails; // Affiche la valeur dans la cellule du tableau.
+        }
+    }
+
+    // Appel à updateCharts avec les trois valeurs distinctes
+    updateCharts(adv);
 }
 
 function initCharts() {
