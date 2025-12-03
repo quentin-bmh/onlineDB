@@ -548,7 +548,9 @@ td .table-input {
     position: static; /* Annule l'éventuelle position absolue héritée */
     width: 70px; /* Taille fixe pour les inputs de valeur */
     padding: 4px;
-    font-size: 14px;
+    font-weight: bold;
+    font-size: 15px;
+    text-align: center;
 }
 
 /* Annuler les anciens styles d'image qui fixaient une largeur trop petite */
@@ -596,10 +598,26 @@ td .table-input {
     background-color: #fff; 
     cursor: text;
     transition: background-color 0.1s;
-    /* Ajout de la gestion des données numériques si possible */
     -moz-appearance: textfield; 
 }
+.attaches-table td:not(:first-child) {
+    padding: 0;
+}
+.attaches-table input{
+    border: none;
+    width: 100%;
+    text-align: center;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
 
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
 .attaches-table td[contenteditable="true"]:hover {
     background-color: #f7f7f7;
 }
@@ -678,4 +696,8 @@ td .table-input {
 .form-actions button:active {
     /* Effet de clic */
     transform: translateY(0);
+}
+
+.leaflet-control-layers {
+    display: none !important;
 }

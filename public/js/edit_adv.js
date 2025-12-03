@@ -261,12 +261,12 @@ function generateTableField(rowConfig, fieldName, fieldId) {
         
         return `
             <select class="table-input" name="${fieldName}" id="${fieldId}">
-                <option value="" disabled selected>-- Choisir --</option>
+                <option value="" selected>-- Choisir --</option>
                 ${optionsHTML}
             </select>
         `;
     } else if (rowConfig.type === 'input_number') {
-        return `<input type="number" class="table-input" name="${fieldName}" id="${fieldId}" step="0.01" placeholder="0">`;
+        return `<input type="number" class="table-input" name="${fieldName}" id="${fieldId}" step="1" placeholder="0">`;
     } else {
         return `<input type="text" class="table-input" name="${fieldName}" id="${fieldId}">`;
     }
@@ -882,11 +882,13 @@ function collectEcartementData() {
  */
 function collectAttachesData() {
     const data = {};
-    const cells = document.querySelectorAll('#tab-attaches td[contenteditable="true"]');
+    // Cible tous les inputs numériques créés dans le tableau des attaches
+    const inputs = document.querySelectorAll('#tab-attaches input[type="number"]'); 
+    const validZoneRegex = /^[1-8]p?$/; 
 
-    cells.forEach(cell => {
-        const name = cell.getAttribute('data-name'); 
-        let value = cell.innerText.trim();
+    inputs.forEach(input => {
+        const name = input.name; 
+        let value = input.value.trim();
 
         if (name && value !== '') {
             const parts = name.split('_'); 
@@ -894,21 +896,20 @@ function collectAttachesData() {
             const type = parts[1]; 
             
             const safeZone = zone; 
-            let dbKey = '';
+            const dbKey = name; // Le nom est déjà la clé BDD (att_e_1, att_i_1p...)
             
-            if (type === 'efficaces') {
-                dbKey = `att_e_${safeZone}`; 
-            } else if (type === 'inefficaces') {
-                dbKey = `att_i_${safeZone}`; 
+            // Validation de la zone (gardée pour la robustesse du schéma)
+            if (!validZoneRegex.test(safeZone)) {
+                return; 
             }
             
-            if (dbKey) {
-                let parsedValue = parseInt(value, 10);
-                value = isNaN(parsedValue) ? null : parsedValue;
-
-                if (value !== null) {
-                    data[dbKey] = value;
-                }
+            // La valeur doit être un entier
+            let parsedValue = parseInt(value, 10);
+            
+            if (!isNaN(parsedValue)) {
+                // Assure qu'on envoie 0 au minimum si l'utilisateur met un signe - non géré
+                value = Math.max(0, parsedValue); 
+                data[dbKey] = value;
             }
         }
     });
@@ -1204,7 +1205,10 @@ function initMap() {
         return;
     }
 
-    map = L.map('map').setView([initialLat, initialLng], 13);
+    map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([initialLat, initialLng], 18);
 
     advMarkers = L.layerGroup(); 
     

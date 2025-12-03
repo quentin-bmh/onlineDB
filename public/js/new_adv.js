@@ -201,6 +201,7 @@ function generateEcartementInput(labelText, index) {
                    name="${name}" 
                    title="${labelText}"
                    step="1" 
+                   min="0"
                    placeholder="${index}">`;
 }
 
@@ -219,14 +220,29 @@ function generateAttachesTableRows(advType) {
     }).filter(zone => zone !== '');
 
     zoneLabels.forEach((zone, index) => {
-        const nameEfficaces = `attaches_efficaces_${zone.replace(/'/g, 'p')}`;
-        const nameInefficaces = `attaches_inefficaces_${zone.replace(/'/g, 'p')}`;
+        const zoneKey = zone.replace(/'/g, 'p');
+        const nameEfficaces = `att_e_${zoneKey}`;
+        const nameInefficaces = `att_i_${zoneKey}`;
 
         rowsHTML += `
             <tr>
                 <td class="zone-label">${zone}</td>
-                <td contenteditable="true" class="attaches-data efficaces" data-name="${nameEfficaces}" data-zone="${zone}" data-type="number" placeholder="0"></td>
-                <td contenteditable="true" class="attaches-data inefficaces" data-name="${nameInefficaces}" data-zone="${zone}" data-type="number" placeholder="0"></td>
+                <td>
+                    <input type="number" 
+                           class="attaches-input efficaces"
+                           name="${nameEfficaces}"
+                           data-zone="${zoneKey}"
+                           step="1"
+                           min="0">
+                </td>
+                <td>
+                    <input type="number" 
+                           class="attaches-input inefficaces"
+                           name="${nameInefficaces}"
+                           data-zone="${zoneKey}"
+                           step="1"
+                           min="0">
+                </td>
             </tr>
         `;
     });
@@ -249,12 +265,12 @@ function generateTableField(rowConfig, fieldName, fieldId) {
         
         return `
             <select class="table-input" name="${fieldName}" id="${fieldId}">
-                <option value="" disabled selected>-- Choisir --</option>
+                <option value="" selected>-- Choisir --</option>
                 ${optionsHTML}
             </select>
         `;
     } else if (rowConfig.type === 'input_number') {
-        return `<input type="number" class="table-input" name="${fieldName}" id="${fieldId}" step="0.01" placeholder="0">`;
+        return `<input type="number" class="table-input" name="${fieldName}" id="${fieldId}" step="1" placeholder="0">`;
     } else {
         return `<input type="text" class="table-input" name="${fieldName}" id="${fieldId}">`;
     }
@@ -755,43 +771,47 @@ function collectEcartementData() {
  */
 function collectAttachesData() {
     const data = {};
-    const cells = document.querySelectorAll('#tab-attaches td[contenteditable="true"]');
+    const inputs = document.querySelectorAll('#tab-attaches input[type="number"]'); 
+    
+    // Récupération dynamique du type ADV à partir du formulaire
+    const advType = document.getElementById('advType')?.value; 
 
-    // Regex pour valider les zones (ex: 1, 2, 8, 1p, 2p, 4p)
-    // Seules les zones 1 à 8 (et leurs primes) sont valides pour TJ/TO/BS
-    const validZoneRegex = /^[1-8]p?$/; 
-
-    cells.forEach(cell => {
-        const name = cell.getAttribute('data-name'); 
-        let value = cell.innerText.trim();
+    // Si BS : accepte 1 à 9. Si TJ/TO : accepte [1-8]p?
+    let validZoneRegex;
+    if (advType === 'BS') {
+        // BS a des attaches de 1 à 9 (sans primes)
+        validZoneRegex = /^[1-9]$/; 
+    } else if (advType === 'TJ' || advType === 'TO') {
+        // TJ/TO ont des attaches de 1, 1' à 8 (et certaines avec primes 'p')
+        validZoneRegex = /^[1-8]p?$/; 
+    } else {
+        // Fallback pour les cas non définis
+        validZoneRegex = /^[1-9]p?$/; 
+    }
+    
+    inputs.forEach(input => {
+        const name = input.name; 
+        let value = input.value.trim();
 
         if (name && value !== '') {
             const parts = name.split('_'); 
-            const zone = parts.pop(); 
-            const type = parts[1]; 
+            const zone = parts.pop(); // Ex: '9', '1p', '1'
+            // const type = parts[1]; // 'e' ou 'i' (efficaces/inefficaces)
             
             const safeZone = zone; 
-            let dbKey = '';
+            const dbKey = name;
             
-            // --- NOUVELLE VÉRIFICATION DE ZONE ---
+            // Validation de la zone
             if (!validZoneRegex.test(safeZone)) {
-                return; // Ignore les zones invalides (ex: '9')
-            }
-            // ------------------------------------
-            
-            if (type === 'efficaces') {
-                dbKey = `att_e_${safeZone}`; 
-            } else if (type === 'inefficaces') {
-                dbKey = `att_i_${safeZone}`; 
+                return; // Ignore les zones invalides (att_e_9 pour TJ/TO, ou 1p pour BS)
             }
             
-            if (dbKey) {
-                let parsedValue = parseInt(value, 10);
-                value = isNaN(parsedValue) ? null : parsedValue;
-
-                if (value !== null) {
-                    data[dbKey] = value;
-                }
+            // La valeur doit être un entier
+            let parsedValue = parseInt(value, 10);
+            
+            if (!isNaN(parsedValue)) {
+                value = Math.max(0, parsedValue); 
+                data[dbKey] = value;
             }
         }
     });
@@ -1168,12 +1188,13 @@ function initMap() {
         return;
     }
 
-    // Initialisation de la carte sur la div 'map'
-    map = L.map('map').setView([initialLat, initialLng], 13); // Zoom par défaut sur Paris
+    map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([initialLat, initialLng], 18);
 
-    advMarkers = L.layerGroup(); // Initialisation du groupe de marqueurs
+    advMarkers = L.layerGroup();
     
-    // Définition des couches de tuiles (Plan Standard et Satellite)
     const normalLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     });
