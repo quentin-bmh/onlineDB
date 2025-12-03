@@ -1181,15 +1181,17 @@ function updateEbrechureTable(data) {
         }
       }
 
-      // 2. ctc_fente
+      // 2. ctc_fente (Contact au dessous/dessus de la fente repère)
       if (item.ctc_fente && colIndex !== null) {
+        let row;
         if (item.ctc_fente === "dessous") {
-          const row = table.querySelector('tr[data-type="ctc_dessous_fente"]');
-          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+          // CORRECTION: Cherche le sélecteur TJ 'contact_sous_fente' PUIS le sélecteur BS 'ctc_dessous_fente'
+          row = table.querySelector('tr[data-type="contact_sous_fente"]') || table.querySelector('tr[data-type="ctc_dessous_fente"]');
         } else if (item.ctc_fente === "dessus") {
-          const row = table.querySelector('tr[data-type="ctc_dessus_fente"]');
-          if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
+          // CORRECTION: Cherche le sélecteur TJ 'contact_au_dessus_fente' PUIS le sélecteur BS 'ctc_dessus_fente'
+          row = table.querySelector('tr[data-type="contact_au_dessus_fente"]') || table.querySelector('tr[data-type="ctc_dessus_fente"]');
         }
+        if (row && row.cells[colIndex]) row.cells[colIndex].textContent = "✗";
       }
 
       // 3. taille_ebrechure_fente → longueur_sous_fente
@@ -1443,8 +1445,8 @@ function updateBois(adv) {
         const cells = boisRow.querySelectorAll('td');
         if (cells.length >= 3) {
             cells[0].textContent = boisPct;     // % bois à remplacer (masqué)
-            cells[1].textContent = boisRemp;    // bois à remplacer
-            cells[2].textContent = boisBon;     // bois bon état
+            cells[1].textContent = boisBon;     // bois bon état
+            cells[2].textContent = boisRemp;    // bois à remplacer
         }
     }
 

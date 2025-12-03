@@ -9,8 +9,8 @@ const SELECT_OPTIONS = {
         { value: 'presence', label: 'Présence d\'ébréchure' }
     ],
     contactFente: [
-        { value: 'dessous_repere', label: 'au dessous de la fente repère' },
-        { value: 'dessus_repere', label: 'au dessus de la fente repère' }
+        { value: 'dessous', label: 'en dessous' },
+        { value: 'dessus', label: 'au dessus' }
     ],
     classement: [
         { value: 'bon', label: 'Bon' },
@@ -56,23 +56,22 @@ const DEMI_AIG_CONFIG = [
     { label: "Usure LA Classement", type: 'select', options: SELECT_OPTIONS.classement } // 15
 ];
 
-// --- Mappage entre Index de ligne (1-based) et Clé JSON ---
 const DEMI_AIG_FIELD_MAPPING = {
-    1: 'bavure', 
-    2: 'ebrechure_a', 
-    3: 'ctc_fente', 
-    4: 'taille_ebrechure_fente', 
-    5: 'taille_tot_ebrechure', 
-    6: 'ebrechure_a_classement', 
-    7: 'application_da_entrebaillement', 
-    8: 'application_da_etat_bute', 
-    9: 'usure_lca', 
-    10: 'usure_lca_calibre', 
-    11: 'usure_lca_pige', 
-    12: 'usure_lca_classement', 
-    14: 'usure_la_contact', 
-    13: 'usure_la_pente', 
-    15: 'usure_la_classement' 
+    1: 'bavure',
+    2: 'ebrechure_a',
+    3: 'ctc_fente',
+    4: 'taille_ebrechure_fente',
+    5: 'taille_tot_ebrechure',
+    6: 'ebrechure_a_classement',
+    7: 'application_da_entrebaillement',
+    8: 'application_da_etat_bute',
+    9: 'usure_lca',
+    10: 'usure_lca_calibre',
+    11: 'usure_lca_pige',
+    12: 'usure_lca_classement',
+    14: 'usure_la_contact',
+    13: 'usure_la_pente',
+    15: 'usure_la_classement'
 };
 
 const DEMI_AIG_OUTPUT_ORDER = [
@@ -98,8 +97,8 @@ const DEMI_AIG_OUTPUT_ORDER = [
 const DEMI_AIG_SELECT_VALUE_MAPPING = {
     'eliminees': 'bavures éliminées par meulage',
     'presence': 'Présence de bavures',
-    'dessous_repere': 'dessous',
-    'dessus_repere': 'dessus',
+    'dessus': 'au dessus',
+    'dessous': 'en dessous',
     'bon': 'Bon',
     'va': 'VA',
     'vr': 'VR',
@@ -1039,7 +1038,7 @@ function collectDemiAiguillageData(advType) {
     const advName = document.getElementById('general_1').value || null;
     const demiAigTable = document.querySelector('#tab-demiAiguillage table');
     const demiAigRaw = [];
-    
+
     if (!demiAigTable || ADV_CONFIG_NORMALIZED[advType]?.demiAiguillageCols === 0) {
         return [];
     }
@@ -1051,7 +1050,7 @@ function collectDemiAiguillageData(advType) {
     for (let j = 1; j <= colCount; j++) {
         let aiguillageData = {
             adv: advName,
-            adv_type: colLabels[j - 1], 
+            adv_type: colLabels[j - 1],
         };
         let hasData = false;
 
@@ -1070,13 +1069,13 @@ function collectDemiAiguillageData(advType) {
                 if (input.tagName === 'SELECT') {
                     const selectedOptionValue = input.value.trim();
                     if (selectedOptionValue !== '') {
-                        
-                        if (i === 1) { 
+
+                        if (i === 1) {
                              value = (selectedOptionValue === 'aucune') ? 'aucune bavure' : DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
-                        } else if (i === 2) { 
+                        } else if (i === 2) {
                              value = (selectedOptionValue === 'aucune') ? 'aucune ebrechure' : 'présence ébrechure';
                         } else if (i === 3) {
-                            value = (selectedOptionValue === 'dessous_repere') ? 'dessous' : 'dessus';
+                            value = (selectedOptionValue === 'dessous') ? 'dessous' : 'dessus';
                         } else {
                             value = DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
                         }
@@ -1091,7 +1090,7 @@ function collectDemiAiguillageData(advType) {
             }
 
             aiguillageData[fieldName] = (value === '' || value === 'NaN') ? null : value;
-            
+
             if (aiguillageData[fieldName] !== null && fieldName !== 'adv' && fieldName !== 'adv_type') {
                 hasData = true;
             }
@@ -1108,7 +1107,6 @@ function collectDemiAiguillageData(advType) {
 
     return demiAigRaw;
 }
-
 /**
  * @returns {{generalData: Object, specificData: Object, demiAiguillageData: Array<Object>}} Les données séparées.
  */
@@ -1459,11 +1457,11 @@ function fillDemiAiguillageData(data, advType) {
         acc[DEMI_AIG_FIELD_MAPPING[key]] = parseInt(key, 10);
         return acc;
     }, {});
-    
+
     const reverseSelectMapping = {};
     Object.keys(DEMI_AIG_SELECT_VALUE_MAPPING).forEach(key => {
          const dbValue = DEMI_AIG_SELECT_VALUE_MAPPING[key];
-         if (!reverseSelectMapping[dbValue]) { 
+         if (!reverseSelectMapping[dbValue]) {
              reverseSelectMapping[dbValue] = key;
          }
     });
@@ -1495,17 +1493,19 @@ function fillDemiAiguillageData(data, advType) {
                 if (input && valueToSet !== null) {
                     if (input.tagName === 'SELECT') {
                         let finalValue = valueToSet;
-                        
-                        if (dbKey === 'bavure' && valueToSet === 'aucune bavure') {
+
+                        if (dbKey === 'ctc_fente') {
+                            finalValue = valueToSet;
+                        } else if (dbKey === 'bavure' && valueToSet === 'aucune bavure') {
                             finalValue = 'aucune';
                         } else if (dbKey === 'ebrechure_a' && valueToSet === 'aucune ebrechure') {
                             finalValue = 'aucune';
                         } else if (dbKey === 'ebrechure_a' && valueToSet === 'présence ébrechure') {
-                            finalValue = 'presence'; 
+                            finalValue = 'presence';
                         } else if (reverseSelectMapping[valueToSet]) {
                             finalValue = reverseSelectMapping[valueToSet];
                         }
-                        
+
                         input.value = finalValue;
                     } else {
                         input.value = valueToSet;

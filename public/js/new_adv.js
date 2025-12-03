@@ -9,8 +9,8 @@ const SELECT_OPTIONS = {
         { value: 'presence', label: 'Présence d\'ébréchure' }
     ],
     contactFente: [
-        { value: 'dessous_repere', label: 'au dessous de la fente repère' },
-        { value: 'dessus_repere', label: 'au dessus de la fente repère' }
+        { value: 'dessous', label: 'en dessous' },
+        { value: 'dessus', label: 'au dessus' }
     ],
     classement: [
         { value: 'bon', label: 'Bon' },
@@ -55,24 +55,22 @@ const DEMI_AIG_CONFIG = [
     { label: "Usure LA Contact", type: 'select', options: SELECT_OPTIONS.usureLAContact }, // 14
     { label: "Usure LA Classement", type: 'select', options: SELECT_OPTIONS.classement } // 15
 ];
-
-// --- Mappage entre Index de ligne (1-based) et Clé JSON ---
 const DEMI_AIG_FIELD_MAPPING = {
-    1: 'bavure', // Bavures
-    2: 'ebrechure_a', // Ebrechure aiguille
-    3: 'ctc_fente', // Contact fente
-    4: 'taille_ebrechure_fente', // Longueur ébréchure sous fente repère
-    5: 'taille_tot_ebrechure', // Longueur totale de la zone ébréchée
-    6: 'ebrechure_a_classement', // Ebrechure classement
-    7: 'application_da_entrebaillement', // Demi-Aiguillage entrebaillement
-    8: 'application_da_etat_bute', // Demi-Aiguillage Etat butée
-    9: 'usure_lca', // Usure LCA
-    10: 'usure_lca_calibre', // Usure LCA Calibre
-    11: 'usure_lca_pige', // Usure LCA Pige
-    12: 'usure_lca_classement', // Usure LCA Classement
-    14: 'usure_la_contact', // Usure LA Contact
-    13: 'usure_la_pente', // Usure LA Pente
-    15: 'usure_la_classement' // Usure LA Classement
+    1: 'bavure',
+    2: 'ebrechure_a',
+    3: 'ctc_fente',
+    4: 'taille_ebrechure_fente',
+    5: 'taille_tot_ebrechure',
+    6: 'ebrechure_a_classement',
+    7: 'application_da_entrebaillement',
+    8: 'application_da_etat_bute',
+    9: 'usure_lca',
+    10: 'usure_lca_calibre',
+    11: 'usure_lca_pige',
+    12: 'usure_lca_classement',
+    14: 'usure_la_contact',
+    13: 'usure_la_pente',
+    15: 'usure_la_classement'
 };
 
 // --- Ordre des clés pour l'affichage console (optionnel, mais garantit l'ordre pour le log) ---
@@ -99,8 +97,8 @@ const DEMI_AIG_OUTPUT_ORDER = [
 const DEMI_AIG_SELECT_VALUE_MAPPING = {
     'eliminees': 'bavures éliminées par meulage',
     'presence': 'Présence de bavures',
-    'dessous_repere': 'dessous',
-    'dessus_repere': 'dessus',
+    'dessous': 'dessous',
+    'dessus': 'dessus',
     'bon': 'Bon',
     'va': 'VA',
     'vr': 'VR',
@@ -759,23 +757,32 @@ function collectAttachesData() {
     const data = {};
     const cells = document.querySelectorAll('#tab-attaches td[contenteditable="true"]');
 
+    // Regex pour valider les zones (ex: 1, 2, 8, 1p, 2p, 4p)
+    // Seules les zones 1 à 8 (et leurs primes) sont valides pour TJ/TO/BS
+    const validZoneRegex = /^[1-8]p?$/; 
+
     cells.forEach(cell => {
-        const name = cell.getAttribute('data-name'); // Ex: attaches_efficaces_1p
+        const name = cell.getAttribute('data-name'); 
         let value = cell.innerText.trim();
 
         if (name && value !== '') {
             const parts = name.split('_'); 
-            const zone = parts.pop(); // Ex: 1 ou 1p
-            const type = parts[1]; // efficaces ou inefficaces
+            const zone = parts.pop(); 
+            const type = parts[1]; 
             
-            // La zone (ex: '1p') est déjà le nom de clé BDD sécurisé.
             const safeZone = zone; 
             let dbKey = '';
             
+            // --- NOUVELLE VÉRIFICATION DE ZONE ---
+            if (!validZoneRegex.test(safeZone)) {
+                return; // Ignore les zones invalides (ex: '9')
+            }
+            // ------------------------------------
+            
             if (type === 'efficaces') {
-                dbKey = `att_e_${safeZone}`; // Ex: att_e_1p
+                dbKey = `att_e_${safeZone}`; 
             } else if (type === 'inefficaces') {
-                dbKey = `att_i_${safeZone}`; // Ex: att_i_1p
+                dbKey = `att_i_${safeZone}`; 
             }
             
             if (dbKey) {
@@ -816,41 +823,34 @@ function collectBoisJointsData() {
     // Nettoyage: supprimer les clés nulles ou vides
     Object.keys(data).forEach(key => (data[key] === null || data[key] === '') && delete data[key]);
 
-    // Re-nettoyage pour l'état des rails si sélection par défaut 'bon' (non nécessaire dans la BD)
-    if (data.etat_rails === 'bon') delete data.etat_rails;
-
     return data;
 }
 
 
 /**
- * Collecte les données de demi-aiguillage et les structure au format JSON attendu (Array de JSONs).
- * @param {string} advType - Le type d'ADV ('BS' ou 'TJ').
- * @returns {Array<Object>} Un tableau d'objets, un par demi-aiguillage.
+ * @param {string} advType 
+ * @returns {Array<Object>}
  */
 function collectDemiAiguillageData(advType) {
     const advName = document.getElementById('general_1').value || null;
     const demiAigTable = document.querySelector('#tab-demiAiguillage table');
     const demiAigRaw = [];
     const demiAigData = [];
-    
+
     if (!demiAigTable || ADV_CONFIG_NORMALIZED[advType].demiAiguillageCols === 0) {
         return demiAigData;
     }
 
     const colCount = ADV_CONFIG_NORMALIZED[advType].demiAiguillageCols;
     const colLabels = (advType === 'BS') ? ['D', 'G'] : Array.from({ length: 8 }, (_, i) => String(i + 1));
-    const isBS = advType === 'BS';
 
-    // 1. Collecte des données brutes par colonne
     for (let j = 1; j <= colCount; j++) {
         let aiguillageData = {
             adv: advName,
-            adv_type: colLabels[j - 1], // D/G pour BS, 1-8 pour TJ
+            adv_type: colLabels[j - 1],
         };
         let hasData = false;
 
-        // On itère sur les 15 champs (lignes)
         for (let i = 1; i <= 15; i++) {
             const row = demiAigTable.querySelector(`tr[data-row-index="${i}"]`);
             if (!row) continue;
@@ -866,26 +866,26 @@ function collectDemiAiguillageData(advType) {
                 if (input.tagName === 'SELECT') {
                     const selectedOptionValue = input.value.trim();
                     if (selectedOptionValue !== '') {
-                        
-                        // --- CAS SPÉCIAUX POUR LES CHAÎNES DE SORTIE (Lignes 1, 2, 6, 8, 12, 15) ---
-                        if (i === 1) { // Bavures
-                             // aucune bavure / bavures éliminées par meulage
-                             value = (selectedOptionValue === 'aucune') ? 'aucune bavure' : DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
-                        } else if (i === 2) { // Ebrechure aiguille
-                             // aucune ebrechure / grooose ebrechure (selon exemple)
-                             value = (selectedOptionValue === 'aucune') ? 'aucune ebrechure' : 'grooose ebrechure';
-                        } else if ([6, 8, 12, 15].includes(i)) { // Classements
-                             // Bon (majuscule) / VA / VR / VI
+
+                        if (i === 1) {
+                             value = (selectedOptionValue === 'aucune')
+                                 ? 'aucune bavure'
+                                 : DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
+                        } else if (i === 2) {
+                             value = (selectedOptionValue === 'aucune') ? 'aucune ebrechure' : 'présence ébrechure';
+                        } else if (i === 3) {
+                             value = selectedOptionValue;
+                        } else if ([6, 8, 12, 15].includes(i)) {
                              value = DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
+                        } else if (i === 14) {
+                            value = DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
                         } else {
-                            // Cas standard pour les autres selects (LCA, LA Pente, Contact Fente)
                             value = DEMI_AIG_SELECT_VALUE_MAPPING[selectedOptionValue] || selectedOptionValue;
                         }
                     }
                 } else if (input.type === 'number' || input.type === 'text') {
                     const inputValue = input.value.trim();
                     if (inputValue !== '') {
-                        // Tenter la conversion en nombre
                         let parsedValue = parseFloat(inputValue);
                         value = (i === 7) ? parseInt(inputValue, 10) : parsedValue;
                         value = isNaN(value) ? inputValue : value;
@@ -893,27 +893,18 @@ function collectDemiAiguillageData(advType) {
                 }
             }
 
-            // Exclure les champs spécifiques à BS pour les TJ
-            const isContactField = ['ctc_fente', 'taille_ebrechure_fente', 'taille_tot_ebrechure'].includes(fieldName);
-            if (!isBS && isContactField) {
-                 aiguillageData[fieldName] = null;
-            } else {
-                 aiguillageData[fieldName] = (value === '' || value === 'NaN') ? null : value;
-            }
+            aiguillageData[fieldName] = (value === '' || value === 'NaN') ? null : value;
 
-            // Si une valeur est présente (non null), on considère qu'il y a des données pour cet aiguillage
             if (aiguillageData[fieldName] !== null) {
                 hasData = true;
             }
         }
 
-        // Ajouter uniquement les aiguillages avec au moins un champ renseigné (sauf adv et adv_type)
         if (hasData) {
              demiAigRaw.push(aiguillageData);
         }
     }
-    
-    // 2. Reconstruction des objets pour forcer l'ordre des clés (pour l'affichage console)
+
     demiAigRaw.forEach(rawItem => {
         const orderedItem = {};
         DEMI_AIG_OUTPUT_ORDER.forEach(key => {
