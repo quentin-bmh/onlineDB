@@ -32,6 +32,8 @@
                 <button type="button" class="tab-btn" data-tab="bois">Bois</button>
                 <button type="button" class="tab-btn" data-tab="joints">Joints</button>
                 <button type="button" class="tab-btn conditional-tab" data-tab="demiAiguillage">Demi-Aiguillage</button>
+                <!-- NOUVEL ONGLETS OBSERVATIONS -->
+                <button type="button" class="tab-btn" data-tab="observations">Observations</button>
             </nav>
 
             <div class="tabs-content">
@@ -311,11 +313,18 @@
                     <div id="demi-aiguillage-content">
                     </div>
                 </div>
+                <div id="tab-observations" class="tab-pane">
+                    <fieldset>
+                        <legend>Observations et Modifications</legend>
+                        <p class="mb-4">Veuillez renseigner ce qui a été modifié ou toute observation pertinente concernant l'ADV.</p>
+                        <textarea id="obs_text" name="obs_text" rows="8" placeholder="Observations..."></textarea>
+                    </fieldset>
+                </div>
 
             </div>
 
             <div class="form-actions">
-                <button type="submit">⬆️ Mettre à Jour l'ADV</button>
+                <button type="submit" id="updateAdvBtn" disabled>⬆️ Valider l'intervention</button>
             </div>
         </form>
     </div>

@@ -105,6 +105,25 @@ fieldset {
 fieldset input{
     width: 80%;
 }
+/* Style spécifique pour le textarea de l'onglet Observations */
+#tab-observations textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 200px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    resize: vertical;
+    transition: border 0.3s;
+}
+
+/* Style pour le champ d'observation manquant/requis */
+#tab-observations textarea.required-missing {
+    border: 2px solid #dc3545; /* Bordure rouge pour indiquer l'erreur */
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+}
 
 legend {
     font-weight: bold;

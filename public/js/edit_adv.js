@@ -195,10 +195,14 @@ const initialLng = 2.3522;
 let traversesChartInstance = null;
 let jointsChartInstance = null;
 
+// --- NOUVEAU: État initial pour la détection de modifications (State Diffing) ---
+let initialTechnicalState = null;
+
 
 // --- FONCTIONS EXISTANTES (DE new_adv.js) ---
 
 /**
+ * Génère l'input pour un écartement spécifique.
  * @param {string} labelText
  * @param {number} index
  * @returns {string}
@@ -217,6 +221,8 @@ function generateEcartementInput(labelText, index) {
 }
 
 /**
+ * Génère les lignes du tableau pour les attaches.
+ * MODIFIÉ : Utilise des inputs plutôt que contenteditable.
  * @param {string} advType
  * @returns {string}
  */
@@ -232,14 +238,30 @@ function generateAttachesTableRows(advType) {
 
     zoneLabels.forEach((zone, index) => {
         const zoneKey = zone.replace(/'/g, 'p'); // 1p au lieu de 1'
-        const nameEfficaces = `attaches_efficaces_${zoneKey}`;
-        const nameInefficaces = `attaches_inefficaces_${zoneKey}`;
+        const nameEfficaces = `att_e_${zoneKey}`; // Clé BDD
+        const nameInefficaces = `att_i_${zoneKey}`; // Clé BDD
 
         rowsHTML += `
             <tr>
                 <td class="zone-label">${zone}</td>
-                <td contenteditable="true" class="attaches-data efficaces" data-name="${nameEfficaces}" data-zone="${zoneKey}" data-type="number" placeholder="0"></td>
-                <td contenteditable="true" class="attaches-data inefficaces" data-name="${nameInefficaces}" data-zone="${zoneKey}" data-type="number" placeholder="0"></td>
+                <td>
+                    <input type="number" 
+                           class="attaches-input efficaces"
+                           name="${nameEfficaces}"
+                           data-zone="${zoneKey}"
+                           step="1"
+                           min="0"
+                           placeholder="0">
+                </td>
+                <td>
+                    <input type="number" 
+                           class="attaches-input inefficaces"
+                           name="${nameInefficaces}"
+                           data-zone="${zoneKey}"
+                           step="1"
+                           min="0"
+                           placeholder="0">
+                </td>
             </tr>
         `;
     });
@@ -248,6 +270,7 @@ function generateAttachesTableRows(advType) {
 }
 
 /**
+ * Génère le champ de formulaire pour une cellule de tableau.
  * @param {Object} rowConfig
  * @param {string} fieldName
  * @param {string} fieldId
@@ -274,6 +297,7 @@ function generateTableField(rowConfig, fieldName, fieldId) {
 
 
 /**
+ * Génère le tableau du demi-aiguillage (BS et TJ).
  * @param {string} advType
  * @returns {string}
  */
@@ -347,6 +371,9 @@ function generateDemiAiguillageTable(advType) {
     return tableHTML;
 }
 
+/**
+ * Met à jour le formulaire lors du changement de type d'ADV.
+ */
 function updateForm() {
     const advType = document.getElementById('advType').value;
     const advForm = document.getElementById('advForm');
@@ -418,6 +445,7 @@ function updateForm() {
         targetAttaches.classList.remove('hidden-adv-type');
         attachesMainContainer.setAttribute('data-type', advTypeLower);
 
+        // Appel à la nouvelle fonction de génération
         const attachesTableBody = targetAttaches.querySelector(`.attaches-table[data-type="${advTypeLower}"] tbody`);
         attachesTableBody.innerHTML = generateAttachesTableRows(advType);
     } 
@@ -443,6 +471,7 @@ function updateForm() {
     }
 }
 /**
+ * Initialise le graphique des traverses (Doughnut).
  * @returns {Chart} Instance du graphique Traversées.
  */
 function initTraversesChart() {
@@ -475,6 +504,7 @@ function initTraversesChart() {
 }
 
 /**
+ * Initialise le graphique des joints (Barre).
  * @returns {Chart} Instance du graphique Joints.
  */
 function initJointsChart() {
@@ -512,6 +542,9 @@ function initJointsChart() {
     });
 }
 
+/**
+ * Met à jour les graphiques à partir des données des inputs.
+ */
 function updateCharts() {
     // Lecture des valeurs du formulaire. Utilisation de parseFloat() pour les graphiques.
     const bonBois = parseFloat(document.getElementById('bois_1').value) || 0;
@@ -534,6 +567,7 @@ function updateCharts() {
 
 
 /**
+ * Change d'onglet actif.
  * @param {string} tabId
  */
 function switchTab(tabId) {
@@ -554,6 +588,9 @@ const applyRowBtn = document.getElementById('apply-row');
 const applyColBtn = document.getElementById('apply-col');
 let targetCell = null; 
 
+/**
+ * Cache le menu contextuel.
+ */
 function hideContextMenu() {
     contextMenu.style.display = 'none';
     targetCell = null;
@@ -562,6 +599,7 @@ function hideContextMenu() {
 }
 
 /**
+ * Réinitialise la valeur d'un input.
  * @param {HTMLInputElement|HTMLSelectElement} inputElement
  */
 function resetInputValue(inputElement) {
@@ -570,13 +608,20 @@ function resetInputValue(inputElement) {
 }
 
 /**
+ * Réinitialise tous les inputs d'un tableau.
  * @param {HTMLElement} table
  */
 function resetAllTableInputs(table) {
     if (!table) return;
+    // Cible les inputs (pour Demi-Aiguillage)
     table.querySelectorAll('.table-input').forEach(input => {
         resetInputValue(input);
     });
+    // Cible les inputs pour les attaches
+    table.querySelectorAll('.attaches-input').forEach(input => {
+        resetInputValue(input);
+    });
+    // L'ancienne logique contenteditable n'est plus nécessaire ici pour les attaches
     table.querySelectorAll('td[contenteditable="true"]').forEach(cell => {
         cell.innerText = '';
         cell.dispatchEvent(new Event('change'));
@@ -584,6 +629,7 @@ function resetAllTableInputs(table) {
 }
 
 /**
+ * Copie les valeurs d'une colonne vers les autres dans un tableau.
  * @param {HTMLElement} table
  * @param {number} sourceColIndex 
  */
@@ -593,8 +639,8 @@ function copyColumn(table, sourceColIndex) {
         const effectiveSourceIndex = sourceColIndex; 
         
         if (cells.length > effectiveSourceIndex && effectiveSourceIndex > 0) {
-            const sourceCell = cells[effectiveSourceIndex];
-            const sourceInput = sourceCell.querySelector('.table-input');
+            // Cible les inputs générés, qu'ils soient de type .table-input (DA) ou .attaches-input (Attaches)
+            const sourceInput = sourceCell.querySelector('.table-input') || sourceCell.querySelector('.attaches-input');
             let sourceValue;
 
             if (sourceInput) {
@@ -607,7 +653,7 @@ function copyColumn(table, sourceColIndex) {
             
             cells.forEach((td, index) => {
                 if (index > 0 && index !== effectiveSourceIndex) { 
-                    const targetInput = td.querySelector('.table-input');
+                    const targetInput = td.querySelector('.table-input') || td.querySelector('.attaches-input');
                     
                     if (targetInput) {
                         targetInput.value = sourceValue;
@@ -647,7 +693,7 @@ function attachTableListeners(table) {
                 const effectiveIndex = columnIndex; 
                 
                 if (cells[effectiveIndex]) { 
-                    const input = cells[effectiveIndex].querySelector('.table-input');
+                    const input = cells[effectiveIndex].querySelector('.table-input') || cells[effectiveIndex].querySelector('.attaches-input');
                     const editable = cells[effectiveIndex].getAttribute('contenteditable') === 'true';
 
                     if (input) {
@@ -675,7 +721,7 @@ function attachTableListeners(table) {
             return;
         }
 
-        const sourceInput = targetCell.querySelector('.table-input');
+        const sourceInput = targetCell.querySelector('.table-input') || targetCell.querySelector('.attaches-input');
         let sourceValue;
 
         if (sourceInput) {
@@ -692,7 +738,7 @@ function attachTableListeners(table) {
         if (row) {
             row.querySelectorAll('td').forEach((td, index) => {
                 if (index > 0) {
-                    const targetInput = td.querySelector('.table-input');
+                    const targetInput = td.querySelector('.table-input') || td.querySelector('.attaches-input');
                     
                     if (targetInput) {
                         targetInput.value = sourceValue;
@@ -768,6 +814,7 @@ function fillCroisementData(data, advType) {
 }
 
 /**
+ * Collecte les données de croisement.
  * @param {string} advType
  * @returns {Object}
  */
@@ -848,6 +895,7 @@ function collectCroisementData(advType) {
 }
 
 /**
+ * Collecte les données d'écartement.
  * @returns {Object}
  */
 function collectEcartementData() {
@@ -878,45 +926,45 @@ function collectEcartementData() {
 }
 
 /**
+ * Collecte les données d'attaches.
+ * ADAPTÉ : Cible les inputs générés avec leur attribut 'name'.
  * @returns {Object}
  */
 function collectAttachesData() {
     const data = {};
-    // Cible tous les inputs numériques créés dans le tableau des attaches
     const inputs = document.querySelectorAll('#tab-attaches input[type="number"]'); 
-    const validZoneRegex = /^[1-8]p?$/; 
-
+    const advType = document.getElementById('advType')?.value; 
+    let validZoneRegex;
+    if (advType === 'BS') {
+        validZoneRegex = /^[1-9]$/; 
+    } else if (advType === 'TJ' || advType === 'TO') {
+        validZoneRegex = /^[1-8]p?$/; 
+    } else {
+        validZoneRegex = /^[1-9]p?$/; 
+    }
+    
     inputs.forEach(input => {
         const name = input.name; 
         let value = input.value.trim();
 
         if (name && value !== '') {
             const parts = name.split('_'); 
-            const zone = parts.pop(); 
-            const type = parts[1]; 
-            
+            const zone = parts.pop();            
             const safeZone = zone; 
-            const dbKey = name; // Le nom est déjà la clé BDD (att_e_1, att_i_1p...)
-            
-            // Validation de la zone (gardée pour la robustesse du schéma)
+            const dbKey = name;
             if (!validZoneRegex.test(safeZone)) {
-                return; 
+                return;
             }
-            
-            // La valeur doit être un entier
             let parsedValue = parseInt(value, 10);
             
             if (!isNaN(parsedValue)) {
-                // Assure qu'on envoie 0 au minimum si l'utilisateur met un signe - non géré
                 value = Math.max(0, parsedValue); 
                 data[dbKey] = value;
             }
         }
     });
-
     return data;
 }
-
 /**
  * @returns {Object}
  */
@@ -938,9 +986,6 @@ function collectBoisJointsData() {
     };
     
     Object.keys(data).forEach(key => (data[key] === null || data[key] === '') && delete data[key]);
-
-    // if (data.etat_rails === 'bon') delete data.etat_rails;
-
     return data;
 }
 
@@ -1026,12 +1071,14 @@ function collectSpecificTechnicalData(advType) {
     specificData.type = advType;
     specificData.adv = document.getElementById('general_1').value;
 
+    const obsInput = document.getElementById('obs_text');
+    specificData.obs = obsInput ? obsInput.value.trim() : null;
+
     return specificData;
 }
 
 
 /**
- * Collecte les données de demi-aiguillage et les structure au format JSON attendu (Array de JSONs).
  * @param {string} advType - Le type d'ADV ('BS' ou 'TJ').
  * @returns {Array<Object>} Un tableau d'objets, un par demi-aiguillage.
  */
@@ -1108,7 +1155,9 @@ function collectDemiAiguillageData(advType) {
 
     return demiAigRaw;
 }
+
 /**
+ * Sépare les données du formulaire en sections pour l'envoi API.
  * @returns {{generalData: Object, specificData: Object, demiAiguillageData: Array<Object>}} Les données séparées.
  */
 function splitFormData() {
@@ -1349,6 +1398,8 @@ async function loadAdvData() {
         advForm.classList.add('hidden');
         advTypeDisplay.textContent = 'Type: N/A';
         document.getElementById('advType').value = '';
+        // Réinitialiser l'état initial si aucun ADV n'est sélectionné
+        initialTechnicalState = null;
         return;
     }
     
@@ -1385,11 +1436,28 @@ async function loadAdvData() {
         handleCoordinateChange();
         updateCharts(); 
         
+        // --- NOUVEAU: Capture de l'état initial pour la détection de modifications ---
+        setTimeout(() => {
+            const obsInput = document.getElementById('obs_text');
+            if(obsInput) {
+                // S'assurer que le champ observation est vide au chargement
+                obsInput.value = ''; 
+                obsInput.classList.remove('required-missing'); // Nettoyage style erreur
+            }
+            
+            const currentData = splitFormData();
+            // On exclut 'obs' de l'état initial technique
+            if(currentData.specificData) delete currentData.specificData.obs;
+            initialTechnicalState = JSON.stringify(currentData);
+            
+            // Initialiser l'état du bouton (désactivé par défaut au chargement)
+            updateUpdateButtonState();
+        }, 200);
+        
     } catch (e) {
         console.error("Échec du chargement des données de l'ADV", advName, e);
     }
 }
-
 
 /**
  * Remplit les champs du formulaire avec les données générales.
@@ -1429,15 +1497,16 @@ function fillSpecificData(data, advType) {
         }
     });
 
-    // Remplissage Attaches (cellules contenteditable)
-    document.querySelectorAll(`#tab-attaches td.attaches-data`).forEach(cell => {
-        const zone = cell.getAttribute('data-zone');
-        const typeClass = cell.classList.contains('efficaces') ? 'e' : 'i';
-        const dbKey = `att_${typeClass}_${zone}`;
+    // Remplissage Attaches (inputs)
+    // ADAPTÉ : Utilise le sélecteur d'inputs et l'attribut name pour charger les données.
+    document.querySelectorAll(`#tab-attaches input.attaches-input`).forEach(input => {
+        const dbKey = input.name; // ex: att_e_1
         
-        if (data[dbKey] !== undefined) {
-             cell.innerText = data[dbKey];
+        if (data[dbKey] !== undefined && data[dbKey] !== null) {
+             input.value = data[dbKey];
         }
+        // Déclencher un événement change pour mettre à jour l'état si nécessaire (bien que l'état initial soit capturé après)
+        // input.dispatchEvent(new Event('change')); 
     });
 
     // Remplissage Bois/Joints
@@ -1521,6 +1590,9 @@ function fillDemiAiguillageData(data, advType) {
 }
 
 
+/**
+ * Envoie le formulaire et gère l'historique et la transaction.
+ */
 async function sendUpdateFormData() {
     const { generalData: newGeneralData, specificData: newSpecificData, demiAiguillageData: newDemiAiguillageData } = splitFormData();
     
@@ -1533,6 +1605,10 @@ async function sendUpdateFormData() {
         return;
     }
     
+    // Désactiver le bouton pendant l'envoi
+    const updateBtn = document.getElementById('updateAdvBtn');
+    updateBtn.disabled = true;
+
     console.log('--- Démarrage de la mise à jour de l\'ADV ---');
 
     let oldSpecificData = {};
@@ -1540,12 +1616,8 @@ async function sendUpdateFormData() {
     const timestamp = new Date().toISOString();
     let historicSuccess = true;
     
-    // NOUVEAU: Encodage pour l'URL Path
     const encodedAdvName = encodeURIComponent(advName);
-
-    // --- Étape 0: Récupération des données anciennes ---
     try {
-        // Utilisation de l'ADV encodé
         oldSpecificData = await fetchData(`/api/${advTypeLower}/${encodedAdvName}`);
         
         if (advTypeLower !== 'to') {
@@ -1566,13 +1638,8 @@ async function sendUpdateFormData() {
     } catch (e) {
          console.warn("⚠️ Échec de la récupération des anciennes données. La tentative d'historisation va suivre.");
     }
-    
-    // --- ÉTAPE 1: POST des Anciennes Données dans l'Historique ---
-    
-    // A. Historique Données Spécifiques
     if (Object.keys(oldSpecificData).length > 2) {
         try {
-            // Appel à la NOUVELLE route /api/adv_historic/bs
             const historicSpecificUrl = `/api/adv_historic/${advTypeLower}`; 
             await postData(historicSpecificUrl, oldSpecificData);
             console.log(`✅ Soumission Historique (ADV_${advType}) réussie.`);
@@ -1581,8 +1648,6 @@ async function sendUpdateFormData() {
             historicSuccess = false; 
         }
     }
-    
-    // B. Historique Demi-Aiguillage
     if (historicSuccess && oldDemiAiguillageData.length > 0) {
         try {
             const historicDaUrl = '/api/b2v_da_historic';
@@ -1596,52 +1661,142 @@ async function sendUpdateFormData() {
 
     if (!historicSuccess) {
         console.error("🛑 Mise à jour annulée car l'historique n'a pas pu être créé.");
+        updateBtn.disabled = false;
         return; 
     }
-    
-    // --- ÉTAPE 2: PUT des Nouvelles Données dans les Tables de Base (Transactionnel) ---
     try {
-        // Appel à la NOUVELLE route transactionnelle
         const updateUrl = `/api/adv_update_transaction/${encodedAdvName}`;
         
         const payload = {
             generalData: newGeneralData,
             specificData: newSpecificData,
             demiAiguillageData: newDemiAiguillageData,
-            advType: advType // Passer le type pour le serveur
+            advType: advType
         };
 
         await putData(updateUrl, payload, 'PUT'); 
         
         console.log("🎉 Mise à jour de l'ADV complétée avec succès (Transaction atomique) !");
+        alert("Mise à jour effectuée avec succès.");
+        const obsInput = document.getElementById('obs_text');
+        if (obsInput) obsInput.value = '';
+        const newData = splitFormData();
+        if (newData.specificData) delete newData.specificData.obs;
+        initialTechnicalState = JSON.stringify(newData);
 
     } catch (e) {
         console.error("🛑 La mise à jour de l'ADV a échoué. Toutes les modifications de l'étape 2 ont été annulées (ROLLBACK).");
         console.log(`Détails: ${e.message}`);
+        alert("Erreur lors de la mise à jour : " + e.message);
+    } finally {
+        updateBtn.disabled = false;
+        updateUpdateButtonState(); 
     }
 }
+
+/**
+ * @returns {boolean}
+ */
+function hasTechnicalChanges() {
+    if (initialTechnicalState === null) return false;
+    
+    const currentDataFull = splitFormData();
+    
+    const dataToCompare = JSON.parse(JSON.stringify(currentDataFull));
+    if (dataToCompare.specificData) delete dataToCompare.specificData.obs;
+    
+    const currentTechnicalState = JSON.stringify(dataToCompare);
+    
+    return initialTechnicalState !== currentTechnicalState;
+}
+
+function updateUpdateButtonState() {
+    const updateBtn = document.getElementById('updateAdvBtn');
+    if (!updateBtn) return;
+    
+    const obsInput = document.getElementById('obs_text');
+    const obsFilled = obsInput && obsInput.value.trim() !== '';
+    const changesMade = hasTechnicalChanges();
+    
+    if (changesMade && obsFilled) {
+        updateBtn.style.display = 'flex';
+        updateBtn.disabled = false;      
+    } else if (changesMade && !obsFilled) {
+        updateBtn.style.display = 'flex';
+        updateBtn.disabled = true;       
+        updateBtn.textContent = '⚠️ Renseignez l\'Observation';
+    } else {
+        updateBtn.style.display = 'flex';
+        updateBtn.disabled = true;       
+        updateBtn.textContent = 'Pas de modification à envoyer';
+    }
+    
+    if (changesMade && obsFilled) {
+        updateBtn.textContent = '⬆️ Valider l\'intervention';
+    } else if (!changesMade) {
+        updateBtn.textContent = 'Pas de modification à envoyer';
+    }
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     loadAdvList(); 
 
     initMap(); 
     if (typeof Chart !== 'undefined' && document.getElementById('traversesChart')) {
-        // Détruire les anciennes instances si elles existent pour éviter les conflits
-        if (window.traversesChartInstance) {
-            window.traversesChartInstance.destroy();
-        }
-        if (window.jointsChartInstance) {
-            window.jointsChartInstance.destroy();
-        }
+        if (window.traversesChartInstance) window.traversesChartInstance.destroy();
+        if (window.jointsChartInstance) window.jointsChartInstance.destroy();
         
         window.traversesChartInstance = initTraversesChart();
         window.jointsChartInstance = initJointsChart();
-        
-        // La mise à jour initiale sera déclenchée par loadAdvData() après le remplissage des inputs
     }
     
+    // --- NOUVEAU: Écouteur générique sur le formulaire pour mettre à jour l'état du bouton ---
+    const advForm = document.getElementById('advForm');
+    if (advForm) {
+        advForm.addEventListener('input', updateUpdateButtonState);
+        advForm.addEventListener('change', updateUpdateButtonState);
+    }
+    
+    // --- MODIFICATION MAJEURE : Logique de validation et redirection vers l'onglet Observations ---
     document.getElementById('advForm').addEventListener('submit', (e) => {
         e.preventDefault();
+
+        // 1. Détection des changements techniques
+        const changesMade = hasTechnicalChanges();
+        
+        // 2. Vérification de la présence de l'observation
+        const obsInput = document.getElementById('obs_text');
+        const obsValue = obsInput ? obsInput.value.trim() : '';
+
+        // Contrainte b: Le bouton ne doit pas être cliquable si pas de changement technique
+        if (!changesMade) {
+            alert("Aucune modification technique détectée. Mise à jour annulée.");
+            return;
+        }
+
+        // Contrainte a: Le champ obs est obligatoire si des changements ont été faits
+        if (!obsValue) {
+            // UX : Redirection vers l'onglet Observation et mise en évidence
+            switchTab('observations');
+            if (obsInput) {
+                obsInput.classList.add('required-missing');
+                obsInput.focus();
+                
+                // Retirer la classe d'erreur dès la saisie
+                obsInput.addEventListener('input', function removeErrorClass() {
+                    if (this.value.trim() !== '') {
+                        this.classList.remove('required-missing');
+                        updateUpdateButtonState(); // Mettre à jour l'état du bouton
+                        this.removeEventListener('input', removeErrorClass);
+                    }
+                });
+            }
+            alert("Une observation est OBLIGATOIRE pour valider les modifications.");
+            return;
+        }
+
+        // 3. Si changements OK et Obs OK, envoi des données
         sendUpdateFormData();
     });
     
