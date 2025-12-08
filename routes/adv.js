@@ -491,5 +491,42 @@ router.get('/list_historic_for/:type', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+router.post('/adv-audit-log', async (req, res) => {
+    const { adv_name, user_id, observation, changes_json, snapshot_date } = req.body;
+    
+    if (!adv_name || !user_id || !observation || !changes_json || !snapshot_date) {
+        return res.status(400).json({ error: 'Données de log d\'audit manquantes (adv_name, user_id, observation, changes_json, snapshot_date).' });
+    }
+    
+    const query = `
+        INSERT INTO adv_snapshot_log (adv_name, user_id, observation, changes_json, snapshot_date)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *;
+    `;
+    const values = [adv_name, user_id, observation, JSON.stringify(changes_json), snapshot_date];
 
+    try {
+        const result = await pool.query(query, values);
+        res.status(201).json({ message: 'Snapshot log recorded', data: result.rows[0] });
+    } catch (err) {
+        console.error('Erreur insertion adv_snapshot_log:', err.message);
+        res.status(500).json({ error: `Erreur serveur lors de l'insertion dans adv_snapshot_log: ${err.message}` });
+    }
+});
+router.get('/adv_snapshot_log/:advName', async (req, res) => {
+    const advName = req.params.advName;
+    try {
+        const query = `
+            SELECT id, adv_name, snapshot_date, user_id, observation, changes_json 
+            FROM adv_snapshot_log 
+            WHERE adv_name = $1 
+            ORDER BY snapshot_date DESC;
+        `;
+        const result = await pool.query(query, [advName]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Erreur de récupération des logs snapshot:', err.message);
+        res.status(500).json({ error: `Erreur serveur lors de la récupération des logs snapshot: ${err.message}` });
+    }
+});
 module.exports = router;

@@ -3,6 +3,7 @@
 }
 :root {
     --primary-orange: #FF8C00;
+    --secondary-orange: #e67e00;
     --dark-blue: rgba(0, 42, 85, 0.9);
     --modal-bg-color: rgba(30, 30, 30, 0.6);
     --header-transition-duration: 1.5s;
@@ -353,7 +354,7 @@ body {
 .toggle-menu {
   display: block;
   background-color: #333;
-  padding: 10px;
+  padding: 20px;
   border-top: 1px solid #555;
 }
 
@@ -364,6 +365,10 @@ body {
   color: white;
   border: none;
   border-radius: 4px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-decoration: none;
   cursor: pointer;
 }
 .toggle-menu button:hover {
@@ -381,13 +386,18 @@ body {
   margin: 5px;
   padding: 25px 40px;
   font-size: 29px;
-  background-color: #555;
+  /* background-color: #e67f09; */
+  background-color: var(--primary-orange);
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
-
+#hub button:hover {
+  background-color: var(--secondary-orange);
+  transform: translateY(-2px);
+}
 /* Autres styles */
 table {
   width: 100%;
@@ -1201,16 +1211,20 @@ th, td {
 #document-btn{
   display: block;
   position: absolute;
-  bottom: 10%;
+  bottom: 20%;
   margin: 0 auto;
-  background-color: #4f46e5 !important; /* violet */
+  background-color: #5c5c5f !important;
+  /* background-color: var(--secondary-orange); */
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   border: solid 1px #000000;
 }
-
+#document-btn:hover {
+    background-color: #444447 !important;
+    /* background-color: #e67e00; */
+}
 .choice-button {
     display: flex;
     align-items: center;

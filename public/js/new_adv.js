@@ -72,8 +72,6 @@ const DEMI_AIG_FIELD_MAPPING = {
     13: 'usure_la_pente',
     15: 'usure_la_classement'
 };
-
-// --- Ordre des clés pour l'affichage console (optionnel, mais garantit l'ordre pour le log) ---
 const DEMI_AIG_OUTPUT_ORDER = [
     'adv',
     'adv_type',
@@ -1100,13 +1098,6 @@ async function postData(url, data) {
     }
 }
 
-/**
- * Orchestre la soumission de toutes les parties du formulaire aux routes backend.
- */
-/**
- * Orchestre la soumission de toutes les parties du formulaire aux routes backend 
- * (basées sur les noms des tables de la BDD).
- */
 async function sendFormData() {
     const { generalData, specificData, demiAiguillageData } = splitFormData();
     
@@ -1173,7 +1164,6 @@ let marker = null;
 let advMarkers;
 const latInputId = 'general_3';
 const lngInputId = 'general_4';
-// Définition de coordonnées initiales (ex: Paris)
 const initialLat = 48.8566;
 const initialLng = 2.3522;
 
@@ -1289,8 +1279,6 @@ function updateMapMarker(lat, lng, popupText = 'Point de visualisation') {
         map.invalidateSize();
     }, 100);
 }
-
-// --- L'intégralité du code de gestion du DOM était ici ---
 
 document.addEventListener('DOMContentLoaded', () => {
     initMap(); 
@@ -1451,7 +1439,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabBois = document.getElementById('tab-bois');
 
     if (tabBois) {
-        // Initialiser Chart.js ici si Chart est chargé
         if (typeof Chart !== 'undefined') {
             traversesChartInstance = initTraversesChart();
             jointsChartInstance = initJointsChart();

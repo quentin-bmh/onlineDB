@@ -21,7 +21,6 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-
 h1 {
     text-align: center;
     color: #333;
@@ -29,12 +28,10 @@ h1 {
     padding-bottom: 10px;
     margin-bottom: 20px;
 }
-
 #adv-selection {
     text-align: center;
     margin-bottom: 20px;
 }
-
 #advType {
     padding: 8px;
     font-size: 16px;
@@ -81,12 +78,21 @@ h1 {
     display: none;
     padding: 15px 0 0 0;
     border-top: 1px solid #eee;
+}
+
+/* Règle générale pour afficher l'onglet actif (par défaut en flex-column, utilisé pour la plupart des onglets) */
+.tab-pane.active {
+    display: flex;
     flex-direction: column;
 }
 
-.tab-pane.active {
-    display: flex;
+/* CORRECTION: Règle spécifique pour l'onglet Observations actif, forçant display: grid */
+.tab-pane.observations-grid.active {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Répétition de la mise en page grid pour s'assurer qu'elle est appliquée */
 }
+
+
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(45%, 1fr));
@@ -105,8 +111,18 @@ fieldset {
 fieldset input{
     width: 80%;
 }
-/* Style spécifique pour le textarea de l'onglet Observations */
-#tab-observations textarea {
+/* Style spécifique pour la zone Observations (la mise en page 'grid' n'est appliquée qu'avec '.active') */
+#tab-observations.observations-grid {
+    /* La règle display: grid est déplacée dans .tab-pane.observations-grid.active */
+    gap: 20px;
+    align-items: stretch;
+}
+
+#tab-observations .textarea-container,
+#tab-observations .changes-list-container {
+    height: 100%;
+}
+#tab-observations .textarea-container textarea {
     width: 100%;
     max-width: 100%;
     min-height: 200px;
@@ -119,12 +135,51 @@ fieldset input{
     transition: border 0.3s;
 }
 
-/* Style pour le champ d'observation manquant/requis */
-#tab-observations textarea.required-missing {
-    border: 2px solid #dc3545; /* Bordure rouge pour indiquer l'erreur */
-    box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+/* Style pour la liste des changements */
+.changes-list-container {
+    display: flex;
+    flex-direction: column;
+}
+#changes-summary-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 5px;
+    font-size: 0.9em;
+}
+#changes-summary-content p {
+    margin: 2px 0;
+}
+.change-item {
+    padding: 3px 0;
+    border-bottom: 1px dotted #eee;
+}
+.change-item:last-child {
+    border-bottom: none;
+}
+.change-label {
+    font-weight: bold;
+    color: #333;
+}
+.change-values {
+    color: #555;
+    word-break: break-word;
+}
+.change-values .old-value {
+    color: #dc3545;
+    font-style: italic;
+}
+.change-values .new-value {
+    color: #28a745;
+    font-weight: bold;
 }
 
+
+/* Style pour le champ d'observation manquant/requis */
+#tab-observations .textarea-container textarea.required-missing {
+    border: 2px solid #dc3545;
+    box-shadow: 0 0 5px rgba(220, 53, 69, 0.5);
+    background-color: #fff8f8;
+}
 legend {
     font-weight: bold;
     color: var(--primary-orange);
@@ -270,8 +325,6 @@ select {
     border: solid 1px black;
     font-size: 10px;
 }
-
-/* Positionnement des inputs pour BS */
 .croisement-img-bs .ep_cr_g { top: 4%; left: 16.87%; width: 7.9%; height: 11%; }
 .croisement-img-bs .ep_cal_g { top: 16%; left: 16.87%; width: 7.9%; height: 11%; }
 .croisement-img-bs .nb_cal_g { top: 29%; left: 16.87%; width: 7.9%; height: 11%; }
@@ -283,7 +336,6 @@ select {
 .croisement-img-bs .coeur2c_num_h { top: 79%; left: 40%; width: 21%; height: 14%; }
 .croisement-img-bs .coeur_etat { top: 65%; left: 75%; width: 17%; height: 14%; }
 
-/* Inputs TJ (Cœur haut/bas) */
 .container_coeur2c_h .ep_cr_g, .container_coeur2c_b .ep_cr_g { top: 4%; left: 16.87%; width: 7.9%; height: 11%; }
 .container_coeur2c_h .ep_cal_g, .container_coeur2c_b .ep_cal_g { top: 16%; left: 16.87%; width: 7.9%; height: 11%; }
 .container_coeur2c_h .nb_cal_g, .container_coeur2c_b .nb_cal_g { top: 29%; left: 16.87%; width: 7.9%; height: 11%; }
@@ -297,12 +349,10 @@ select {
 .container_coeur2c_b .p2p_d_b { top: 45%; right: 30.4%; width: 15%; height: 11%; }
 .container_coeur2c_b .coeur2c_num_b { top: 79%; left: 40%; width: 21%; height: 14%; }
 
-/* Inputs TO (Cœur haut/bas - coeur2c_h_t / coeur2c_b_t) */
 .container_coeur2c_h_t .p2p_g_h, .container_coeur2c_b_t .p2p_g_b { top: 29%; left: 13%; width: 23%; height: 11%; }
 .container_coeur2c_h_t .p2p_d_h, .container_coeur2c_b_t .p2p_d_b { top: 29%; left: 62%; width: 23%; height: 11%; }
 .container_coeur2c_h_t .coeur2c_num_h_t, .container_coeur2c_b_t .coeur2c_num_b_t { top: 79%; left: 31%; width: 39%; height: 14%; }
 
-/* Inputs Cœur de Traversée (coeur2t) pour TJ et TO */
 .traverse-img {
     position: relative;
 }
@@ -564,27 +614,23 @@ td .table-input {
 }
 
 .ecartement-inputs-list input[type="number"] {
-    position: static; /* Annule l'éventuelle position absolue héritée */
-    width: 70px; /* Taille fixe pour les inputs de valeur */
+    position: static;
+    width: 70px;
     padding: 4px;
     font-weight: bold;
     font-size: 15px;
     text-align: center;
 }
-
-/* Annuler les anciens styles d'image qui fixaient une largeur trop petite */
 .ecartement-img-bs img,
 .ecartement-img-tj img,
 .ecartement-img-to img {
-    width: 100%; /* La largeur est gérée par .ecartement-visual */
+    width: 100%;
     max-height: 700px;
     height: auto;
     border: 1px solid #ccc;
     border-radius: 8px;
     object-fit: contain;
 }
-
-/* Section Attaches (Tableau + Image Attaches) */
 .attaches-section {
     flex: 1 1 60%; 
     display: flex;
@@ -608,8 +654,6 @@ td .table-input {
     border-radius: 8px;
     object-fit: contain; 
 }
-
-/* Styles pour rendre le tableau éditable (point 1) */
 .attaches-table td[contenteditable="true"] {
     text-align: center;
     min-width: 80px;
@@ -697,11 +741,7 @@ input[type=number] {
     font-weight: 600;
     background-color: var(--primary-orange);
     color: white; 
-    
-    /* Transition pour l'effet de survol */
     transition: background-color 0.3s ease, transform 0.1s ease;
-    
-    /* Pour s'assurer que l'icône de la disquette ne soit pas trop éloignée du texte */
     display: flex;
     align-items: center;
     gap: 8px; 

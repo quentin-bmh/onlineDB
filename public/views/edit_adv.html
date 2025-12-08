@@ -32,7 +32,6 @@
                 <button type="button" class="tab-btn" data-tab="bois">Bois</button>
                 <button type="button" class="tab-btn" data-tab="joints">Joints</button>
                 <button type="button" class="tab-btn conditional-tab" data-tab="demiAiguillage">Demi-Aiguillage</button>
-                <!-- NOUVEL ONGLETS OBSERVATIONS -->
                 <button type="button" class="tab-btn" data-tab="observations">Observations</button>
             </nav>
 
@@ -313,18 +312,29 @@
                     <div id="demi-aiguillage-content">
                     </div>
                 </div>
-                <div id="tab-observations" class="tab-pane">
-                    <fieldset>
-                        <legend>Observations et Modifications</legend>
+                
+                <!-- MODIFICATION : Utilisation d'un grid pour la zone d'observations -->
+                <div id="tab-observations" class="tab-pane observations-grid">
+                    <fieldset class="textarea-container">
+                        <legend>Observations</legend>
                         <p class="mb-4">Veuillez renseigner ce qui a été modifié ou toute observation pertinente concernant l'ADV.</p>
-                        <textarea id="obs_text" name="obs_text" rows="8" placeholder="Observations..."></textarea>
+                        <textarea id="obs_text" name="obs_text" rows="8" placeholder="Observation obligatoire si une modification technique est effectuée."></textarea>
+                    </fieldset>
+
+                    <fieldset class="changes-list-container">
+                        <legend>Détail des Modifications</legend>
+                        <div id="changes-summary-content">
+                            <!-- Contenu généré par JS -->
+                            <p class="text-gray-500">Aucune modification détectée.</p>
+                        </div>
                     </fieldset>
                 </div>
 
             </div>
 
             <div class="form-actions">
-                <button type="submit" id="updateAdvBtn" disabled>⬆️ Valider l'intervention</button>
+                <!-- Bouton géré par JS pour l'état disabled/texte -->
+                <button type="submit" id="updateAdvBtn" disabled>Pas de modification à envoyer</button>
             </div>
         </form>
     </div>

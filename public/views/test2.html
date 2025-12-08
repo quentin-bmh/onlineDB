@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Export Intervention</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <button id="btn-download">Télécharger Rapport (.html)</button>
+    <script>
+        document.getElementById('btn-download').addEventListener('click', async () => {
+            const advName = "BS Test";
+            const logoUrl = "/assets/logo_a2c.png";
+            
+            try {
+                const [dataResponse, logoBase64] = await Promise.all([
+                    fetch(`/api/adv_snapshot_log/${advName}`),
+                    getBase64FromUrl(logoUrl)
+                ]);
+
+                if (!dataResponse.ok) throw new Error(`Erreur HTTP API: ${dataResponse.status}`);
+                
+                const data = await dataResponse.json();
+                
+                if (!data || data.length === 0) {
+                    alert('Aucun log disponible.');
+                    return;
+                }
+
+                // 2. Génération du HTML avec l'image incrustée
+                const htmlContent = generateReportHTML(data, advName, logoBase64);
+
+                // 3. Téléchargement
+                downloadFile(htmlContent, `Rapport_${advName}.html`);
+
+            } catch (error) {
+                console.error('Erreur export:', error);
+                alert('Impossible de générer le rapport (Vérifiez que l\'image existe et que l\'API répond).');
+            }
+        });
+
+        /**
+         * Télécharge une image et la convertit en chaîne Base64
+         */
+        async function getBase64FromUrl(url) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Image non trouvée');
+                const blob = await res.blob();
+                
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result); // Résultat: "data:image/png;base64,..."
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) {
+                console.warn("Erreur chargement logo, utilisation d'un placeholder vide", e);
+                return ""; // Retourne vide si l'image plante pour ne pas bloquer le download
+            }
+        }
+
+        function generateReportHTML(logs, advName, logoBase64) {
+            const dateGeneration = new Date().toLocaleString();
+
+            const rowsHtml = logs.map(log => {
+                const changes = typeof log.changes_json === 'string' 
+                    ? JSON.parse(log.changes_json) 
+                    : log.changes_json;
+
+                const changesRows = changes.map(c => `
+                    <tr>
+                        <td>${c.label}</td>
+                        <td class="old-val">${c.oldValue}</td>
+                        <td class="new-val">${c.newValue}</td>
+                    </tr>
+                `).join('');
+
+                return `
+                <div class="card">
+                    <div class="card-header">
+                        <span class="date">${new Date(log.snapshot_date).toLocaleString()}</span>
+                        <span class="user">Utilisateur : <strong>${log.user_id}</strong></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="observation">
+                            <strong>Observation :</strong> ${log.observation}
+                        </div>
+                        <table class="changes-table">
+                            <thead>
+                                <tr>
+                                    <th>Élément modifié</th>
+                                    <th>Ancienne valeur</th>
+                                    <th>Nouvelle valeur</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${changesRows}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // Note: On injecte la variable logoBase64 dans le src
+            return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport - ${advName}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #f4f4f4; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0056b3; padding-bottom: 20px; margin-bottom: 30px; }
+        header img { height: 90px; max-width: 200px;  } 
+        header .title-block { text-align: right; }
+        h1 { margin: 0; font-size: 24px; color: #0056b3; }
+        .subtitle { font-size: 14px; color: #666; }
+
+        .card { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 25px; overflow: hidden; background: #fff; }
+        .card-header { background: #e9ecef; padding: 10px 15px; display: flex; justify-content: space-between; font-size: 0.9em; border-bottom: 1px solid #ddd; }
+        .card-body { padding: 15px; }
+        .observation { margin-bottom: 15px; font-style: italic; color: #555; }
+
+        .changes-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        .changes-table th, .changes-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        .changes-table th { background-color: #f8f9fa; font-weight: 600; }
+        .old-val { color: #dc3545; text-decoration: line-through; font-size: 0.85em; }
+        .new-val { color: #28a745; font-weight: bold; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="${logoBase64}" alt="Logo A2C">
+            <div class="title-block">
+                <h1>Rapport d'Intervention</h1>
+                <div class="subtitle">ADV : ${advName}</div>
+                <div class="subtitle">Généré le : ${dateGeneration}</div>
+            </div>
+        </header>
+        
+        <div class="content">
+            ${rowsHtml}
+        </div>
+    </div>
+</body>
+</html>`;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>

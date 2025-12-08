@@ -266,7 +266,7 @@ async function getSpecificSnapshotData(advType, advName, snapshotDate) {
         const targetAdvData = data.find(item => 
             item.adv === advName && item.snapshot_date === snapshotDate
         );
-        // console.log('Données de la snapshot récupérées:', targetAdvData);
+        console.log('Données de la snapshot récupérées:', targetAdvData);
         return targetAdvData || {};
     } catch (e) {
         console.error(`Échec du chargement de la snapshot ${snapshotDate}:`, e);
@@ -307,6 +307,7 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
                   console.warn("Aucune donnée spécifique trouvée pour cette snapshot.");
                   return;
               }
+              console.log("données snapshot: ", advData);
               switchVoieTypeContent(type, 'voie-croisement');
               switchVoieTypeContent(type, 'voie-ecartement');
               updateCroisement(advData)
