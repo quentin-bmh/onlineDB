@@ -666,11 +666,12 @@ td .table-input {
 .attaches-table td:not(:first-child) {
     padding: 0;
 }
-.attaches-table input{
+.attaches-table input, .attaches-table select{
     border: none;
     width: 100%;
     text-align: center;
 }
+
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;

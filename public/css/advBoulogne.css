@@ -353,7 +353,7 @@ body {
 
 .toggle-menu {
   display: block;
-  background-color: #333;
+  background-color: #3f3f3f;
   padding: 20px;
   border-top: 1px solid #555;
 }
@@ -361,7 +361,8 @@ body {
 .toggle-menu button {
   margin: 5px;
   padding: 6px 12px;
-  background-color: #555;
+  /* background-color: #555; */
+  background-color: var(--primary-orange);
   color: white;
   border: none;
   border-radius: 4px;
@@ -370,9 +371,12 @@ body {
   font-weight: bold;
   text-decoration: none;
   cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
+
 .toggle-menu button:hover {
-  background-color: #777;
+    background-color: #e67e00;
+    transform: translateY(-2px);
 }
 #hub {
   display: flex;
@@ -800,7 +804,7 @@ th, td {
 .ecartement-top {
   display: flex;
   width: 100%;
-  margin: 2% 0 2% 0;
+  margin: 1% 0 2% 0;
   flex-direction: row;
   gap: 10px;
   align-items: center;
@@ -823,7 +827,7 @@ th, td {
   }
 }
 .table-wrapper {
-  width: 28%;
+  width: 35%;
   min-width: 350px;
   /* overflow: hidden; */
 }
@@ -842,7 +846,9 @@ th, td {
 .attaches-table th:nth-child(2),
 .attaches-table td:nth-child(2),
 .attaches-table th:nth-child(3),
-.attaches-table td:nth-child(3) {
+.attaches-table td:nth-child(3),
+.attaches-table th:nth-child(4),
+.attaches-table td:nth-child(4) {
   width: 150px;
   max-width: 150px;
 }
@@ -874,17 +880,32 @@ th, td {
 .attaches-table td:hover {
   background-color: #f0f8ff;
 }
-
+.left_side{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 55%;
+}
 .ecartements-image-wrapper {
   position: relative;
   display: inline-block;
-  width: 55%;
+  width: 90%;
+  max-height: 250px;
 }
 .ecartements-image {
   width: 100%;
   max-height: 300px;
   display: block;
   border-radius: 8px;
+}
+.ecartement-bottom{
+  width: 90%;
+  margin: 2% 0 2% 0;
+  gap: 10px;
+}
+.ecartement-bottom img{
+  width: 100%;
 }
 .ecartement-card {
   position: absolute;
@@ -1250,16 +1271,16 @@ th, td {
 .choice-button img {
     width: 60px;
     font-size: 1.5rem;
-    margin-right: 1rem;
+    margin-right: 5%;
 }
 
 
 #show-summary, #show-detail {
   display: block;
   position: absolute;
-  top: 10px;
+  top: 20px;
   right: 2px;
-  background-color: #4f46e5; /* violet */
+  background-color: #919191;
   color: white;
   border: none;
   border-radius: 5px;

@@ -39,7 +39,7 @@
       <div class="voie-content" id="voie-croisement">
         <div class="voie-type-container" data-type="bs">
           <div class="croisement-img-bs">
-            <img src="../assets/coeur2c_h_bs.png" alt="coeur haut" />
+            <img src="../assets/coeur2c_h_bs.png" alt="coeur haut" draggable="false"/>
             <input class="p2p_g">
             <input class="p2p_d">
             <input class="ep_cr_g" />
@@ -84,7 +84,7 @@
         <div class="voie-type-container" data-type="tj">
           <div class="croisement-img">
             <div class="container_coeur2c_h">
-              <img src="../assets/coeur2c_h.png" alt="coeur haut" />
+              <img src="../assets/coeur2c_h.png" alt="coeur haut" draggable="false"/>
               <input class="ep_cr_g" />
               <input class="ep_cal_g" />
               <input class="nb_cal_g" />
@@ -97,7 +97,7 @@
             </div>
 
             <div class="container_coeur2c_b">
-              <img src="../assets/coeur2c_b.png" alt="coeur bas" />
+              <img src="../assets/coeur2c_b.png" alt="coeur bas" draggable="false"/>
               <input class="ep_cr_g" />
               <input class="ep_cal_g" />
               <input class="nb_cal_g" />
@@ -111,7 +111,7 @@
 
           </div>
           <div class="traverse-img">
-            <img src="../assets/coeur2t.png" alt="coeur de traversée" class="croisement-image" />
+            <img src="../assets/coeur2t.png" alt="coeur de traversée" class="croisement-image" draggable="false"/>
             <input class="p2pt_g_h" />
             <input class="p2pt_d_h" />
             <input class="libre_passage_g" />
@@ -126,14 +126,14 @@
         <div class="voie-type-container" data-type="to">
           <div class="croisement-img">
             <div class="container_coeur2c_h_t">
-              <img src="../assets/coeur2c_h_t.png" alt="coeur haut" />
+              <img src="../assets/coeur2c_h_t.png" alt="coeur haut" draggable="false"/>
               <input class="p2p_g_h" />
               <input class="p2p_d_h" />
               <input class="coeur2c_num_h_t" />
             </div>
 
             <div class="container_coeur2c_b_t">
-              <img src="../assets/coeur2c_b_t.png" alt="coeur bas" />
+              <img src="../assets/coeur2c_b_t.png" alt="coeur bas" draggable="false"/>
               <input class="p2p_g_b" />
               <input class="p2p_d_b" />
               <input class="coeur2c_num_b_t" />
@@ -141,7 +141,7 @@
 
           </div>
           <div class="traverse-img">
-            <img src="../assets/coeur2t.png" alt="coeur de traversée" class="croisement-image" />
+            <img src="../assets/coeur2t.png" alt="coeur de traversée" class="croisement-image" draggable="false"/>
               <input class="p2pt_g_h" />
               <input class="p2pt_d_h" />
               <input class="libre_passage_g" />
@@ -157,16 +157,20 @@
       <div class="voie-content" id="voie-ecartement">
         <div class="voie-type-container" data-type="bs">
           <div class="ecartement-top">
-            <img src="/assets/attaches.png" alt="Attaches" class="attaches-image-bs" />
-            <div class="ecartements-image-wrapper">
-              <img src="/assets/ecartements.png" alt="Écartements" class="ecartements-image" />
-              <div class="ecartement-card card-1" data-editable="true">1490</div>
-              <div class="ecartement-card card-2" data-editable="true">1490</div>
-              <div class="ecartement-card card-3" data-editable="true">1490</div>
-              <div class="ecartement-card card-4" data-editable="true">1490</div>
-              <div class="ecartement-card card-5" data-editable="true">1490</div>
-              <div class="ecartement-card card-6" data-editable="true">1490</div>
-              <div class="ecartement-card card-7" data-editable="true">1490</div>
+            <div class="left_side">
+              <div class="ecartements-image-wrapper">
+                <img src="/assets/ecartements.png" alt="Écartements" class="ecartements-image" draggable="false"/>
+                <div class="ecartement-card card-1" data-editable="true">1490</div>
+                <div class="ecartement-card card-2" data-editable="true">1490</div>
+                <div class="ecartement-card card-3" data-editable="true">1490</div>
+                <div class="ecartement-card card-4" data-editable="true">1490</div>
+                <div class="ecartement-card card-5" data-editable="true">1490</div>
+                <div class="ecartement-card card-6" data-editable="true">1490</div>
+                <div class="ecartement-card card-7" data-editable="true">1490</div>
+              </div>
+              <div class="ecartement-bottom">
+                <img src="/assets/attaches.png" alt="Attaches" class="attaches-image-bs" draggable="false"/>
+              </div>
             </div>
             <div class="table-wrapper">
               <table class="attaches-table" data-editable="true" data-lock="first-row first-col">
@@ -175,36 +179,42 @@
                     <th>Zone</th>
                     <th>% Attaches efficaces</th>
                     <th>% Attaches inefficaces</th>
+                    <th>Etat rails</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>1</td><td></td><td></td></tr>
-                  <tr><td>2</td><td></td><td></td></tr>
-                  <tr><td>3</td><td></td><td></td></tr>
-                  <tr><td>4</td><td></td><td></td></tr>
-                  <tr><td>5</td><td></td><td></td></tr>
-                  <tr><td>6</td><td></td><td></td></tr>
-                  <tr><td>7</td><td></td><td></td></tr>
-                  <tr><td>8</td><td></td><td></td></tr>
-                  <tr><td>9</td><td></td><td></td></tr>
+                  <tr><td>1</td><td></td><td></td><td></td></tr>
+                  <tr><td>2</td><td></td><td></td><td></td></tr>
+                  <tr><td>3</td><td></td><td></td><td></td></tr>
+                  <tr><td>4</td><td></td><td></td><td></td></tr>
+                  <tr><td>5</td><td></td><td></td><td></td></tr>
+                  <tr><td>6</td><td></td><td></td><td></td></tr>
+                  <tr><td>7</td><td></td><td></td><td></td></tr>
+                  <tr><td>8</td><td></td><td></td><td></td></tr>
+                  <tr><td>9</td><td></td><td></td><td></td></tr>
                 </tbody>
               </table>
             </div>
           </div>
+
         </div>
         <div class="voie-type-container" data-type="tj">
           <div class="ecartement-top">
-            <img src="/assets/tj_attaches.png" alt="Attaches" class="attaches-image" />
-            <div class="ecartements-image-wrapper">
-              <img src="/assets/tj_ecartements.jpg" alt="Écartements" class="ecartements-image" />
-              <div class="ecartement-card card-1" data-editable="true">1490</div>
-              <div class="ecartement-card card-2" data-editable="true">1490</div>
-              <div class="ecartement-card card-3" data-editable="true">1490</div>
-              <div class="ecartement-card card-4" data-editable="true">1490</div>
-              <div class="ecartement-card card-5" data-editable="true">1490</div>
-              <div class="ecartement-card card-6" data-editable="true">1490</div>
-              <div class="ecartement-card card-7" data-editable="true">1490</div>
-              <div class="ecartement-card card-8" data-editable="true">1490</div>
+            <div class="left_side">
+              <div class="ecartements-image-wrapper">
+                <img src="/assets/tj_ecartements.jpg" alt="Écartements" class="ecartements-image" draggable="false"/>
+                <div class="ecartement-card card-1" data-editable="true">1490</div>
+                <div class="ecartement-card card-2" data-editable="true">1490</div>
+                <div class="ecartement-card card-3" data-editable="true">1490</div>
+                <div class="ecartement-card card-4" data-editable="true">1490</div>
+                <div class="ecartement-card card-5" data-editable="true">1490</div>
+                <div class="ecartement-card card-6" data-editable="true">1490</div>
+                <div class="ecartement-card card-7" data-editable="true">1490</div>
+                <div class="ecartement-card card-8" data-editable="true">1490</div>
+              </div>
+              <div class="ecartement-bottom">
+                <img src="/assets/tj_attaches.png" alt="Attaches" class="attaches-image" draggable="false"/>
+              </div>
             </div>
             <div class="table-wrapper">
               <table class="attaches-table" data-editable="true" data-lock="first-row first-col">
@@ -213,21 +223,22 @@
                     <th>Zone</th>
                     <th>% Attaches efficaces</th>
                     <th>% Attaches inefficaces</th>
+                    <th>Etat rails</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>1</td><td></td><td></td></tr>
-                  <tr><td>1'</td><td></td><td></td></tr>
-                  <tr><td>2</td><td></td><td></td></tr>
-                  <tr><td>2'</td><td></td><td></td></tr>
-                  <tr><td>3</td><td></td><td></td></tr>
-                  <tr><td>3'</td><td></td><td></td></tr>
-                  <tr><td>4</td><td></td><td></td></tr>
-                  <tr><td>4'</td><td></td><td></td></tr>
-                  <tr><td>5</td><td></td><td></td></tr>
-                  <tr><td>6</td><td></td><td></td></tr>
-                  <tr><td>7</td><td></td><td></td></tr>
-                  <tr><td>8</td><td></td><td></td></tr>
+                  <tr><td>1</td><td></td><td></td><td></td></tr>
+                  <tr><td>1'</td><td></td><td></td><td></td></tr>
+                  <tr><td>2</td><td></td><td></td><td></td></tr>
+                  <tr><td>2'</td><td></td><td></td><td></td></tr>
+                  <tr><td>3</td><td></td><td></td><td></td></tr>
+                  <tr><td>3'</td><td></td><td></td><td></td></tr>
+                  <tr><td>4</td><td></td><td></td><td></td></tr>
+                  <tr><td>4'</td><td></td><td></td><td></td></tr>
+                  <tr><td>5</td><td></td><td></td><td></td></tr>
+                  <tr><td>6</td><td></td><td></td><td></td></tr>
+                  <tr><td>7</td><td></td><td></td><td></td></tr>
+                  <tr><td>8</td><td></td><td></td><td></td></tr>
                 </tbody>
               </table>
             </div>
@@ -235,18 +246,23 @@
         </div>
         <div class="voie-type-container" data-type="to">
           <div class="ecartement-top">
-            <img src="/assets/to_attaches.png" alt="Attaches" class="attaches-image" />
-            <div class="ecartements-image-wrapper">
-              <img src="/assets/tj_ecartements.jpg" alt="Écartements" class="ecartements-image" />
-              <div class="ecartement-card card-1" data-editable="true">1490</div>
-              <div class="ecartement-card card-2" data-editable="true">1490</div>
-              <div class="ecartement-card card-3" data-editable="true">1490</div>
-              <div class="ecartement-card card-4" data-editable="true">1490</div>
-              <div class="ecartement-card card-5" data-editable="true">1490</div>
-              <div class="ecartement-card card-6" data-editable="true">1490</div>
-              <div class="ecartement-card card-7" data-editable="true">1490</div>
-              <div class="ecartement-card card-8" data-editable="true">1490</div>
+            <div class="left_side">
+              <div class="ecartements-image-wrapper">
+                <img src="/assets/tj_ecartements.jpg" alt="Écartements" class="ecartements-image" draggable="false"/>
+                <div class="ecartement-card card-1" data-editable="true">1490</div>
+                <div class="ecartement-card card-2" data-editable="true">1490</div>
+                <div class="ecartement-card card-3" data-editable="true">1490</div>
+                <div class="ecartement-card card-4" data-editable="true">1490</div>
+                <div class="ecartement-card card-5" data-editable="true">1490</div>
+                <div class="ecartement-card card-6" data-editable="true">1490</div>
+                <div class="ecartement-card card-7" data-editable="true">1490</div>
+                <div class="ecartement-card card-8" data-editable="true">1490</div>
+              </div>
+              <div class="ecartement-bottom">
+                <img src="/assets/to_attaches_h.png" alt="Attaches" class="attaches-image" draggable="false"/>
+              </div>
             </div>
+            
             <div class="table-wrapper">
               <table class="attaches-table" data-editable="true" data-lock="first-row first-col">
                 <thead>
@@ -254,21 +270,22 @@
                     <th>Zone</th>
                     <th>% Attaches efficaces</th>
                     <th>% Attaches inefficaces</th>
+                    <th>Etat rails</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>1</td><td></td><td></td></tr>
-                  <tr><td>1'</td><td></td><td></td></tr>
-                  <tr><td>2</td><td></td><td></td></tr>
-                  <tr><td>2'</td><td></td><td></td></tr>
-                  <tr><td>3</td><td></td><td></td></tr>
-                  <tr><td>3'</td><td></td><td></td></tr>
-                  <tr><td>4</td><td></td><td></td></tr>
-                  <tr><td>4'</td><td></td><td></td></tr>
-                  <tr><td>5</td><td></td><td></td></tr>
-                  <tr><td>6</td><td></td><td></td></tr>
-                  <tr><td>7</td><td></td><td></td></tr>
-                  <tr><td>8</td><td></td><td></td></tr>
+                  <tr><td>1</td><td></td><td></td><td></td></tr>
+                  <tr><td>1'</td><td></td><td></td><td></td></tr>
+                  <tr><td>2</td><td></td><td></td><td></td></tr>
+                  <tr><td>2'</td><td></td><td></td><td></td></tr>
+                  <tr><td>3</td><td></td><td></td><td></td></tr>
+                  <tr><td>3'</td><td></td><td></td><td></td></tr>
+                  <tr><td>4</td><td></td><td></td><td></td></tr>
+                  <tr><td>4'</td><td></td><td></td><td></td></tr>
+                  <tr><td>5</td><td></td><td></td><td></td></tr>
+                  <tr><td>6</td><td></td><td></td><td></td></tr>
+                  <tr><td>7</td><td></td><td></td><td></td></tr>
+                  <tr><td>8</td><td></td><td></td><td></td></tr>
                 </tbody>
               </table>
             </div>
@@ -786,10 +803,10 @@
             </table>
           </div>
   
-          <table class="mini-table"  data-editable="true" data-lock="first-row">
+          <!-- <table class="mini-table"  data-editable="true" data-lock="first-row">
             <thead><tr><th>Etat des rails</th></tr></thead>
             <tbody><tr><td>Bon</td></tr></tbody>
-          </table>
+          </table> -->
         </div>
       </div>
       
@@ -812,15 +829,15 @@
       </div>
     </div>
     <!-- <button class="exit"><a href="/">Accueil</a></button> -->
-    <a href="/" class="exit choice-button voies-button">
-                    <img src="../assets/accueil.png" alt="Accueil">
+    <a href="/" class="exit choice-button voies-button" draggable="false">
+                    <img src="../assets/accueil.png" alt="Accueil" draggable="false">
                     Accueil
     </a>
-    <a href="/new_adv" class=" new_adv choice-button voies-button" style="display: none;">
-                    <img src="../assets/add.png" alt="Accueil">
+    <a href="/new_adv" class=" new_adv choice-button voies-button" style="display: none;" draggable="false">
+                    <img src="../assets/add.png" alt="Accueil" draggable="false">
                     ADV
     </a>
-        <a href="/edit_adv" class=" modify_adv choice-button voies-button">
+        <a href="/edit_adv" class=" modify_adv choice-button voies-button" draggable="false">
                     Modifier l'ADV
     </a>
   </div>

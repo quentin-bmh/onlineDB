@@ -640,41 +640,232 @@ async function fetchAdvData() {
 }
 
 /**
- * Affiche la table des ADVs.
- * @param {Array<Object>} advs Liste des objets ADV (general_data).
+ * Gère le processus de téléchargement du rapport pour un ADV spécifique.
+ * @param {string} advName Le nom de l'ADV (identifiant) à exporter.
  */
+async function handleDownloadReport(advName) {
+    const logoUrl = "/assets/logo_a2c.png";
+
+    try {
+        // 1. Récupération des données et du logo
+        const [dataResponse, logoBase64] = await Promise.all([
+            fetch(`/api/adv_snapshot_log/${advName}`),
+            getBase64FromUrl(logoUrl)
+        ]);
+
+        if (!dataResponse.ok) throw new Error(`Erreur HTTP API: ${dataResponse.status}`);
+        
+        const data = await dataResponse.json();
+        
+        if (!data || data.length === 0) {
+            alert(`Aucune modification n'a été faite sur l'ADV: ${advName}.`);
+            return;
+        }
+
+        // 2. Génération du HTML avec l'image incrustée
+        const htmlContent = generateReportHTML(data, advName, logoBase64);
+
+        // 3. Téléchargement
+        downloadFile(htmlContent, `Rapport_${advName}.html`);
+
+    } catch (error) {
+        console.error(`Erreur export pour ADV ${advName}:`, error);
+        alert(`Impossible de générer le rapport pour ${advName} (Vérifiez que l\'image existe et que l\'API répond).`);
+    }
+}
+
+/**
+ * Télécharge une image et la convertit en chaîne Base64
+ * Le code est conservé tel quel du fichier d'origine.
+ */
+async function getBase64FromUrl(url) {
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Image non trouvée');
+        const blob = await res.blob();
+        
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result); // Résultat: "data:image/png;base64,..."
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    } catch (e) {
+        console.warn("Erreur chargement logo, utilisation d'un placeholder vide", e);
+        return ""; // Retourne vide si l'image plante pour ne pas bloquer le download
+    }
+}
+
+/**
+ * Génère le contenu HTML du rapport.
+ * Le code est conservé tel quel du fichier d'origine.
+ */
+function generateReportHTML(logs, advName, logoBase64) {
+    const dateGeneration = new Date().toLocaleString();
+
+    const rowsHtml = logs.map(log => {
+        // La gestion de 'changes_json' nécessite de vérifier si c'est une chaîne
+        const changes = typeof log.changes_json === 'string' 
+            ? JSON.parse(log.changes_json) 
+            : log.changes_json;
+
+        const changesRows = changes.map(c => `
+            <tr>
+                <td>${c.label}</td>
+                <td class="old-val">${c.oldValue}</td>
+                <td class="new-val">${c.newValue}</td>
+            </tr>
+        `).join('');
+
+        return `
+        <div class="card">
+            <div class="card-header">
+                <span class="date">${new Date(log.snapshot_date).toLocaleString()}</span>
+                <span class="user">Utilisateur : <strong>${log.user_id}</strong></span>
+            </div>
+            <div class="card-body">
+                <div class="observation">
+                    <strong>Observation :</strong> ${log.observation}
+                </div>
+                <table class="changes-table">
+                    <thead>
+                        <tr>
+                            <th>Élément modifié</th>
+                            <th>Ancienne valeur</th>
+                            <th>Nouvelle valeur</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${changesRows}
+                    </tbody>
+                </table>
+            </div>
+        </div>`;
+    }).join('');
+
+    return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Rapport - ${advName}</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #f4f4f4; padding: 40px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0056b3; padding-bottom: 20px; margin-bottom: 30px; }
+        header img { height: 90px; max-width: 200px; } 
+        header .title-block { text-align: right; }
+        h1 { margin: 0; font-size: 24px; color: #0056b3; }
+        .subtitle { font-size: 14px; color: #666; }
+
+        .card { border: 1px solid #ddd; border-radius: 5px; margin-bottom: 25px; overflow: hidden; background: #fff; }
+        .card-header { background: #e9ecef; padding: 10px 15px; display: flex; justify-content: space-between; font-size: 0.9em; border-bottom: 1px solid #ddd; }
+        .card-body { padding: 15px; }
+        .observation { margin-bottom: 15px; font-style: italic; color: #555; }
+
+        .changes-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        .changes-table th, .changes-table td { border: 1px solid #eee; padding: 8px; text-align: left; }
+        .changes-table th { background-color: #f8f9fa; font-weight: 600; }
+        .old-val { color: #dc3545; text-decoration: line-through; font-size: 0.85em; }
+        .new-val { color: #28a745; font-weight: bold; }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="${logoBase64}" alt="Logo A2C">
+            <div class="title-block">
+                <h1>Rapport d'Intervention</h1>
+                <div class="subtitle">ADV : ${advName}</div>
+                <div class="subtitle">Généré le : ${dateGeneration}</div>
+            </div>
+        </header>
+        
+        <div class="content">
+            ${rowsHtml}
+        </div>
+    </div>
+</body>
+</html>`;
+}
+
+/**
+ * Lance le téléchargement en créant un Blob et un lien temporaire.
+ * Le code est conservé tel quel du fichier d'origine.
+ */
+function downloadFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/html' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+// --- Mise à jour de la fonction de rendu du tableau ---
+
 function renderAdvTable(advs) {
+    // Supposons que 'advTableBody' est défini dans le scope parent
     advTableBody.innerHTML = '';
 
     if (advs.length === 0) {
-        advTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">Aucun ADV enregistré.</td></tr>`;
+        advTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Aucun ADV enregistré.</td></tr>`;
         return;
     }
 
     advs.forEach(adv => {
+        const advName = adv.adv; // Récupération du nom de l'ADV
         const row = advTableBody.insertRow();
         row.className = 'hover:bg-gray-700 transition duration-150';
         
         const deleteButton = `
             <button class="delete-adv-btn bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
-                    data-adv-name="${adv.adv}">
+                    data-adv-name="${advName}">
                 <span class="text-sm">🗑️</span>
+            </button>`;
+            
+        // Nouveau bouton de téléchargement :
+        const downloadButton = `
+            <button class="download-adv-btn bg-orange-500 hover:bg-orange-600 px-3 py-1 text-sm rounded transition duration-150 shadow-md"
+                    data-adv-name="${advName}">
+                Interventions
             </button>`;
 
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">${adv.adv}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.type || 'N/A'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.modele || 'N/A'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.lat || 'N/A'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm">${adv.long || 'N/A'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-center">${deleteButton}</td> 
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-400">${advName}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.type || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.modele || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.lat || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.long || 'N/A'}</td> 
+            <td class="px-6 py-4 whitespace-nowrap text-center text-center">${downloadButton}</td> 
+            <td class="px-6 py-4 whitespace-nowrap text-center text-center">${deleteButton}</td> 
         `;
     });
 
+    // Gestionnaire d'événement pour le bouton de suppression (existant)
     document.querySelectorAll('.delete-adv-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const advName = e.currentTarget.dataset.advName;
-            handleDeleteAdv(advName, e.currentTarget);
+            // Supposons que handleDeleteAdv est défini ailleurs
+            handleDeleteAdv(advName, e.currentTarget); 
+        });
+    });
+
+    // Gestionnaire d'événement pour le nouveau bouton de téléchargement
+    document.querySelectorAll('.download-adv-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const advName = e.currentTarget.dataset.advName;
+            // Appel de la fonction de gestion de l'export
+            handleDownloadReport(advName); 
         });
     });
 }

@@ -175,20 +175,46 @@ function updateCharts(data, voieLabel) {
         };
         gradientColor = dynamicBorderColor;
         
+        const xValues = chartData.map(p => p.x);
+        const minX = chartData.length > 0 ? Math.min(...xValues) : 0;
+        const maxX = chartData.length > 0 ? Math.max(...xValues) : 100;
+
+        let datasets = [{
+            // Dataset 1: La courbe de données principale
+            data: chartData,
+            backgroundColor: 'transparent',
+            borderColor: gradientColor, 
+            borderWidth: 3,
+            fill: false, 
+            pointRadius: 0,
+            pointHoverRadius: 2,
+            pointBackgroundColor: chartData.map(p => p.color),
+        }];
+
+        if (config.threshold !== undefined && config.threshold !== null) {
+            // Dataset 2: Ligne horizontale pour le seuil (l'axe horizontal souhaité)
+            const thresholdDataset = {
+                data: [
+                    { x: minX, y: config.threshold }, 
+                    { x: maxX, y: config.threshold }  
+                ],
+                type: 'line', 
+                label: `Seuil ${config.label}`,
+                borderColor: 'rgba(255, 0, 0, 0.7)', 
+                borderWidth: 2,
+                borderDash: [6, 6], 
+                pointRadius: 0, 
+                fill: false,
+                yAxisID: 'y',
+                order: 0, 
+            };
+            datasets.push(thresholdDataset);
+        }
+
         const chart = new Chart(ctx, {
             type: 'line',
             data: {
-                datasets: [{
-                    data: chartData,
-                    backgroundColor: 'transparent',
-                    borderColor: gradientColor, 
-                    
-                    borderWidth: 3,
-                    fill: false, 
-                    pointRadius: 0,
-                    pointHoverRadius: 2,
-                    pointBackgroundColor: chartData.map(p => p.color),
-                }]
+                datasets: datasets,
             },
             options: {
                 responsive: true,
@@ -201,7 +227,13 @@ function updateCharts(data, voieLabel) {
                             title: function(context) { 
                                 return []; 
                             },
-                            label: context => `Distance: ${context.raw.x}, ${config.label}: ${context.raw.y}`
+                            label: context => {
+                                // N'affiche les infos que pour le dataset des données (index 0)
+                                if (context.datasetIndex === 0) { 
+                                    return `Distance: ${context.raw.x}, ${config.label}: ${context.raw.y}`;
+                                }
+                                return null;
+                            }
                         }
                     }
                 },
@@ -252,8 +284,8 @@ function updateCharts(data, voieLabel) {
                     const dataIndex = chart.data.datasets[0].data.findIndex(p => p.x === parseFloat(point.id));
                     if (dataIndex !== -1) {
                         chart.data.datasets[0].pointBackgroundColor[dataIndex] = 'yellow';
-                        console.log('Hovering over point:', chart.data.datasets[0].data[dataIndex]);
-                        chart.data.datasets[0].data[dataIndex].pointRadius = 5;
+                        // console.log('Hovering over point:', chart.data.datasets[0].data[dataIndex]); // Ligne commentée pour nettoyage
+                        chart.data.datasets[0].pointRadius = 5; // Applique le radius sur tout le dataset, nécessite un ajustement fin
                         chart.setActiveElements([{ datasetIndex, index: dataIndex }]);
                         chart.tooltip.setActiveElements([{ datasetIndex, index: dataIndex }], { x: 0, y: 0 });
                         chart.update();

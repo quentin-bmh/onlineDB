@@ -208,7 +208,8 @@ function generateEcartementInput(labelText, index) {
  * @returns {string}
  */
 function generateAttachesTableRows(advType) {
-    const config = ADV_CONFIG_NORMALIZED[advType];
+    // Supposons que ADV_CONFIG_NORMALIZED est défini ailleurs.
+    const config = ADV_CONFIG_NORMALIZED[advType]; 
     let rowsHTML = '';
     const zoneLabels = config.ecartement.filter(label => 
         label.startsWith('Attaches efficaces')
@@ -221,6 +222,7 @@ function generateAttachesTableRows(advType) {
         const zoneKey = zone.replace(/'/g, 'p');
         const nameEfficaces = `att_e_${zoneKey}`;
         const nameInefficaces = `att_i_${zoneKey}`;
+        const nameEtatRail = `etat_rail_${zoneKey}`; // Nom unique pour le select
 
         rowsHTML += `
             <tr>
@@ -240,6 +242,14 @@ function generateAttachesTableRows(advType) {
                            data-zone="${zoneKey}"
                            step="1"
                            min="0">
+                </td>
+                <td>
+                    <select class="etat-rail-select" name="${nameEtatRail}" data-zone="${zoneKey}">
+                        <option value="" disabled selected>-- Choisir --</option>
+                        <option value="neuf">Neuf</option>
+                        <option value="bon">Bon État</option>
+                        <option value="remplacer">À Remplacer</option>
+                    </select>
                 </td>
             </tr>
         `;
@@ -769,7 +779,8 @@ function collectEcartementData() {
  */
 function collectAttachesData() {
     const data = {};
-    const inputs = document.querySelectorAll('#tab-attaches input[type="number"]'); 
+    // 1. Sélectionner tous les champs à récupérer (inputs numériques et selects)
+    const formElements = document.querySelectorAll('#tab-attaches input[type="number"], #tab-attaches select'); 
     
     // Récupération dynamique du type ADV à partir du formulaire
     const advType = document.getElementById('advType')?.value; 
@@ -777,39 +788,56 @@ function collectAttachesData() {
     // Si BS : accepte 1 à 9. Si TJ/TO : accepte [1-8]p?
     let validZoneRegex;
     if (advType === 'BS') {
-        // BS a des attaches de 1 à 9 (sans primes)
+        // BS: zones 1 à 9 (sans primes)
         validZoneRegex = /^[1-9]$/; 
     } else if (advType === 'TJ' || advType === 'TO') {
-        // TJ/TO ont des attaches de 1, 1' à 8 (et certaines avec primes 'p')
+        // TJ/TO: zones 1, 1', 2, 2', ... 8 (représentées par 1, 1p, 2, 2p, ... 8)
         validZoneRegex = /^[1-8]p?$/; 
     } else {
-        // Fallback pour les cas non définis
+        // Fallback
         validZoneRegex = /^[1-9]p?$/; 
     }
     
-    inputs.forEach(input => {
-        const name = input.name; 
-        let value = input.value.trim();
+    formElements.forEach(element => {
+        const name = element.name; 
+        const value = element.value.trim();
 
         if (name && value !== '') {
             const parts = name.split('_'); 
-            const zone = parts.pop(); // Ex: '9', '1p', '1'
-            // const type = parts[1]; // 'e' ou 'i' (efficaces/inefficaces)
-            
+            const zone = parts.pop(); // Ex: '9', '1p', '1', '9' (pour etat_rail9)
+            const type = parts[0]; // Ex: 'att', 'etat', etc.
+
             const safeZone = zone; 
-            const dbKey = name;
             
             // Validation de la zone
             if (!validZoneRegex.test(safeZone)) {
-                return; // Ignore les zones invalides (att_e_9 pour TJ/TO, ou 1p pour BS)
+                return; // Ignore les zones invalides
             }
             
-            // La valeur doit être un entier
-            let parsedValue = parseInt(value, 10);
-            
-            if (!isNaN(parsedValue)) {
-                value = Math.max(0, parsedValue); 
-                data[dbKey] = value;
+            let dbKey;
+            let finalValue;
+
+            if (element.tagName === 'INPUT') {
+                // Traitement des inputs numériques (attaches efficaces/inefficaces)
+                const isEfficace = parts[1] === 'e';
+                const typeKey = isEfficace ? 'att_e' : 'att_i'; 
+                dbKey = name; // Conserver le nom d'origine (att_e_X ou att_i_X)
+
+                let parsedValue = parseInt(value, 10);
+                if (!isNaN(parsedValue)) {
+                    finalValue = Math.max(0, parsedValue); 
+                    data[dbKey] = finalValue;
+                }
+            } else if (element.tagName === 'SELECT') {
+                // Traitement des selects (état rails)
+                // Le nom dans le HTML est etat_rail_X. Le nom en DB est etat_railX
+                dbKey = `etat_rail${safeZone}`; 
+                finalValue = value;
+                
+                // On s'assure que la valeur n'est pas le placeholder désactivé
+                if (finalValue !== '') {
+                    data[dbKey] = finalValue;
+                }
             }
         }
     });
@@ -826,7 +854,7 @@ function collectBoisJointsData() {
     const jointsBon = parseFloat(document.getElementById('bois_3')?.value) || null;
     const jointsRemp = parseFloat(document.getElementById('bois_4')?.value) || null;
     const jointsGraisser = parseFloat(document.getElementById('bois_5')?.value) || null;
-    const etatRails = document.getElementById('bois_6')?.value || null;
+    // const etatRails = document.getElementById('bois_6')?.value || null;
 
     const data = {
         // Mappage basé sur les exemples JSON (/bs, /tj, /to)
@@ -835,7 +863,7 @@ function collectBoisJointsData() {
         joints_bon: jointsBon,
         joints_a_repr: jointsRemp,
         joints_a_graisser: jointsGraisser,
-        etat_rails: etatRails 
+        // etat_rails: etatRails 
     };
     
     // Nettoyage: supprimer les clés nulles ou vides

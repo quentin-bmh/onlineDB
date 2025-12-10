@@ -1450,22 +1450,6 @@ function updateBois(adv) {
             cells[2].textContent = boisRemp;    // bois à remplacer
         }
     }
-
-    // === ÉTAT DES RAILS ===
-    // Récupère l'état des rails depuis les données de l'ADV, avec un fallback.
-    const etatRails = adv['etat_rails'] || 'Non renseigné'; 
-
-    // Cible la mini-table 'Etat des rails' qui est un enfant direct de .bois_container
-    const etatRailsTable = document.querySelector('.bois_container > .mini-table');
-
-    if (etatRailsTable) {
-        const railCell = etatRailsTable.querySelector('tbody td');
-        if (railCell) {
-            railCell.textContent = etatRails; // Affiche la valeur dans la cellule du tableau.
-        }
-    }
-
-    // Appel à updateCharts avec les trois valeurs distinctes
     updateCharts(adv);
 }
 
@@ -1578,44 +1562,73 @@ function updateEcartements(adv, type) {
 }
 
 function updateAttaches(adv, type) {
-  if (!adv || typeof adv !== 'object') return;
+    if (!adv || typeof adv !== 'object') return;
 
-  const voieEcartement = document.getElementById('voie-ecartement');
-  if (!voieEcartement) return;
+    const voieEcartement = document.getElementById('voie-ecartement');
+    if (!voieEcartement) return;
 
-  const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
-  if (!targetContainer) {
-    console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
-    return;
-  }
+    // Cibler le conteneur spécifique au type d'ADV
+    const targetContainer = voieEcartement.querySelector(`.voie-type-container[data-type="${type}"]`);
+    if (!targetContainer) {
+        console.warn(`❌ Container avec data-type="${type}" non trouvé.`);
+        return;
+    }
 
-  const rows = targetContainer.querySelectorAll('table.attaches-table tbody tr');
+    // Récupérer les lignes du tableau des attaches
+    const rows = targetContainer.querySelectorAll('table.attaches-table tbody tr');
 
-  rows.forEach(row => {
+    rows.forEach(row => {
         const zoneCell = row.cells[0];
         const effCell = row.cells[1];
         const ineffCell = row.cells[2];
+        const railCell = row.cells[3]; // Nouvelle cellule pour l'état du rail
 
-        if (!zoneCell || !effCell || !ineffCell) return;
+        // Vérification de la présence des cellules nécessaires
+        if (!zoneCell || !effCell || !ineffCell || !railCell) return;
 
         let zone = zoneCell.textContent.trim();
-        const zoneKey = zone.replace("'", 'p');
+        const zoneKey = zone.replace("'", 'p'); // Ex: '1p', '9'
+        
+        // --- Clés pour les attaches ---
         const keyEffCount = `att_e_${zoneKey}`;
         const keyIneffCount = `att_i_${zoneKey}`;
         const keyEffPct = `att_e_pct_${zoneKey}`;
         const keyIneffPct = `att_i_pct_${zoneKey}`;
 
-        const valEffCount = adv[keyEffCount];
-        const valIneffCount = adv[keyIneffCount];
-        effCell.textContent = (valEffCount != null && valEffCount !== '') ? valEffCount : '-';
-        ineffCell.textContent = (valIneffCount != null && valIneffCount !== '') ? valIneffCount : '-';
-        effCell.setAttribute('contenteditable', 'true');
-        ineffCell.setAttribute('contenteditable', 'true');
+        // --- Clé pour l'état du rail ---
+        // Format DB: etat_railX ou etat_railXp
+        const keyRail = `etat_rail${zoneKey}`; 
+
+        // Remplissage des attaches (pourcentage, comme dans votre code initial)
         const valEffPct = adv[keyEffPct];
         const valIneffPct = adv[keyIneffPct];
         effCell.textContent = (valEffPct != null) ? `${(parseFloat(valEffPct) * 100).toFixed(0)}%` : '-';
         ineffCell.textContent = (valIneffPct != null) ? `${(parseFloat(valIneffPct) * 100).toFixed(0)}%` : '-';
-  });
+
+        // CORRECTION: Remplissage de l'état du rail
+        const valRail = adv[keyRail];
+        
+        if (valRail != null && valRail !== '') {
+            // Afficher la valeur ou la traduire si nécessaire.
+            // Si la valeur est 'bon', afficher 'Bon État', sinon afficher la valeur brute.
+            // Pour l'affichage dans une page statique, on peut utiliser un switch pour un affichage plus lisible.
+            let displayValue = valRail;
+            switch (valRail) {
+                case 'neuf':
+                    displayValue = 'Neuf';
+                    break;
+                case 'bon':
+                    displayValue = 'Bon État';
+                    break;
+                case 'remplacer':
+                    displayValue = 'À Remplacer';
+                    break;
+            }
+            railCell.textContent = displayValue;
+        } else {
+            railCell.textContent = '-'; // Valeur par défaut si non renseignée
+        }
+    });
 }
 
 //page Croisement

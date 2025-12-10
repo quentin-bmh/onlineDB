@@ -264,6 +264,9 @@ router.delete('/adv/:advName', async (req, res) => {
     await client.query(`DELETE FROM ${specificTableName} WHERE adv = $1`, [advName]);
     console.log(`[DELETE] Supprimé de ${specificTableName}`);
 
+    await client.query(`DELETE FROM adv_snapshot_log WHERE adv_name = $1`, [advName]);
+    console.log('[DELETE] Supprimé de adv_snapshot_log (Logs d\'audit)');
+
     if (advType === 'bs' || advType === 'tj') {
       await client.query('DELETE FROM b2v_da WHERE adv = $1', [advName]);
       console.log('[DELETE] Supprimé de b2v_da (Demi-Aiguillage)');
