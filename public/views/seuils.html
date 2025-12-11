@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration des Seuils Clients</title>
+    <link rel="stylesheet" href="/css/seuils.css">
+</head>
+<body>
+    <main class="container">
+        <h2>Configuration des Seuils</h2>
+        
+        <div class="tabs" id="seuil-tabs">
+            <button class="tab-button" data-etat="aremplacer">À remplacer</button>
+            <button class="tab-button" data-etat="acoriger">À corriger</button>
+            <button class="tab-button" data-etat="correct">Correct</button>
+            <button class="tab-button active" data-etat="bon">Bon</button>
+        </div>
+
+        <table id="seuil-table">
+            <thead>
+                <tr>
+                    <th>Label Seuil</th>
+                    <th>BS</th>
+                    <th>TJ</th>
+                    <th>TO</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <div class="actions">
+            <button id="save-button" disabled>Sauvegarder les modifications (0)</button>
+        </div>
+    </main>
+    <script src="/js/seuils.js"></script>
+</body>
+</html>

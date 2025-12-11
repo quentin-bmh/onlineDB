@@ -1,0 +1,194 @@
+/* style.css */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7f9;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-width: 1000px; /* Augmenté pour les doubles inputs */
+    width: 100%;
+}
+
+h2 {
+    color: #0056b3;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+.tabs {
+    display: flex;
+    flex-direction: row-reverse;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ccc;
+}
+
+.tab-button {
+    padding: 10px 15px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-weight: bold;
+    color: white; /* Défini sur blanc pour les couleurs de fond ci-dessous */
+    transition: background-color 0.3s, color 0.3s;
+}
+
+/* Styles des boutons d'onglet par État */
+.tab-button[data-etat="bon"] {
+    background-color: #07d80e; /* Vert */
+}
+
+.tab-button[data-etat="correct"] {
+    background-color: #ff9c07; /* Jaune/Orange */
+    color: #333;
+}
+
+.tab-button[data-etat="acoriger"] {
+    background-color: #ff2600; /* Orange vif */
+}
+
+.tab-button[data-etat="aremplacer"] {
+    background-color: #1f1f1f; /* Noir */
+}
+
+/* Style de l'onglet actif et du survol */
+.tab-button.active {
+    opacity: 0.8;
+}
+
+.tab-button:not(.active):hover {
+    opacity: 0.9;
+}
+
+#seuil-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+#seuil-table th, #seuil-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+#seuil-table th {
+    background-color: #007bff;
+    color: white;
+    text-transform: uppercase;
+}
+
+.cell-input input[type="number"] {
+    width: 45px; /* Réduit pour les deux inputs */
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    text-align: center;
+    box-sizing: border-box;
+    margin: 0 2px;
+}
+
+.cell-input input[type="number"]:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.cell-input.blocked {
+    background-color: #e9ecef;
+}
+
+.cell-input.blocked input[type="number"] {
+    background-color: #e9ecef;
+    border: 1px dashed #adb5bd;
+    cursor: not-allowed;
+}
+
+.cell-input.modified {
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+.cell-input.modified input[type="number"] {
+    border-color: #ffc107;
+}
+
+/* Styles spécifiques aux plages JSONB */
+.add-range-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 5px;
+    display: block;
+    width: 100%;
+}
+.range-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+.range-pair {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+.range-pair input {
+    width: 35px; /* Réduction pour les plages JSONB */
+}
+.range-remove-button {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    height: 20px;
+    line-height: 1;
+}
+
+.actions {
+    text-align: right;
+    padding-top: 15px;
+}
+
+#save-button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#save-button:hover:not([disabled]) {
+    background-color: #218838;
+}
+
+#save-button[disabled] {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
