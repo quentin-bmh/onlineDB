@@ -26,22 +26,64 @@ function updateSaveButton() {
 
 function handleInputChange(event) {
     const input = event.target;
-    // Utiliser Number(input.value) pour convertir la chaîne vide en 0, puis vérifier, ou parseInt
+    const isVoie = input.getAttribute('data-source') === 'voie';
     const nouvelleValeur = input.value === "" ? null : parseInt(input.value, 10);
     
     const labelSeuil = input.getAttribute('data-label');
-    const categorie = input.getAttribute('data-cat');
-    const type = input.getAttribute('data-type');
+    const categorie = input.getAttribute('data-cat'); // Sera null pour "Voie"
+    const typeAttr = input.getAttribute('data-type');
     
-    if (type.startsWith('json-')) {
-        handleJsonRangeChange(labelSeuil, categorie, input, nouvelleValeur);
+    if (isVoie) {
+        // Logique spécifique pour le tableau Voie
+        const [_, type, index] = typeAttr.split('-');
+        const bufferKey = `voie-${labelSeuil}-${currentEtat}`;
+        const initialRow = fullVoiesData.find(d => d.label_seuil.trim() === labelSeuil.trim());
+        
+        const jsonKey = JSON_KEYS[currentEtat];
+        
+        // Récupération des plages (Buffer -> BDD -> Vide)
+        let currentPlages = pendingChanges[bufferKey]
+            ? JSON.parse(JSON.stringify(pendingChanges[bufferKey].valeur_seuil))
+            : (initialRow.plages_json && initialRow.plages_json[jsonKey] 
+                ? JSON.parse(JSON.stringify(initialRow.plages_json[jsonKey])) 
+                : []);
+
+        // Mise à jour de la valeur min/max
+        if (currentPlages[index]) {
+            currentPlages[index][type] = nouvelleValeur;
+        }
+
+        // Enregistrement dans le buffer
+        pendingChanges[bufferKey] = {
+            label_seuil: labelSeuil.trim(),
+            etat: currentEtat,
+            type: 'voie-json',
+            valeur_seuil: currentPlages
+        };
+
+        // Comparaison pour nettoyage du buffer si identique à l'origine
+        const initialPlages = initialRow.plages_json && initialRow.plages_json[jsonKey] ? initialRow.plages_json[jsonKey] : [];
+        const currentPlagesFiltered = currentPlages.filter(range => range.min !== null || range.max !== null);
+        
+        if (JSON.stringify(currentPlagesFiltered) === JSON.stringify(initialPlages)) {
+            delete pendingChanges[bufferKey];
+        }
+
     } else {
-        handleSimpleRangeChange(labelSeuil, categorie, nouvelleValeur); // Modification: suppression du paramètre 'type'
+        // Logique existante pour le tableau ADV
+        if (typeAttr.startsWith('json-')) {
+            handleJsonRangeChange(labelSeuil, categorie, input, nouvelleValeur);
+        } else {
+            handleSimpleRangeChange(labelSeuil, categorie, nouvelleValeur);
+        }
     }
     
+    // Gestion visuelle de la classe 'modified'
     const cell = input.closest('.cell-input');
-    // Vérifier si des changements sont en attente pour CETTE cellule spécifique
-    const hasPendingChanges = Object.keys(pendingChanges).some(k => k.startsWith(`${labelSeuil}-${categorie}-${currentEtat}`));
+    const searchKey = isVoie ? `voie-${labelSeuil}-${currentEtat}` : `${labelSeuil}-${categorie}-${currentEtat}`;
+    
+    const hasPendingChanges = Object.keys(pendingChanges).some(k => k.startsWith(searchKey));
+    
     if (hasPendingChanges) {
         cell.classList.add('modified');
     } else {
@@ -397,27 +439,162 @@ function handleTabClick(event) {
         });
         event.target.classList.add('active');
         
+        // Mise à jour des DEUX tableaux avec le nouvel état
         renderTable(fullSeuilsData, currentEtat);
+        renderVoieTable(fullVoiesData, currentEtat);
     }
 }
+let fullVoiesData = []; // Nouveau stockage pour les données Voies
+const voieTableBody = document.querySelector('#seuil-Voie-table tbody');
 
 async function loadSeuilsData() {
     try {
-        const response = await fetch('/api/seuils/etendus');
-        if (!response.ok) {
-            throw new Error('Échec du chargement des seuils étendus.');
-        }
-        fullSeuilsData = await response.json();
-        console.log("Données des seuils chargées :", fullSeuilsData);
+        // Chargement simultané des deux sources de données
+        const [respAdv, respVoie] = await Promise.all([
+            fetch('/api/seuils/etendus'),
+            fetch('/api/seuils/voies')
+        ]);
+
+        if (!respAdv.ok || !respVoie.ok) throw new Error('Erreur de chargement des données');
+
+        fullSeuilsData = await respAdv.json();
+        fullVoiesData = await respVoie.json();
+
+        // Rendu initial pour l'état par défaut (currentEtat)
         renderTable(fullSeuilsData, currentEtat);
+        renderVoieTable(fullVoiesData, currentEtat);
         
-        saveButton.addEventListener('click', handleSave);
+        saveButton.addEventListener('click', handleSaveAll);
         document.getElementById('seuil-tabs').addEventListener('click', handleTabClick);
 
     } catch (error) {
-        console.error("Erreur de chargement initial des données:", error);
-        alert(`Impossible de charger la configuration des seuils : ${error.message}`);
+        console.error("Erreur de chargement initial:", error);
     }
 }
 
+function renderVoieTable(data, etat) {
+    voieTableBody.innerHTML = '';
+    const jsonKey = JSON_KEYS[etat]; // Sélection de plages_bon, plages_correct, etc.
+
+    data.forEach(item => {
+        const row = document.createElement('tr');
+        
+        const labelCell = document.createElement('td');
+        labelCell.textContent = item.label_seuil;
+        row.appendChild(labelCell);
+
+        const cell = document.createElement('td');
+        cell.classList.add('cell-input');
+
+        const bufferKey = `voie-${item.label_seuil}-${etat}`;
+        
+        // Priorité au buffer (pendingChanges), sinon données de la BDD pour l'état sélectionné
+        let ranges = pendingChanges[bufferKey]
+            ? pendingChanges[bufferKey].valeur_seuil
+            : (item.plages_json && item.plages_json[jsonKey] ? JSON.parse(JSON.stringify(item.plages_json[jsonKey])) : []);
+
+        const container = document.createElement('div');
+        container.classList.add('range-container');
+
+        ranges.forEach((range, index) => {
+            const pair = document.createElement('div');
+            pair.classList.add('range-pair');
+
+            const createInput = (type) => {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.placeholder = type.toUpperCase();
+                input.value = range[type] !== null ? range[type] : '';
+                input.setAttribute('data-source', 'voie');
+                input.setAttribute('data-label', item.label_seuil);
+                input.setAttribute('data-type', `json-${type}-${index}`);
+                input.addEventListener('input', handleInputChange);
+                return input;
+            };
+
+            pair.appendChild(createInput('min'));
+            pair.appendChild(createInput('max'));
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = 'X';
+            removeBtn.classList.add('range-remove-button');
+            removeBtn.onclick = () => removeVoieRange(item.label_seuil, index);
+            pair.appendChild(removeBtn);
+
+            container.appendChild(pair);
+        });
+
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '+ Nouvelle Plage';
+        addBtn.classList.add('add-range-button');
+        addBtn.onclick = () => addVoieRange(item.label_seuil);
+        container.appendChild(addBtn);
+
+        cell.appendChild(container);
+
+        // Marquage visuel si des modifications sont dans le buffer
+        if (pendingChanges[bufferKey]) {
+            cell.classList.add('modified');
+        }
+
+        row.appendChild(cell);
+        voieTableBody.appendChild(row);
+    });
+}
+
+// 3. Fonctions utilitaires pour les ranges Voie
+function addVoieRange(labelSeuil) {
+    const bufferKey = `voie-${labelSeuil}-${currentEtat}`;
+    const initialRow = fullVoiesData.find(d => d.label_seuil === labelSeuil);
+    let currentPlages = pendingChanges[bufferKey] 
+        ? JSON.parse(JSON.stringify(pendingChanges[bufferKey].valeur_seuil))
+        : (initialRow.plages_json && initialRow.plages_json[JSON_KEYS[currentEtat]] ? JSON.parse(JSON.stringify(initialRow.plages_json[JSON_KEYS[currentEtat]])) : []);
+
+    currentPlages.push({ min: null, max: null });
+    pendingChanges[bufferKey] = { label_seuil: labelSeuil, etat: currentEtat, type: 'voie-json', valeur_seuil: currentPlages };
+    renderVoieTable(fullVoiesData, currentEtat);
+    updateSaveButton();
+}
+
+function removeVoieRange(labelSeuil, index) {
+    const bufferKey = `voie-${labelSeuil}-${currentEtat}`;
+    const initialRow = fullVoiesData.find(d => d.label_seuil === labelSeuil);
+    let currentPlages = pendingChanges[bufferKey] 
+        ? JSON.parse(JSON.stringify(pendingChanges[bufferKey].valeur_seuil))
+        : JSON.parse(JSON.stringify(initialRow.plages_json[JSON_KEYS[currentEtat]] || []));
+
+    currentPlages.splice(index, 1);
+    pendingChanges[bufferKey] = { label_seuil: labelSeuil, etat: currentEtat, type: 'voie-json', valeur_seuil: currentPlages };
+    renderVoieTable(fullVoiesData, currentEtat);
+    updateSaveButton();
+}
+async function handleSaveAll() {
+    const changesADV = Object.values(pendingChanges).filter(c => c.type !== 'voie-json');
+    const changesVoie = Object.values(pendingChanges).filter(c => c.type === 'voie-json');
+
+    try {
+        // Sauvegarde ADV
+        if (changesADV.length > 0) {
+            await fetch('/api/seuils/update-etendu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(changesADV)
+            });
+        }
+
+        // Sauvegarde Voies
+        if (changesVoie.length > 0) {
+            await fetch('/api/seuil/voies/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(changesVoie.map(c => ({...c, type: 'json'})))
+            });
+        }
+
+        alert("Sauvegarde effectuée");
+        location.reload(); // Rechargement simple pour rafraîchir l'état local
+    } catch (e) {
+        alert("Erreur: " + e.message);
+    }
+}
 document.addEventListener('DOMContentLoaded', loadSeuilsData);

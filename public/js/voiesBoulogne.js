@@ -285,7 +285,7 @@ function updateCharts(data, voieLabel) {
                     if (dataIndex !== -1) {
                         chart.data.datasets[0].pointBackgroundColor[dataIndex] = 'yellow';
                         // console.log('Hovering over point:', chart.data.datasets[0].data[dataIndex]); // Ligne commentée pour nettoyage
-                        chart.data.datasets[0].pointRadius = 5; // Applique le radius sur tout le dataset, nécessite un ajustement fin
+                        chart.data.datasets[0].pointRadius = 1; // Applique le radius sur tout le dataset, nécessite un ajustement fin
                         chart.setActiveElements([{ datasetIndex, index: dataIndex }]);
                         chart.tooltip.setActiveElements([{ datasetIndex, index: dataIndex }], { x: 0, y: 0 });
                         chart.update();

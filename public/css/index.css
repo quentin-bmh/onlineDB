@@ -112,9 +112,17 @@ body {
     transform: translateY(20px);
     transition: opacity 1s ease-in, transform 1s ease-in; 
 }
-.btn_container{
+.btn_container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 5px; 
+    max-width: 500px;
+    margin: 0 auto;
+}
+.btn_container a{
+    width: 80%;
+    min-height: 60px;
     display: flex;
-    flex-direction: row;
     align-items: center;
     justify-content: center;
 }

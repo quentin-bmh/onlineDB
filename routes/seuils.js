@@ -100,4 +100,51 @@ router.post('/seuils/update-etendu', async (req, res) => {
     }
 });
 
+router.get('/seuils/voies', async (req, res) =>{
+    try{
+        const query = `
+            SELECT label_seuil, plages_json
+            FROM seuils_voies
+            ORDER BY label_seuil;
+        `;
+        const result = await pool.query(query);
+        res.status(200).json(result.rows);
+    }catch (err){
+        console.error('Erreur lecture seuils etendus:', err.message);
+        res.status(500).json({ message: "Erreur serveur lors de la lecture des seuils." });
+    }
+});
+router.post('/seuil/voies/update', async (req, res) => {
+    const changes = req.body;
+    if (!Array.isArray(changes) || changes.length === 0) {
+        return res.status(400).json({ message: "Données manquantes." });
+    }
+
+    let client;
+    try {
+        client = await pool.getClient();
+        await client.query('BEGIN');
+
+        for (const change of changes) {
+            const { label_seuil, etat, valeur_seuil } = change;
+            const jsonKey = JSON_KEYS[etat];
+            const updateValue = JSON.stringify({ [jsonKey]: valeur_seuil });
+
+            const query = `
+                UPDATE seuils_voies
+                SET plages_json = COALESCE(plages_json, '{}'::JSONB) || $1::JSONB
+                WHERE TRIM(label_seuil) = TRIM($2);
+            `;
+            await client.query(query, [updateValue, label_seuil]);
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: "Seuils Voies mis à jour." });
+    } catch (error) {
+        if (client) await client.query('ROLLBACK');
+        res.status(500).json({ message: "Erreur SQL", error: error.message });
+    } finally {
+        if (client) client.release();
+    }
+});
 module.exports = router;

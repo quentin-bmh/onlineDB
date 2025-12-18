@@ -69,19 +69,19 @@ h2 {
     opacity: 0.9;
 }
 
-#seuil-table {
+#seuil-table ,#seuil-Voie-table{
     width: 100%;
     border-collapse: collapse;
     margin: 20px 0;
 }
 
-#seuil-table th, #seuil-table td {
+#seuil-table th, #seuil-table td ,#seuil-Voie-table th, #seuil-Voie-table td{
     border: 1px solid #ddd;
     padding: 8px;
     text-align: center;
 }
 
-#seuil-table th {
+#seuil-table th ,#seuil-Voie-table th{
     background-color: #007bff;
     color: white;
     text-transform: uppercase;

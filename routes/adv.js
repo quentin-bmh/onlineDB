@@ -16,11 +16,11 @@ router.get('/general_data', async (req, res) => {
   const advName = req.query.adv;
   try {
     if (advName) {
-      const result = await pool.query('SELECT * FROM general_data WHERE adv = $1 LIMIT 1', [advName]);
+      const result = await pool.query('SELECT * FROM general_data WHERE adv = $1 order by type LIMIT 1 ', [advName]);
       if (result.rows.length === 0) return res.status(404).json({ error: 'ADV non trouvé' });
       return res.json(result.rows[0]);
     } else {
-      const result = await pool.query('SELECT * FROM general_data;');
+      const result = await pool.query('SELECT * FROM general_data order by type, adv;');
       return res.json(result.rows);
     }
   } catch (err) {

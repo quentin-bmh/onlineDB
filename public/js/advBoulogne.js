@@ -266,7 +266,7 @@ async function getSpecificSnapshotData(advType, advName, snapshotDate) {
         const targetAdvData = data.find(item => 
             item.adv === advName && item.snapshot_date === snapshotDate
         );
-        console.log('Données de la snapshot récupérées:', targetAdvData);
+        // console.log('Données de la snapshot récupérées:', targetAdvData);
         return targetAdvData || {};
     } catch (e) {
         console.error(`Échec du chargement de la snapshot ${snapshotDate}:`, e);
@@ -282,7 +282,7 @@ async function getDaSnapshotData(advName, snapshotDate) {
         const filteredDaData = data.filter(item => 
             item.snapshot_adv === advName && item.snapshot_date === snapshotDate
         );
-        console.log('Données DA de la snapshot récupérées:', filteredDaData);
+        // console.log('Données DA de la snapshot récupérées:', filteredDaData);
         return filteredDaData;
     } catch (e) {
         console.error(`Échec du chargement de la snapshot DA ${snapshotDate}:`, e);
@@ -300,14 +300,14 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
   }
   
   if (isSnapshot && snapshotDate) {
-      console.log(`Chargement de la SNAPSHOT: ${name} (${snapshotDate})`);
+      // console.log(`Chargement de la SNAPSHOT: ${name} (${snapshotDate})`);
       getSpecificSnapshotData(type, name, snapshotDate)
           .then(advData => {
               if (Object.keys(advData).length === 0) {
                   console.warn("Aucune donnée spécifique trouvée pour cette snapshot.");
                   return;
               }
-              console.log("données snapshot: ", advData);
+              // console.log("données snapshot: ", advData);
               switchVoieTypeContent(type, 'voie-croisement');
               switchVoieTypeContent(type, 'voie-ecartement');
               updateCroisement(advData)
@@ -325,7 +325,7 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
       }
       
   } else {
-      console.log(`Chargement des données COURANTES: ${name}`);
+      // console.log(`Chargement des données COURANTES: ${name}`);
       const encodedName = encodeURIComponent(name);
       
       fetch(`/api/${type}/${encodedName}`)
@@ -336,12 +336,14 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
         .then(advData => {
           advData = Array.isArray(advData) ? advData[0] : advData;
           if (!advData) return;
-          console.log("Données ADV reçues:", advData);
+          // console.log("Données ADV reçues:", advData);
           switchVoieTypeContent(type, 'voie-croisement');
           switchVoieTypeContent(type, 'voie-ecartement');
-          updateCroisement(advData)
-          updateEcartementAttaches(advData, type)
+          updateCroisement(advData);
+          updateEcartementAttaches(advData, type);
           updatePlancherBois(advData);
+          // calculNoteHorsDa(advData);
+          calculerTableauGlobal(advData);
         })
         .catch(err => console.error("Erreur chargement ADV détails:", err));
         
@@ -351,10 +353,13 @@ function getAdvDataHub(adv, isSnapshot = false, snapshotDate = null) {
           return res.json();
         })
         .then(data => {
-          console.log("Données DA reçues:", data);
+          // console.log("Données DA reçues:", data);
           if (!Array.isArray(data) || data.length === 0) return;
           switchVoieTypeContent(type, 'voie-aiguillage');
           updateDA(data, type);
+          // calculNoteDa(data, type);
+          // calculerTableauGlobal(data);
+
         })
         .catch(err => console.error("Erreur chargement bavure ADV:", err));
   }
@@ -393,7 +398,7 @@ async function createTable(data, advToSelect = null) {
     }
     
     if (data.length === 0) {
-        console.log(`Aucun ADV trouvé pour le type: ${currentAdvType}`);
+        // console.log(`Aucun ADV trouvé pour le type: ${currentAdvType}`);
         return;
     }
     let snapshotMap = new Map();

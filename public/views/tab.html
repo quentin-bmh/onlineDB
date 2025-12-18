@@ -2,10 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Boulogne-Landing Page</title>
-    <link rel="stylesheet" href="/css/index.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Tableau de Synthèse ADV</title>
     <style>
             /* Styles pour les couleurs PDF (utilisés dans la légende) */
         .color-box {
@@ -25,59 +22,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-    <div class="background-filter-overlay"></div> 
-    
-    <header class="minimal-header">
-        <div class="header-title">Boulogne</div>
-        <div class="header-profile">
-            <a href="/dashboard" id="dashboard-link" style="display: none;" draggable="false"> Dashboard
-            </a>
-            <a href="#" id="logout-link" draggable="false">
-                <i class="fas fa-sign-out-alt"></i> Déconnexion
-            </a> 
-            <i class="fas fa-user-circle"></i> 
-        </div>
-    </header>
-
-    <div class="modal-overlay">
-        <div class="modal-container" id="choiceModal">
-            
-            <h2 id="welcome-title" class="text-2xl font-bold mb-2">Chargement...</h2>
-            <p id="user-role-display" class="text-gray-400 mb-6 font-medium"></p>
-            
-            <h3 class="text-xl mt-6 mb-3 border-b border-gray-600 pb-2">Nos visualisations</h3>
-            
-            <div class="btn_container">
-                <a href="/advBoulogne" class="choice-button adv-button" draggable="false">
-                    <img src="../assets/adv_icon.png" alt="icone ADV" draggable="false">
-                    ADV
-                </a>
-                
-                <a href="/voiesBoulogne" class="choice-button voies-button" draggable="false">
-                    <img src="../assets/voies_icon.png" alt="icone Voies" draggable="false">
-                    Voies
-                </a>
-                <a onclick="lancerCalculEtAffichage(true)" class="choice-button adv-button" draggable="false">
-                    <img src="../assets/document.png" alt="icone ADV" draggable="false">
-                    Synthèse ADV
-                </a>
-                
-                <a id="btn-voie" class="choice-button voies-button" draggable="false">
-                    <img src="../assets/document.png" alt="icone Voies" draggable="false">
-                    Synthèse Voies
-                </a>
-            </div>
-            
-            <!-- <div class="documents-list-container mt-8">
-                <h3 class="text-xl mb-3 border-b border-gray-600 pb-2">Documents ADV</h3>
-                <div id="document-buttons">
-                    Chargement des documents...
-                </div>
-            </div> -->
-        </div>
-    </div>
-
-    <script src="/js/index.js" defer></script>
+    <button onclick="lancerCalculEtAffichage(false)">1. Afficher Tableau Global (Console)</button>
+    <button onclick="lancerCalculEtAffichage(true)">Synthèse Adv</button>
+    <button id="btn-voie">Synthèse Voies</button>
     <script src="/js/notes.js"></script> 
     <script>
 
