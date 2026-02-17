@@ -46,6 +46,7 @@ async function manageAdminFeatures() {
 
 document.addEventListener('DOMContentLoaded', () => {
     manageAdminFeatures();
+    fetchPlanFiles();
     initMap();
     loadTypeButtons();
     setupToggleMenu();
@@ -592,7 +593,19 @@ function getAdvDetails(adv) {
 //   });
 // });
 
-
+let allPlanFiles = [];
+async function fetchPlanFiles() {
+    try {
+        const response = await fetch('/api/webdav/list');
+        if (response.ok) {
+            allPlanFiles = await response.json();
+            console.log("Plans récupérés pour visualisation :", allPlanFiles.length);
+        }
+    } catch (e) {
+        console.error("Erreur récupération liste des plans", e);
+        allPlanFiles = []; 
+    }
+}
 function createDocumentButton(advName) {
     const hub = document.getElementById('hub');
     if (!hub) return;
