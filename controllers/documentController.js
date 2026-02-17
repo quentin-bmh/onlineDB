@@ -48,3 +48,51 @@ exports.openDocument = async (req, res) => {
     res.status(500).send("Erreur serveur interne");
   }
 };
+exports.uploadPlan = async (req, res) => {
+    if (!req.file || !req.body.advName) {
+        return res.status(400).json({ error: "Fichier ou nom ADV manquant" });
+    }
+
+    try {
+        const client = await getClient();
+        
+        // 1. Nom propre : On garde les espaces internes (ex: "BS 10a")
+        const cleanAdvName = req.body.advName.trim(); 
+        
+        // 2. Lister le dossier pour trouver les doublons (même nom, extension différente)
+        const directoryItems = await client.getDirectoryContents(targetDir);
+        
+        // On cherche tout fichier dont le nom (sans extension) est EXACTEMENT le nom de l'ADV
+        const filesToDelete = directoryItems.filter(item => {
+            if (item.type !== "file") return false;
+            
+            // Récupère "BS 10a" depuis "BS 10a.png" ou "BS 10a.pdf"
+            const nameWithoutExt = path.parse(item.basename || item.filename).name;
+            return nameWithoutExt === cleanAdvName;
+        });
+
+        // 3. Supprimer les anciens fichiers trouvés
+        if (filesToDelete.length > 0) {
+            console.log(`🗑️ Nettoyage pour ${cleanAdvName} : ${filesToDelete.length} fichier(s) supprimé(s).`);
+            for (const file of filesToDelete) {
+                await client.deleteFile(file.filename);
+            }
+        }
+
+        // 4. Création du nouveau nom (Format: "BS 10a.png")
+        const extension = path.extname(req.file.originalname);
+        const newFilename = `${cleanAdvName}${extension}`;
+        const targetPath = path.posix.join(targetDir, newFilename);
+
+        // 5. Upload du nouveau fichier
+        await client.putFileContents(targetPath, req.file.buffer, {
+            overwrite: true
+        });
+
+        res.json({ success: true, path: targetPath });
+
+    } catch (err) {
+        console.error("❌ Erreur upload WebDAV:", err);
+        res.status(500).json({ error: "Echec transfert WebDAV" });
+    }
+};

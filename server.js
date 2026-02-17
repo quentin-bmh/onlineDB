@@ -1,5 +1,4 @@
 //server.js
-//process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -74,6 +73,7 @@ app.use((err, req, res, next) => {
   res.status(500).send('Erreur interne du serveur');
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Serveur lancé sur http://0.0.0.0:${port}`);
+const server = app.listen(port, '0.0.0.0', () => {
+  console.log(`Serveur lancé sur http://localhost:${port}`);
 });
+server.timeout = 600000;

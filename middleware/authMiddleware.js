@@ -4,9 +4,6 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET; 
 const db = require('../config/db');
 
-/**
- * Middleware d'authentification principal. Valide le token et charge req.user.
- */
 exports.authenticate = async (req, res, next) => {
     const token = req.cookies.token; 
 

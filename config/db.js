@@ -3,19 +3,16 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const PRIMARY_STRING = process.env.CONNECTIONSTRING;
-// const SECONDARY_STRING = process.env.CONNECTIONSTRING2;
 
 let activePoolPromise = null;
 
 /**
- * Crée et connecte un pool de connexion.
  * @param {string} connectionString
  * @param {string} name
  * @returns {Promise<Pool|null>}
  */
 async function createAndConnectPool(connectionString, name) {
     if (!connectionString) {
-        // Le log devient une erreur FATALE car la seule chaîne de connexion est manquante
         console.error(`❌ FATAL: Chaîne de connexion pour ${name} manquante.`);
         return null;
     }
@@ -29,14 +26,10 @@ async function createAndConnectPool(connectionString, name) {
 
     try {
         const client = await pool.connect();
-        // Utilisation de `SET TIME ZONE` pour le fuseau horaire de session, pas du serveur.
         await client.query("SET TIME ZONE 'Europe/Paris'");
         client.release();
-        console.log(`✅ Connecté à PostgreSQL via Pool sur : ${name} !`);
-        console.log('🕓 Fuseau horaire PostgreSQL défini sur Europe/Paris');
         return pool;
     } catch (err) {
-        // Le log devient une erreur FATALE car il n'y a pas de bascule possible
         console.error(`❌ FATAL: Échec de la connexion à la BDD ${name}.`, err.message);
         pool.end();
         return null;
@@ -63,8 +56,6 @@ async function initializePool() {
     throw new Error('Database service unavailable.');
 }
 
-// Lancement de l'initialisation après la définition des fonctions.
-// Ceci assigne une Promesse à activePoolPromise.
 activePoolPromise = initializePool(); 
 
 module.exports = {

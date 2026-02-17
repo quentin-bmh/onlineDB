@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synthèse Bercy</title>
+    <link rel="stylesheet" href="/css/synthese.css">
+</head>
+<body>
+    <div class="grid-layout">    
+        <div class="sidebar">
+            <a id="btn-toggle-adv" class="choice-button adv-button" onclick="switchView('adv')" draggable="false">
+                <img src="../assets/document.png" alt="icone ADV" draggable="false">
+                Synthèse ADV
+            </a>
+            
+            <a id="btn-toggle-voies" class="choice-button voies-button hidden" onclick="switchView('voies')" draggable="false">
+                <img src="../assets/document.png" alt="icone Voies" draggable="false">
+                Synthèse Voies
+            </a>
+
+            <a href="/" class="choice-button accueil-button" draggable="false">
+                <img src="../assets/accueil.png" alt="icone Accueil" draggable="false">
+                Accueil
+            </a>
+            
+            <button id="btn-download" class="choice-button download-action" onclick="handleDownload()">
+                <img src="../assets/telecharger.png" alt="Téléchargement">
+                Télécharger PDF
+            </button>
+        </div>
+
+        <div class="content-area">
+            <div class="header-content">
+                <h1 id="main-title">Synthèse ADV Bercy</h1>
+            </div>
+            <div id="table-container"></div>
+        </div>
+    </div> 
+    
+    <script src="/js/notes.js"></script>
+    <script src="/js/synthese.js"></script>
+</body>
+</html>

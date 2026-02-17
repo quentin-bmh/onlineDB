@@ -56,7 +56,8 @@ const API_ADV_DELETE = '/api/adv'; // Base URL pour DELETE /api/adv/:advName
 
 let allUsersData = [];
 let allPendingRequests = []; 
-let allAdvData = []; // Nouveau tableau pour les données ADV
+let allAdvData = [];
+let allPlanFiles = [];
 let sortState = { key: 'last_login', direction: 'desc' }; 
 let currentSearchTerm = '';
 let currentView = 'users';
@@ -89,6 +90,20 @@ function handleSort(event) {
     header.classList.add(`sorted-${sortState.direction}`);
 
     applyFiltersAndSort();
+}
+
+async function fetchPlanFiles() {
+    try {
+        // Cette route existe déjà via votre downloadRoutes.js (/list -> documentController.listDocuments)
+        const response = await fetch('/api/webdav/list');
+        if (response.ok) {
+            allPlanFiles = await response.json();
+            console.log("Plans récupérés :", allPlanFiles.length);
+        }
+    } catch (e) {
+        console.error("Erreur récupération liste des plans", e);
+        allPlanFiles = []; // En cas d'erreur, on assume vide pour ne pas bloquer l'affichage
+    }
 }
 
 function mockToggleAdmin(userId, currentStatus) {
@@ -502,10 +517,67 @@ function renderPermissions(permissions) {
     savePermissionsButton.disabled = true; // Désactiver par défaut, il sera réactivé lors d'un changement
 }
 
+async function handleDashboardUpload(file, advName, labelElement) {
+    // Sauvegarde du contenu pour restauration en cas d'erreur
+    const originalContent = labelElement.innerHTML;
+    const originalClasses = labelElement.className; // Sauvegarde des classes (couleur originale)
+    
+    // Feedback visuel : Spinner
+    labelElement.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>`;
+    labelElement.classList.add('cursor-not-allowed', 'opacity-50');
 
-/**
- * Gère l'enregistrement des permissions mises à jour.
- */
+    const formData = new FormData();
+    formData.append('plan', file);
+    formData.append('advName', advName);
+
+    try {
+        const response = await fetch('/api/webdav/upload_plan', { 
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Erreur serveur lors de l'upload");
+
+        // --- SUCCÈS ---
+
+        // 1. Nettoyage de TOUTES les classes de couleur possibles
+        labelElement.classList.remove(
+            'bg-blue-600', 'hover:bg-blue-700', 
+            'bg-orange-500', 'hover:bg-orange-600', 
+            'bg-green-500', 'cursor-not-allowed', 'opacity-50'
+        );
+        
+        // 2. Flash Vert de succès temporaire
+        labelElement.classList.add('bg-green-500');
+        labelElement.innerHTML = '✓';
+
+        // 3. Mise à jour de la liste locale (IMPORTANT pour que le prochain render soit correct)
+        const normalizedName = advName.trim().replace(/\s+/g, '_');
+        if (!allPlanFiles.some(f => f.name.includes(normalizedName))) {
+            allPlanFiles.push({ name: `${normalizedName}_PLAN` });
+        }
+        
+        // 4. Transition vers l'état final : BLEU / DOCUMENT (Car maintenant le fichier existe)
+        setTimeout(() => {
+            labelElement.classList.remove('bg-green-500');
+            // On applique le style "Plan Existant" (Bleu)
+            labelElement.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            labelElement.innerHTML = '📄'; // Icône Document
+            labelElement.title = 'Modifier le plan';
+        }, 1500);
+
+        console.log(`✅ Plan pour ${advName} uploadé.`);
+
+    } catch (error) {
+        console.error("Erreur upload:", error);
+        alert(`Échec de l'upload : ${error.message}`);
+        
+        // En cas d'erreur, on remet l'état EXACT d'avant le clic (Orange ou Bleu selon ce c'était)
+        labelElement.className = originalClasses;
+        labelElement.innerHTML = originalContent;
+    }
+}
+
 async function handleSavePermissions() {
     if (!currentSelectedUserId || isCurrentUserAdmin) return;
 
@@ -614,7 +686,7 @@ async function fetchAdvData() {
     try {
         advLoadingIndicator.classList.remove('hidden');
         advContainer.classList.add('hidden');
-
+        await fetchPlanFiles();
         // Utilisation de la route GET /api/general_data pour obtenir tous les ADV
         const response = await fetch(API_ADV_LIST, { method: 'GET' });
         advLoadingIndicator.classList.add('hidden');
@@ -810,35 +882,98 @@ function downloadFile(content, filename) {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
 }
-
-// --- Mise à jour de la fonction de rendu du tableau ---
-
 function renderAdvTable(advs) {
-    // Supposons que 'advTableBody' est défini dans le scope parent
     advTableBody.innerHTML = '';
 
+    // --- DIAGNOSTIC START (Demandé par l'utilisateur) ---
+    console.group("🔍 DIAGNOSTIC PLANS ADV");
+    console.log(`📊 Nombre d'ADVs : ${advs.length}`);
+    console.log(`📂 Nombre de fichiers sur le Cloud : ${allPlanFiles.length}`);
+
+    const advsWithDoc = [];
+    const advsWithoutDoc = [];
+
+    // Pré-calcul pour le diagnostic
+    advs.forEach(adv => {
+        const targetName = adv.adv.trim().toLowerCase();
+        
+        // Recherche stricte : le nom du fichier (sans extension) doit correspondre au nom de l'ADV
+        const found = allPlanFiles.find(f => {
+            // On enlève l'extension du fichier cloud pour comparer (.png, .pdf, etc.)
+            const fileNameNoExt = f.name.substring(0, f.name.lastIndexOf('.')).toLowerCase();
+            return fileNameNoExt === targetName;
+        });
+
+        if (found) {
+            advsWithDoc.push(`${adv.adv} (Trouvé: ${found.name})`);
+        } else {
+            advsWithoutDoc.push(adv.adv);
+        }
+    });
+
+    console.log("%c✅ ADVs avec document :", "color: green; font-weight: bold", advsWithDoc);
+    console.log("%c❌ ADVs sans document :", "color: orange; font-weight: bold", advsWithoutDoc);
+    console.groupEnd();
+    // --- DIAGNOSTIC END ---
+
     if (advs.length === 0) {
-        advTableBody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">Aucun ADV enregistré.</td></tr>`;
+        advTableBody.innerHTML = `<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Aucun ADV enregistré.</td></tr>`;
         return;
     }
 
     advs.forEach(adv => {
-        const advName = adv.adv; // Récupération du nom de l'ADV
+        const advName = adv.adv; 
         const row = advTableBody.insertRow();
         row.className = 'hover:bg-gray-700 transition duration-150';
         
+        // --- LOGIQUE DE DÉTECTION CORRIGÉE ---
+        const cleanName = advName.trim().toLowerCase();
+        
+        const hasPlan = allPlanFiles.some(f => {
+            // Extraction du nom sans extension pour comparaison exacte "BS 10a" === "BS 10a"
+            const fNameNoExt = f.name.substring(0, f.name.lastIndexOf('.')).toLowerCase();
+            return fNameNoExt === cleanName;
+        });
+
+        let btnColorClass, btnIcon, btnTitle;
+
+        if (hasPlan) {
+            // CAS 1 : Plan présent -> BLEU
+            btnColorClass = 'bg-blue-600 hover:bg-blue-700';
+            btnIcon = '📄'; 
+            btnTitle = 'Plan existant (Modifier)';
+        } else {
+            // CAS 2 : Pas de plan -> ORANGE
+            btnColorClass = 'bg-orange-500 hover:bg-orange-600';
+            btnIcon = '📂'; 
+            btnTitle = 'Aucun plan (Ajouter)';
+        }
+
         const deleteButton = `
             <button class="delete-adv-btn bg-red-600 hover:bg-red-700 px-3 py-1 text-sm rounded transition duration-150 shadow-md" 
                     data-adv-name="${advName}">
                 <span class="text-sm">🗑️</span>
             </button>`;
             
-        // Nouveau bouton de téléchargement :
         const downloadButton = `
             <button class="download-adv-btn bg-orange-500 hover:bg-orange-600 px-3 py-1 text-sm rounded transition duration-150 shadow-md"
                     data-adv-name="${advName}">
                 Interventions
             </button>`;
+
+        const uploadButton = `
+            <div class="relative flex justify-center items-center group">
+                <input type="file" id="upload-plan-${advName}" 
+                       class="hidden dashboard-plan-input" 
+                       data-adv-name="${advName}"
+                       accept=".pdf, .png, .jpg, .jpeg">
+                
+                <label for="upload-plan-${advName}" 
+                       class="cursor-pointer ${btnColorClass} px-3 py-1 text-lg rounded transition duration-150 shadow-md flex items-center justify-center text-white w-10 h-8"
+                       title="${btnTitle}">
+                    ${btnIcon}
+                </label>
+            </div>`;
 
         row.innerHTML = `
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium text-gray-400">${advName}</td>
@@ -846,26 +981,38 @@ function renderAdvTable(advs) {
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.modele || 'N/A'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.lat || 'N/A'}</td>
             <td class="px-6 py-4 whitespace-nowrap text-center text-sm">${adv.long || 'N/A'}</td> 
-            <td class="px-6 py-4 whitespace-nowrap text-center text-center">${downloadButton}</td> 
+            <td class="px-6 py-4 whitespace-nowrap text-center text-center">${downloadButton}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-center">${uploadButton}</td> 
             <td class="px-6 py-4 whitespace-nowrap text-center text-center">${deleteButton}</td> 
         `;
     });
 
-    // Gestionnaire d'événement pour le bouton de suppression (existant)
+    // Re-attach listeners
     document.querySelectorAll('.delete-adv-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const advName = e.currentTarget.dataset.advName;
-            // Supposons que handleDeleteAdv est défini ailleurs
-            handleDeleteAdv(advName, e.currentTarget); 
-        });
+        button.addEventListener('click', (e) => handleDeleteAdv(e.currentTarget.dataset.advName, e.currentTarget));
     });
 
-    // Gestionnaire d'événement pour le nouveau bouton de téléchargement
     document.querySelectorAll('.download-adv-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const advName = e.currentTarget.dataset.advName;
-            // Appel de la fonction de gestion de l'export
-            handleDownloadReport(advName); 
+        button.addEventListener('click', (e) => handleDownloadReport(e.currentTarget.dataset.advName));
+    });
+
+    document.querySelectorAll('.dashboard-plan-input').forEach(input => {
+        input.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            const advName = e.target.dataset.advName;
+            
+            if (file) {
+                const label = e.target.nextElementSibling;
+                const isReplacing = label.classList.contains('bg-blue-600');
+                const confirmMsg = isReplacing 
+                    ? `Voulez-vous REMPLACER le plan existant pour "${advName}" par "${file.name}" ?`
+                    : `Voulez-vous AJOUTER le plan "${file.name}" pour "${advName}" ?`;
+
+                if (confirm(confirmMsg)) {
+                    handleDashboardUpload(file, advName, label);
+                }
+                e.target.value = ''; 
+            }
         });
     });
 }
@@ -954,10 +1101,20 @@ function switchTab(targetSection) {
         } else {
              populateUserSelect();
         }
-    } else if (targetSection === 'adv-section') { // Nouveau cas ADV
+    } else if (targetSection === 'adv-section') { 
         tabAdv.classList.add('active'); 
         searchBar.classList.add('hidden'); 
-        fetchAdvData(); // Charger les données ADV
+        
+        // On lance le chargement
+        advLoadingIndicator.classList.remove('hidden');
+        advContainer.classList.add('hidden');
+
+        // On récupère les ADVs ET la liste des fichiers avant d'afficher
+        Promise.all([fetchAdvData(false), fetchPlanFiles()]).then(() => {
+            renderAdvTable(allAdvData); // On rafraîchit le tableau avec les deux infos
+            advLoadingIndicator.classList.add('hidden');
+            advContainer.classList.remove('hidden');
+        });
     }
     
     errorMessage.classList.add('hidden');

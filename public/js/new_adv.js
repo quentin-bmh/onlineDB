@@ -1061,6 +1061,113 @@ function collectSpecificTechnicalData(advType) {
     return specificData;
 }
 
+// --- GESTION DU DRAG AND DROP POUR LE PLAN ---
+
+document.addEventListener('DOMContentLoaded', () => {
+    const dropZoneElement = document.getElementById('drop-zone-area');
+    const inputElement = document.getElementById('general_plan');
+    const promptElement = dropZoneElement.querySelector('.drop-zone__prompt');
+    const textElement = dropZoneElement.querySelector('.drop-zone__text');
+
+    // Fonction pour mettre à jour la zone quand un fichier est choisi
+    function updateThumbnail(file) {
+        // On retire l'état de survol
+        dropZoneElement.classList.remove('drop-zone--over');
+
+        if (file) {
+            // Un fichier est présent : on change le style et le texte
+            dropZoneElement.classList.add('drop-zone--uploaded');
+            // On remplace tout le contenu du prompt par le nom du fichier
+            textElement.innerHTML = `Fichier sélectionné :<br><strong>${file.name}</strong>`;
+        } else {
+            // Pas de fichier : on remet l'état initial
+            dropZoneElement.classList.remove('drop-zone--uploaded');
+             textElement.innerHTML = `Glissez-déposez votre fichier ici<br><small>ou cliquez pour parcourir</small>`;
+             promptElement.querySelector('.drop-zone__icon').style.display = ''; // Réafficher l'icône
+        }
+    }
+
+    // 1. Gérer le clic classique
+    // Quand on clique sur la zone, on simule un clic sur l'input caché
+    dropZoneElement.addEventListener('click', () => {
+        inputElement.click();
+    });
+
+    // Quand l'input caché change (fichier choisi via l'explorateur), on met à jour la zone
+    inputElement.addEventListener('change', () => {
+        if (inputElement.files.length) {
+            updateThumbnail(inputElement.files[0]);
+        } else {
+             updateThumbnail(null);
+        }
+    });
+
+    // 2. Gérer le Drag and Drop
+    // Empêcher les comportements par défaut du navigateur pour ces événements
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZoneElement.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Ajouter la classe visuelle au survol
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZoneElement.addEventListener(eventName, highlight, false);
+    });
+    
+    // Retirer la classe visuelle quand on quitte la zone
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZoneElement.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+        dropZoneElement.classList.add('drop-zone--over');
+    }
+
+    function unhighlight(e) {
+        dropZoneElement.classList.remove('drop-zone--over');
+    }
+
+    // Gérer le "lâcher" (drop) du fichier
+    dropZoneElement.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+
+        if (files.length) {
+            // LE POINT CLÉ : On assigne les fichiers lâchés à l'input caché !
+            // Cela permet au reste de ton code (sendFormData) de fonctionner sans modification.
+            inputElement.files = files;
+            
+            // Mise à jour visuelle
+            updateThumbnail(files[0]);
+            console.log('Fichier lâché :', files[0].name);
+        }
+    }
+});
+
+async function uploadPlan(file, advName) {
+    const formData = new FormData();
+    formData.append('plan', file);
+    formData.append('advName', advName);
+
+    try {
+        const response = await fetch('/api/webdav/upload_plan', { 
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Erreur upload plan");
+        console.log('✅ Plan uploadé et renommage effectué sur Nextcloud.');
+    } catch (e) {
+        console.error('❌ Échec de l\'upload du plan:', e);
+    }
+}
 
 /**
  * @returns {{generalData: Object, specificData: Object, demiAiguillageData: Array<Object>}} Les données séparées.
@@ -1129,9 +1236,11 @@ async function postData(url, data) {
 async function sendFormData() {
     const { generalData, specificData, demiAiguillageData } = splitFormData();
     
-    // Si generalData n'est pas fourni, le type sera null, ce qui est géré.
     const advType = generalData?.type.toLowerCase(); 
-
+    
+    // Récupération sécurisée du fichier
+    const planInput = document.getElementById('general_plan');
+    const planFile = planInput && planInput.files.length > 0 ? planInput.files[0] : null;
     if (!generalData || !advType) {
         console.error("Impossible de soumettre : Données générales manquantes ou type ADV invalide.");
         return;
@@ -1141,44 +1250,50 @@ async function sendFormData() {
 
     let success = true;
 
-    // 1. Soumission des Données Générales (Table: general_data)
+    // 1. Soumission Générales
     try {
         const generalUrl = '/api/general_data';
-        console.log(`POST ${generalUrl} avec:`, generalData);
         await postData(generalUrl, generalData);
         console.log('✅ Soumission Données Générales réussie.');
     } catch (e) {
-        console.error('❌ Échec de la soumission des données générales.');
+        console.error('❌ Échec soumission données générales:', e);
         success = false;
     }
 
-    // 2. Soumission des Données Spécifiques (Table: adv_bs, adv_tj, adv_to)
+    // 2. Soumission Spécifiques
     if (success) {
         try {
-            const specificUrl = `/api/adv_${advType}`; // Construit /adv_bs, /adv_tj, ou /adv_to
-            console.log(`POST ${specificUrl} avec:`, specificData);
+            const specificUrl = `/api/adv_${advType}`;
             await postData(specificUrl, specificData);
             console.log(`✅ Soumission Données Spécifiques (ADV_${advType.toUpperCase()}) réussie.`);
         } catch (e) {
-            console.error('❌ Échec de la soumission des données spécifiques.');
+            console.error('❌ Échec soumission données spécifiques:', e);
             success = false;
         }
     }
 
-    // 3. Soumission des Données de Demi-Aiguillage (Table: b2v_da)
+    // 3. Soumission Demi-Aiguillage
     if (success && (advType === 'bs' || advType === 'tj') && demiAiguillageData.length > 0) {
         try {
             const daUrl = '/api/b2v_da';
-            console.log(`POST ${daUrl} avec:`, demiAiguillageData);
-            // Soumission du tableau d'objets (chaque élément est un demi-aiguillage)
             await postData(daUrl, demiAiguillageData); 
-            console.log('✅ Soumission Données Demi-Aiguillage (b2v_da) réussie.');
+            console.log('✅ Soumission Données Demi-Aiguillage réussie.');
         } catch (e) {
-            console.error('❌ Échec de la soumission des données de demi-aiguillage.');
+            console.error('❌ Échec soumission demi-aiguillage:', e);
             success = false;
         }
     }
-    
+
+    // 4. Soumission du Plan (Avec un ELSE pour comprendre si ignoré)
+    if (success && planFile && generalData.adv) {
+        console.log("📂 Envoi du plan en cours...");
+        await uploadPlan(planFile, generalData.adv);
+    } else {
+        // Log pour comprendre pourquoi on ne rentre pas
+        if (!planFile) console.warn("⚠️ Pas de plan envoyé : Aucun fichier sélectionné dans l'input.");
+        else if (!generalData.adv) console.warn("⚠️ Pas de plan envoyé : Nom ADV manquant.");
+    }
+
     if (success) {
         console.log("🎉 Création de l'ADV complétée avec succès !");
     } else {

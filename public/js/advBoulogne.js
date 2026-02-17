@@ -52,9 +52,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initCharts();
 });
 
-
-// advBoulogne.js - Dans la fonction initMap()
-
 function initMap() {
     map = L.map('map', {
         zoomControl: false,
@@ -603,14 +600,24 @@ function createDocumentButton(advName) {
     if (oldButton) oldButton.remove();
 
     if (!advName || advName === '') return;
-
+    const targetName = advName.trim().toLowerCase();
+    const foundFile = allPlanFiles.find(f => {
+        const fNameNoExt = f.name.substring(0, f.name.lastIndexOf('.')).toLowerCase();
+        return fNameNoExt === targetName;
+    });
+    if (!foundFile) {
+        console.warn(`createDocumentButton: Aucun fichier trouvé pour l'ADV "${advName}"`);
+        return; 
+    }
+    const fullFilename = foundFile.name; 
     const button = document.createElement('button');
     button.id = 'document-btn';
     button.textContent = `Plan de l'appareil`;
     button.classList.add('data-btn-document'); 
-    const fullFilename = advName + '.pdf';
-    const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public"; // Assurez-vous que cette constante est définie
+
+    const WEBDAV_TARGET_DIR = "/User-Uploads/uploads-public"; 
     const webdavFullPath = `${WEBDAV_TARGET_DIR}/${fullFilename}`; 
+    
     const encodedPath = encodeURIComponent(webdavFullPath);
     const documentUrl = `/api/webdav/open/${encodedPath}`; 
 

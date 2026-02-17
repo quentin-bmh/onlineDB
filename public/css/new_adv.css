@@ -190,7 +190,8 @@ legend {
 .form-grid div {
     display: flex;
     flex-direction: column; 
-    gap: 5px; 
+    padding: 2px;
+    justify-content: space-evenly;
 }
 label {
     font-weight: bold;
@@ -219,6 +220,7 @@ select {
     height: 150px;
     width: 100%;
     border-radius: 6px;
+    margin-top: 15px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -760,4 +762,87 @@ input[type=number] {
 
 .leaflet-control-layers {
     display: none !important;
+}
+
+/* Conteneur global du champ */
+.upload-field-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.upload-label-title {
+    font-weight: bold;
+    color: #555;
+}
+
+/* La zone de drag & drop */
+.drop-zone {
+    width: 100%;
+    max-width: 100%; /* S'adapte au conteneur parent */
+    height: 100px; /* Hauteur fixe pour un rendu uniforme */
+    /* padding: 5px; */
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    color: #6c757d;
+    border: 2px dashed #ced4da; /* Bordure en pointillés grise */
+    border-radius: 8px;
+    background-color: #f8f9fa; /* Fond gris très léger */
+    transition: all 0.3s ease-in-out;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+/* État au survol avec un fichier (activé par JS) */
+.drop-zone.drop-zone--over {
+    border-color: #0d6efd; /* Bleu Bootstrap */
+    background-color: #e9ecef; /* Fond légèrement plus foncé */
+    color: #0d6efd;
+}
+
+/* L'input réel est caché */
+.drop-zone__input {
+    display: none;
+}
+
+/* Contenu texte et icône */
+.drop-zone__prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none; /* Empêche de cliquer sur le texte au lieu de la zone */
+}
+
+.drop-zone__icon {
+    color: #adb5bd;
+    transition: color 0.3s ease;
+}
+
+.drop-zone.drop-zone--over .drop-zone__icon {
+    color: #0d6efd;
+}
+
+.drop-zone__text small {
+    font-weight: normal;
+    opacity: 0.8;
+}
+
+/* Style quand un fichier est sélectionné */
+.drop-zone.drop-zone--uploaded .drop-zone__icon {
+    display: none; /* On cache l'icône upload */
+}
+
+.drop-zone.drop-zone--uploaded .drop-zone__text {
+    font-weight: bold;
+    color: #28a745; /* Vert succès */
+    word-break: break-all; /* Gère les noms de fichiers longs */
 }
